@@ -77,9 +77,10 @@
 	<div class='container'><h6>ОАО Плюс Банк v0.0</h6></div>
 </div>
 -->
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script src='js/bootstrap.min.js'></script>
+    <script>$('input#bl_name').popover('show')</script>
 </body>
 </html>
 
@@ -225,36 +226,45 @@ function layout_newbanlist() {
   echo "<div class='page-header'>\n";
   echo "  <h2>Создание нового бан-листа</h2>\n";
   echo "</div>\n";
-  echo "
-  	<div class='panel'>
+?>
+
+  	<div class='panel panel-default'>
   	  <div class='panel-body'>
-  	  <form class='form-horizontal'>
+  	  <form class='form' method='post'>
   	    <div class='form-group'>
-  	      <label class='control-label col-sm-2'>Имя:</label>
-  	      <div class='col-sm-10'>
-  	        <input type='text' class='form-control' id='bl_name' placeholder='Уникальное имя для банлиста'>
+  	      <label class=''>Имя:</label>
+  	      <div class=''>
+  	        <input type='text' id='bl_name' class='form-control' data-toggle='popover' title='Popover title' data-content='And heres some amazing content. Its very engaging. Right?' name='bl_name' placeholder='Уникальное имя для банлиста' required>
+  	      	
   	      </div>
   	    </div>
   	    <div class='form-group'>
-  	      <label class='control-label col-sm-2'>Краткое описание:</label>
-  	      <div class='col-sm-10'>
-  	        <input type='text' class='form-control' id='bl_shortdesc' placeholder='Краткое описание'>
+  	      <label class=''>Краткое описание:</label>
+  	      <div class=''>
+  	        <input type='text' class='form-control' name='bl_shortdesc' required>
   	      </div>
   	    </div>
   	    <div class='form-group'>
-  	      <label class='control-label col-sm-2'>Полное описание:</label>
-  	      <textarea class='col-sm-10' id='bl_fulldesc' placeholder='Полное описание'></textarea>
-  	    </div>
-  	    <div class='form-group'>
-  	      <div class='col-sm-offset-2'>
-  	        <button class='btn btn-success'>Создать</button>
-  	        <button class='btn btn-default'>Очистить поля</button>
+  	      <label class=''>Полное описание:</label>
+  	      <div class=''> 
+  	        <textarea class='form-control' name='bl_fulldesc' style='height: 150px;' required></textarea>
   	      </div>
   	    </div>
+  	    <div class='form-group'>
+  	      <div class='btn-group btn-group-justified'>
+  	        <div class='btn-group'>
+  	          <button class='btn btn-success'>Создать</button>
+  	        </div>
+  	        <div class='btn-group'>
+  	          <button class='btn btn-default'>Очистить поля</button>
+  	        </div>
+  	      </div>
+  	    </div>
+  	    <button type="button" class="btn btn-lg btn-danger" data-toggle="popover" title="Popover title" data-content="And here's some amazing content. It's very engaging. Right?">Click to toggle popover</button>
   	  </form>
   	  </div>
   	</div>
-  ";
+<?php
 
 }
 
