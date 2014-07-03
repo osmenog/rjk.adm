@@ -1,0 +1,83 @@
+.navbar {
+	margin-bottom: 40px;
+}
+
+.navbar-brand {
+  padding: 5px;
+}
+
+.wrapper {
+	max-width: 730px;	
+}
+
+.auth-wrapper {
+  margin-top: 100px;
+  max-width: 370px; 
+}
+
+.auth-wrapper .alert {
+  margin-top: 20px;
+}
+
+.debug pre{
+	font-size: 8pt;
+	line-height: 1.1;
+}
+
+.footer {
+	background-color: #F5F5F5;
+	/*bottom: 0;
+    height: 40px;
+    position: absolute;
+    width: 100%;*/
+    text-align: center;
+}
+
+.footer h6 {
+	line-height: 20px;
+}
+
+.userlist {
+	margin-top:30px;
+}
+
+.form-signin {
+	width: 330px;
+	margin: 0 auto;
+	padding: 15px;
+}
+
+.form-signin .form-signin-heading,
+.form-signin .checkbox {
+  margin-bottom: 10px;
+}
+
+.form-signin .checkbox {
+  font-weight: normal;
+}
+
+.form-signin .form-control {
+  position: relative;
+  height: auto;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.form-signin .form-control:focus {
+  z-index: 2;
+}
+
+#email {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.form-signin input[type="password"] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
