@@ -77,8 +77,7 @@
 	<div class='container'><h6>ОАО Плюс Банк v0.0</h6></div>
 </div>
 -->
-      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script src='js/bootstrap.min.js'></script>
     <script>$('input#bl_name').popover('show')</script>
 </body>
@@ -94,7 +93,7 @@ function print_layout () {
 		case 'set_user_acl': //Устанавливаем права пользователя на бан-листы
 			//Проверяем корректность запроса. Актуальность данных будет проверяться где-то "внутри" (=
 			//Под "корректностью" понимаем наличие всех входных параметров и заполненность данными (неважно какими).
-			$user=isset($_POST['user']) ? htmlspecialchars($_POST['user'], ENT_QUOTES) : '';
+			$user=isset($_POST['user']) ? mysql_real_escape_string($_POST['user']) : '';
 			if (empty($user)) {
 				echo "<div class='alert alert-danger'><b>Ошибка!</b> Не указан один из параметров</div>\n";
 				break;
@@ -112,6 +111,23 @@ function print_layout () {
 			}
 
 			set_user_acl ($user, $banlists); //Вызываем обработчик
+			break;
+
+		case 'newbanlist': //Создаем новый банлист
+			//Проверяем входные данные
+			if (!isset($_POST['bl_name']) || !isset($_POST['bl_shortdesc']) || !isset($_POST['bl_fulldesc'])) {
+				echo "<div class='alert alert-danger'><b>Ошибка!</b> Не указан один из параметров</div>\n";
+				break;
+			}
+			
+			//Фильтруем значения переменных
+			$bl_name = mysql_real_escape_string($_POST['bl_name']);
+			$bl_shortdesc = mysql_real_escape_string($_POST['bl_shortdesc']);
+			$bl_fulldesc = mysql_real_escape_string($_POST['bl_fulldesc']);
+
+			//Вызываем API-функцию
+			create_banlist ($bl_name, $bl_shortdesc, $bl_fulldesc);
+			
 			break;
 	}
 
@@ -226,16 +242,16 @@ function layout_newbanlist() {
   echo "<div class='page-header'>\n";
   echo "  <h2>Создание нового бан-листа</h2>\n";
   echo "</div>\n";
-?>
-
+  
+echo <<<END
   	<div class='panel panel-default'>
   	  <div class='panel-body'>
-  	  <form class='form' method='post'>
+  	  <form class='form' method='post' action='index.php?action=showbanlists'>
+  	  	<input class='hidden' name='p_action' value='newbanlist'>
   	    <div class='form-group'>
   	      <label class=''>Имя:</label>
   	      <div class=''>
-  	        <input type='text' id='bl_name' class='form-control' data-toggle='popover' title='Popover title' data-content='And heres some amazing content. Its very engaging. Right?' name='bl_name' placeholder='Уникальное имя для банлиста' required>
-  	      	
+  	        <input type='text' id='bl_name' class='form-control' data-toggle='popover' data-placement='left' title='Внимание!!!' data-content='Имя банлиста должно быть в английской раскладке.' name='bl_name' placeholder='Уникальное имя для банлиста' required>
   	      </div>
   	    </div>
   	    <div class='form-group'>
@@ -260,12 +276,10 @@ function layout_newbanlist() {
   	        </div>
   	      </div>
   	    </div>
-  	    <button type="button" class="btn btn-lg btn-danger" data-toggle="popover" title="Popover title" data-content="And here's some amazing content. It's very engaging. Right?">Click to toggle popover</button>
   	  </form>
   	  </div>
   	</div>
-<?php
-
+END;
 }
 
 function layout_getuser ($nick) {
@@ -291,7 +305,7 @@ function layout_getuser ($nick) {
 			return;
 	}
 	
-	//Выводим красивую тпбличку
+	//Выводим красивую табличку
 	echo "<h4>К каким категориям будет иметь доступ пользователь <b>{$nick}</b>:</h2>\n";
 	echo "<div class='panel panel-default'>\n";
 
@@ -299,7 +313,7 @@ function layout_getuser ($nick) {
 	echo "<input class='hidden' name='p_action' value='set_user_acl' />\n";
 	echo "<input class='hidden' name='user' value='$nick' />\n";
 	echo "<table class='table table-striped'>\n";
-    echo "  <tr><th>Выбор</th><th>Бан-лист</th><th>Описание</th></tr>\n";
+	echo "  <tr><th>Выбор</th><th>Бан-лист</th><th>Описание</th></tr>\n";
 
 	foreach ($banlists as $row) {
 		echo "<tr>\n";
@@ -316,6 +330,21 @@ function layout_getuser ($nick) {
 		echo "  <td>{$row['full_desc']}</td>\n";
 		echo "</tr>\n";
 	};
+
+	//Выполняем, привязан ли пользователь к каким-либо удаленным банлистам.
+	$banlists = $rejik->get_banlists();
+
+	foreach ($user_banlists as $value) {
+		//Если бан листа пользователя нет в глобальном списке
+		if (array_search($value, $banlists)===false) {			
+			echo "<tr class='danger'>\n";
+			echo "  <td></td>\n";
+			echo "  <td><b><i>{$value}<i></b></td>\n";
+			echo "  <td><b><i>Банлист был удален из системы</i></b></td>\n";
+			echo "</tr>\n";
+		}
+	}
+
 	echo "</table>\n";
 	
 	//Кнопка "Отправить"
@@ -332,18 +361,26 @@ function layout_getbanlist($banlist) {
 		$rejik = new rejik_worker ($config['rejik_db']);
 		$bl_info = $rejik->get_banlist_info ($banlist);
 
-		if ($bl_info == 0) return; //Выходим, если бан лист пустой.
+		if ($bl_info == 0) {
+			echo "<div class='alert alert-danger'><b>Ошибка!</b> Банлист <i>$banlist</i> не найден в базе.</div>\n";
+			return; //Выходим, если бан лист пустой.
+		}
+
 		$users_in_banlist = $rejik->get_banlist_users ($banlist);
 		
 		echo "<div class='page-header'>\n";
 		echo "<h2>Банлист: <b>{$banlist}</b><br/><small>{$bl_info['full_desc']}</small></h2>\n";
 		echo "</div>\n";
 		
+		echo "<div class='panel panel-default'>\n";
+		echo "  <div class='panel-heading'><h2 class='panel-title'>Пользователи</h2></div>\n";
+		echo "  <div class='panel-body'>\n";
+
 		if ($users_in_banlist!=0) {
 			$users_count = count($users_in_banlist);
 
 			echo "<p>Категория разрешена для <b>{$users_count}</b> ".num_case ($users_count, 'пользователя', 'пользователей', 'пользователей').". \n";
-			echo "<a>Показать</a>\n";
+			echo "<a>Показать</a></p>\n";
 			
 			echo "<div class='panel panel-default'>\n";
 			echo "<table class='table table-striped'>\n";
@@ -357,36 +394,55 @@ function layout_getbanlist($banlist) {
 			};
 			echo "</table>\n";
 			echo "</div>\n";
-
-			echo "<br/>\n";
+		} else {
+			echo "<p>К данной категории не относится ни одного пользователя</p>\n";
 		}
+		echo "  </div>\n";
+		echo "</div>\n";
 
-		
-		
 		$bl_urls = $rejik->get_banlist_urls ($banlist);
 		//echo "<pre>"; print_r($bl_urls); echo "</pre>";
 
-		if ($bl_urls == 0) {
-			echo "<p>К данной категории не относится ни одного сайта</b>\n";
-			return;
-		} else {
-			$bl_count = count ($bl_urls);
-			echo "<p>К данной категории относится <b>{$bl_count}</b> ".num_case ($bl_count, 'сайт', 'сайта', 'сайта').". \n";	
-			echo "<a>Показать</a>\n";
-		}
-		
 		echo "<div class='panel panel-default'>\n";
+		echo "  <div class='panel-heading'><h2 class='panel-title'>Адреса</h2></div>\n";
+		echo "  <div class='panel-body'>\n";
+		
+		if ($bl_urls != 0) {
+			$bl_count = count ($bl_urls);
+			$page_count = ($bl_count>250) ? $bl_count % 250 : 1;
 
-		echo "<table class='table table-striped table-condensed'>\n";
-	    echo "  <tr><th>УРЛ</th></tr>\n";
-		foreach ($bl_urls as $value) {
-			echo "<tr>\n";
-			echo "  <td>{$value}</td>\n";
-			//$usr_info = $prx->get_userinfo ($value);
-			//echo "  <td>{$usr_info['family']}</td>\n";
-			echo "</tr>\n";
-		};
-		echo "</table>\n";
+
+			echo "<p>К данной категории относится: <b>{$bl_count}</b> ".num_case ($bl_count, 'сайт', 'сайта', 'сайтов')."</p>\n";	
+			echo "<center>\n";
+			// В размер 730 px помещается 18 "страниц" обычного размера 21 - "маленького"
+			// 
+			// echo "  <ul class='pagination' style='margin: 0 0 10px 0;'>\n";
+			// echo "    <li><a href='#'>&laquo;</a></li>\n";
+			
+			// for ($i = 1; $i <= $page_count; $i++) {
+			// 	echo "<li><a href='#'>{$i}</a></li>\n";	
+			// }
+
+			// echo "    <li><a href='#'>&raquo;</a></li>\n";
+			// echo "  </ul>\n";
+			echo "</center>\n";
+			echo "<div class='panel panel-default'>\n";
+			echo "<table class='table table-striped table-condensed'>\n";
+		    echo "  <tr><th>УРЛ</th></tr>\n";
+			foreach ($bl_urls as $value) {
+				echo "<tr>\n";
+				echo "  <td>{$value}</td>\n";
+				//$usr_info = $prx->get_userinfo ($value);
+				//echo "  <td>{$usr_info['family']}</td>\n";
+				echo "</tr>\n";
+			};
+			echo "</table>\n";
+			echo "</div>\n";
+		} else {
+			echo "<p>К данной категории не относится ни одного сайта</p>\n";
+		}
+
+		echo "  </div> <!-- pb -->\n"; //panel-body
 		echo "</div>\n";
 	} catch (mysql_exception $e) {
 		echo "<div class='alert alert-danger'><b>Ошибка SQL!</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
@@ -539,9 +595,27 @@ function apply_and_reconfigure() {
 
 	} catch (exception $e) {
 		echo "<div class='alert alert-danger'><b>Ошибка</b>Вылетело исключение.<br/>{$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
+	}		
+}
+
+function create_banlist ($name, $short_desc, $full_desc) {
+	global $config;
+	$rejik = new rejik_worker ($config['rejik_db']);
+	try {
+		if ($rejik->add_banlist($name, $short_desc, $full_desc)) {
+			echo "<div class='alert alert-success'>Создание бан-листа <i>{$name}</i> успешно выполнено!</div>\n";
+		}
+	} catch (rejik_exception $e) {
+		if ($e->getCode() == 0) {
+			echo "<div class='alert alert-danger'><b>Ошибка!</b> Банлист <i>{$name}</i> уже существует</div>\n";	
+		} else {
+			echo "<div class='alert alert-danger'><b>Ошибка</b><br/>{$e->getCode()} : {$e->getMessage()}</div>\n";	
+		}
+	} catch (exception $e) {
+		echo "<div class='alert alert-danger'><b>Ошибка</b>Вылетело исключение.<br/>{$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
 	}
 
-	
-		
+	return;
 }
+
 ?>

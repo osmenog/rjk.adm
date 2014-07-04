@@ -159,7 +159,38 @@ class rejik_worker extends worker {
 		}
 
     	$response->close();
+    	//echo "<pre>"; print_r ($res); echo "</pre>\n";
     	return $res;
+	}
+
+	public function add_banlist ($name, $short_desc, $full_desc='') {
+		// Description ...: Создает новый банлист с заданными параметрами
+		// Parameters ....: $name - Системное имя банлиста (должно быть в англ. раскладке)
+		//             $shortdesc - Короткое описание 
+		//              $fulldesc - Полное описание (не обязательно)
+		// Return values .: Успех - Возвращает True
+		//                Неудача - Возвращает False
+		//                        - Возвращает исключение mysql_exception
+		// -------------------------------------------------------------------------
+
+		// 1. Проверяем, есть ли банлист с таким именем. Если есть - то исключение.
+		if (array_search($name, $this->get_banlists())!==False) throw new rejik_exception("Banlist already exists",1);	
+		
+		// 2. Фильтруем XSS уязвимости
+		$name = htmlspecialchars ($name);
+		$short_desc = htmlspecialchars ($short_desc);
+		$full_desc = htmlspecialchars ($full_desc);
+
+		// 3. Выполняем запрос
+		$query = "INSERT INTO banlists SET `name`='$name', `short_desc`='$short_desc', `full_desc`='$full_desc';";
+		$response = $this->sql->query($query);
+		
+		// 3.1. Проверяем, выполнился запрос
+		if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+
+		//Запись в лог
+    	Logger::add (3, "Banlist {$name} created");
+		return True;
 	}
 
 	public function get_banlist_info ($banlist) {
@@ -280,6 +311,9 @@ class rejik_worker extends worker {
 			echo "<div class='alert alert-danger'><b>Ошибка!</b> Банлист <b>$banlist</b> отсутствует в базе!</div>\n";
 			return -2;
 		}
+		// Фильтрация XSS
+		$user = htmlspecialchars($user);
+		$banlist = htmlspecialchars($banlist);
 
 		//Готовим запрос
 		$query = "INSERT INTO users_acl SET `nick`='$user', `banlist`='$banlist';";

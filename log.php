@@ -1,5 +1,9 @@
 <?php
 include_once "config.php";
+// Типы сообщений
+// 1-Добавление связи
+// 2-Удаление связи
+// 3-Создание банлиста
 
 class logger {
 	private static $sql;
