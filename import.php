@@ -26,7 +26,7 @@
 
 <?php
 class importer {
-	public $rejik_path = 'C:\\Users\\osme\\Dropbox\\develop\\rejik\\rejik\\';
+	public $rejik_path = 'C:\\MyFiles\\xampp\\htdocs\\rejik2\\';
 	private $csv_file_path;
 	static $csv_import_count = 0;
 
@@ -106,7 +106,7 @@ public function start(){
 
 
 
-	$dir_path = $this->rejik_path;
+	$dir_path = $this->rejik_path.'banlists\\';
 	$root_dir_content = $this->dir_contents($dir_path);
 	if (!$root_dir_content) {
 		echo "<p>Немогу открыть каталог {$dir_path}</p>\n";

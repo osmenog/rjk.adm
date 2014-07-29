@@ -17,6 +17,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="css/bootstrap.min.css" rel="stylesheet">
   <link href="css/style.css" rel="stylesheet">
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <!--<script src="js/jquery.min.js"></script>-->
+  <script src='js/bootstrap.min.js'></script>
+  <script src='js/jquery.twbsPagination.min.js'></script>
+  <script src='js/app.js'></script> 
 </head>
 <body>
 
@@ -77,9 +83,6 @@
 	<div class='container'><h6>ОАО Плюс Банк v0.0</h6></div>
 </div>
 -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-    <script src='js/bootstrap.min.js'></script>
-    <script>$('input#bl_name').popover('show')</script>
 </body>
 </html>
 
@@ -127,7 +130,6 @@ function print_layout () {
 
 			//Вызываем API-функцию
 			create_banlist ($bl_name, $bl_shortdesc, $bl_fulldesc);
-			
 			break;
 	}
 
@@ -354,101 +356,7 @@ function layout_getuser ($nick) {
 }
 
 function layout_getbanlist($banlist) {
-	global $config;
-	
-	try{
-		$prx = new proxy_worker ($config['sams_db']);
-		$rejik = new rejik_worker ($config['rejik_db']);
-		$bl_info = $rejik->get_banlist_info ($banlist);
-
-		if ($bl_info == 0) {
-			echo "<div class='alert alert-danger'><b>Ошибка!</b> Банлист <i>$banlist</i> не найден в базе.</div>\n";
-			return; //Выходим, если бан лист пустой.
-		}
-
-		$users_in_banlist = $rejik->get_banlist_users ($banlist);
-		
-		echo "<div class='page-header'>\n";
-		echo "<h2>Банлист: <b>{$banlist}</b><br/><small>{$bl_info['full_desc']}</small></h2>\n";
-		echo "</div>\n";
-		
-		echo "<div class='panel panel-default'>\n";
-		echo "  <div class='panel-heading'><h2 class='panel-title'>Пользователи</h2></div>\n";
-		echo "  <div class='panel-body'>\n";
-
-		if ($users_in_banlist!=0) {
-			$users_count = count($users_in_banlist);
-
-			echo "<p>Категория разрешена для <b>{$users_count}</b> ".num_case ($users_count, 'пользователя', 'пользователей', 'пользователей').". \n";
-			echo "<a>Показать</a></p>\n";
-			
-			echo "<div class='panel panel-default'>\n";
-			echo "<table class='table table-striped'>\n";
-		    echo "  <tr><th>Логин</th><th>ФИО</th></tr>\n";
-			foreach ($users_in_banlist as $value) {
-				echo "<tr>\n";
-				echo "  <td>{$value}</td>\n";
-				$usr_info = $prx->get_userinfo ($value);
-				echo "  <td>{$usr_info['family']}</td>\n";
-				echo "</tr>\n";
-			};
-			echo "</table>\n";
-			echo "</div>\n";
-		} else {
-			echo "<p>К данной категории не относится ни одного пользователя</p>\n";
-		}
-		echo "  </div>\n";
-		echo "</div>\n";
-
-		$bl_urls = $rejik->get_banlist_urls ($banlist);
-		//echo "<pre>"; print_r($bl_urls); echo "</pre>";
-
-		echo "<div class='panel panel-default'>\n";
-		echo "  <div class='panel-heading'><h2 class='panel-title'>Адреса</h2></div>\n";
-		echo "  <div class='panel-body'>\n";
-		
-		if ($bl_urls != 0) {
-			$bl_count = count ($bl_urls);
-			$page_count = ($bl_count>250) ? $bl_count % 250 : 1;
-
-
-			echo "<p>К данной категории относится: <b>{$bl_count}</b> ".num_case ($bl_count, 'сайт', 'сайта', 'сайтов')."</p>\n";	
-			echo "<center>\n";
-			// В размер 730 px помещается 18 "страниц" обычного размера 21 - "маленького"
-			// 
-			// echo "  <ul class='pagination' style='margin: 0 0 10px 0;'>\n";
-			// echo "    <li><a href='#'>&laquo;</a></li>\n";
-			
-			// for ($i = 1; $i <= $page_count; $i++) {
-			// 	echo "<li><a href='#'>{$i}</a></li>\n";	
-			// }
-
-			// echo "    <li><a href='#'>&raquo;</a></li>\n";
-			// echo "  </ul>\n";
-			echo "</center>\n";
-			echo "<div class='panel panel-default'>\n";
-			echo "<table class='table table-striped table-condensed'>\n";
-		    echo "  <tr><th>УРЛ</th></tr>\n";
-			foreach ($bl_urls as $value) {
-				echo "<tr>\n";
-				echo "  <td>{$value}</td>\n";
-				//$usr_info = $prx->get_userinfo ($value);
-				//echo "  <td>{$usr_info['family']}</td>\n";
-				echo "</tr>\n";
-			};
-			echo "</table>\n";
-			echo "</div>\n";
-		} else {
-			echo "<p>К данной категории не относится ни одного сайта</p>\n";
-		}
-
-		echo "  </div> <!-- pb -->\n"; //panel-body
-		echo "</div>\n";
-	} catch (mysql_exception $e) {
-		echo "<div class='alert alert-danger'><b>Ошибка SQL!</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
-	} catch (exception $e) {
-		echo "<div class='alert alert-danger'><b>Неопознанная ошибка!</b><br/><pre>{$e->getTraceAsString()}</pre></div>\n";
-	}
+	include "layout/layout.getbanlist.inc";
 }
 
 function set_user_acl($user, $banlists) {

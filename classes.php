@@ -67,7 +67,7 @@ class proxy_worker extends worker {
     	$query_str = "SELECT * FROM squidusers WHERE `nick`='$nick';";
     	$res = $this->sql->query($query_str);
     	if (!$res) {
-    		echo "[get_userscount] Не удалось выполнить запрос \"{$query_str}\"<br/>Код: ".$this->sql->errno." ".$this->sql->error;
+    		echo "[get_userinfo] Не удалось выполнить запрос \"{$query_str}\"<br/>Код: ".$this->sql->errno." ".$this->sql->error;
     		return FALSE;
     	}
     	
@@ -254,9 +254,25 @@ class rejik_worker extends worker {
     	return $res;
 	}
 
-	public function get_banlist_urls($banlist) {
-		//Получить массив УРЛов относящихся к заданному $banlist
-		$response = $this->sql->query("SELECT url FROM urls WHERE `banlist`='{$banlist}'");
+	public function get_banlist_urls($banlist, $raw_mode=false, $offset=0, $length=0) {
+		// Description ...: Возвращает массив УРЛов относящихся к заданному $banlist
+		// Parameters ....: $banlist - название бан-листа
+		//                  $raw_mode = [true|false]
+		// Return values .: Успех - если $raw-mode =
+		//                            true - будет возвращаться массив Array [][id,url]
+		//                            false - будет возвращаться массив строк url
+		//                  	  - Возвращает 0, если банлист не содержит УРЛы
+		//				  Неудача - Вызывает исключение если возникла ошибка
+		// -------------------------------------------------------------------------
+
+		if ($offset!=0 or $length!=0) {
+			//echo "<h3>$offset | $length</h3>";
+			//Запрос со смещением
+			$response = $this->sql->query("SELECT id, url FROM urls WHERE `banlist`='{$banlist}' LIMIT {$offset}, {$length}");
+		} else {
+			$response = $this->sql->query("SELECT id, url FROM urls WHERE `banlist`='{$banlist}'");
+		}
+		
     	if (!$response) {
     		echo "get_banlist_urls. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
     		return 0;
@@ -266,13 +282,38 @@ class rejik_worker extends worker {
 		
     	$res = array();
     	while ($row = $response->fetch_row()) {
-    		$res[] = $row[0];
+    		//echo "<pre>"; print_r ($row); echo "</pre>";
+    		if ($raw_mode) {
+    			$res[] = $row;
+    		} else {
+    			$res[] = $row[1];
+    		}
 		}
 
     	$response->close();
     	return $res;
 	}
-	
+	public function get_banlist_urls_count ($banlist) {
+		// Description ...: Возвращает количество УРЛов относящихся к заданному $banlist
+		// Parameters ....: $banlist - название бан-листа
+		// Return values .: Успех - Вернет число ссылок, привязанных к бан листу
+		//                  	  - Возвращает 0, если банлист не содержит УРЛы
+		//				  Неудача - Вызывает исключение если возникла ошибка
+		// -------------------------------------------------------------------------
+
+		
+		$response = $this->sql->query("SELECT Count(*) FROM urls WHERE `banlist`='{$banlist}'");
+    	if (!$response) {
+    		echo "get_banlist_urls_count. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
+    		return 0;
+    	}
+		
+		if ($response->num_rows == 0) return 0;
+		$urls_num = $response->fetch_row();
+   
+    	$response->close();
+    	return $urls_num[0];
+	}
 	// ==========================================================================================================================
 	// Работа с Пользователями
 	// ==========================================================================================================================
@@ -354,7 +395,7 @@ class rejik_worker extends worker {
 	// ==========================================================================================================================
 	public function import_db($csv_file_path) {
 		$query_txt = "LOAD DATA INFILE '{$csv_file_path}' REPLACE INTO TABLE `urls` FIELDS TERMINATED BY ';' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n' (`url`, `banlist`)" ;
-		//echo "<h1>$query_txt</h1>\n";
+		echo "<h1>$query_txt</h1>\n";
 		$response = $this->sql->query($query_txt);
     	if (!$response) {
     		echo "import_db. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;

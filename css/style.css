@@ -19,10 +19,31 @@
   margin-top: 20px;
 }
 
+.search-box-small {
+}
+
+.search-box-small .form-control {
+  height: 27px;
+  line-height: 27px;
+  font-size: 12px;
+  padding: 2px 5px;
+}
+
+.search-box-small .btn {
+  height: 27px;
+  padding: 2px 12px;
+}
+
 .debug pre{
 	font-size: 8pt;
 	line-height: 1.1;
 }
+
+.ctrl {
+  display: none;
+  text-decoration: none;
+}
+
 
 .footer {
 	background-color: #F5F5F5;
@@ -39,6 +60,11 @@
 
 .userlist {
 	margin-top:30px;
+}
+
+.urls_table {
+  width:100%;
+  table-layout: fixed;
 }
 
 .form-signin {
