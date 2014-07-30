@@ -97,7 +97,7 @@
 		$current_page = (isset($_GET['p']) && intval($_GET['p'])) ? intval($_GET['p']) : 1;
 		if ($current_page>$pages_count || $current_page<1) $current_page=1;
 
-		echo "<div id='urls_panel' class='panel panel-default' data-pagescount='{$pages_count}'>\n";
+		echo "<div id='urls_panel' class='panel panel-default' data-pagescount='{$pages_count}' data-urls_per_page='{$urls_per_page}'>\n";
 		echo "  <div class='panel-heading'>";
 		echo "    <div class='row' style='line-height: 27px;'>\n";
 		echo "      <div class='col-sm-7'>\n";

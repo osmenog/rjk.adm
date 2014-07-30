@@ -2,6 +2,7 @@ var Rejik = {
   rejik_url: '/rejik2/ajax.php',
   visible_urls: 0,
   real_urls_count: 0,
+  urls_per_page: 200,
   banlist_edit_url: function(row_elem) {
     //Функция открывает модальное окно для редактирования ссылки
 
@@ -101,6 +102,7 @@ var Rejik = {
   banlist_editor_init: function() {
     Rejik.visible_urls = $('table#urls_table').find('tr').length; //Инициализируем счетчик строк в таблице ссылок
     Rejik.real_urls_count = $('table#urls_table').data('urlscount');
+    Rejik.urls_per_page = $('#urls_panel').data("urls_per_page");
 
     $('table#urls_table').on('mouseenter','tr', function() {
       $(this).find('.ctrl').show();
@@ -147,6 +149,49 @@ var Rejik = {
     });
   },
 
+  get_page: function(page) {
+    console.log (page);
+    var offset = (page-1) * Rejik.urls_per_page;
+
+    //Отправляем AJAX
+    $.ajax(Rejik.rejik_url, {
+      type: "POST",
+      dataType: 'json',
+      data: {action: 'banlist.geturllist', banlist: 'avto-moto', offset: offset, length: Rejik.urls_per_page},
+      beforeSend: function() {
+        $('table#urls_table').fadeOut(200);
+
+      },
+      success: function(response) {
+        if ("error" in response) {
+          console.log("API ErrorMsg: "+response.error.error_msg);
+        } else {
+          $('table#urls_table').find('tbody').detach();
+          
+          var key;
+          var tmp = $('<tbody></tbody>');
+          var urls = response.urls;
+          for (key in urls) {
+            var row = $("<tr data-url-id='"+key+"'></tr>");
+            row.append('<td>'+urls[key]+'</td>');
+            row.append("<td width='5%'><a href='#' class='ctrl editurl'><span class='glyphicon glyphicon-pencil'></span></a></td>");
+            row.append("<td width='5%'><a href='#' class='ctrl removeurl'><span class='glyphicon glyphicon-trash'></span></a></td>");
+            tmp.append (row);
+          }
+          $('table#urls_table').append (tmp);
+          
+
+        }
+      },
+      error: function(request, err_t, err_m) {
+        console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
+      },
+      complete: function() {
+        $('table#urls_table').fadeIn(200);
+      },
+      timeout: 3000
+    });
+  }
 };
 
 
@@ -154,14 +199,15 @@ var Rejik = {
 $(document).ready (function() {
   Rejik.banlist_editor_init();
 
-var pages_num = $('#urls_panel').data("pagescount");
+  var pages_num = $('#urls_panel').data("pagescount");
 
 //http://esimakin.github.io/twbs-pagination/#demo
 $('#pagination-demo').twbsPagination({
   totalPages: pages_num,
   visiblePages: 10,
   onPageClick: function (event, page) {
-    console.log (page);
+    event.preventDefault;
+    Rejik.get_page(page);
   }
 });
 

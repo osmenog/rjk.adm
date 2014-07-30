@@ -10,8 +10,19 @@ include_once "log.php";
 	// get_groupscount
 	// get_groupslist
 // -----------------------------------------------------------------------------------------------------------------------------------------------
-class rejik_exception extends Exception {}
+class rejik_exception extends Exception {
+  function get_json(){
+    //Функция возвращает JSON обьект содержащий параметры ошибки
+    $obj = array('error' => array(
+                          'error_type'  => get_class($this),
+                          'error_code'  => $this->getCode(),
+                          'error_msg'   => $this->getMessage(),
+                          'error_trace' => $this->getTraceAsString()));
+    return json_encode($obj);
+  }
+}
 class mysql_exception extends rejik_exception {}
+class api_exception extends rejik_exception {}
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class worker {
 	protected $sql;
@@ -273,10 +284,7 @@ class rejik_worker extends worker {
 			$response = $this->sql->query("SELECT id, url FROM urls WHERE `banlist`='{$banlist}'");
 		}
 		
-    	if (!$response) {
-    		echo "get_banlist_urls. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
-    		return 0;
-    	}
+    if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
 		
 		if ($response->num_rows == 0) return 0;
 		
@@ -405,8 +413,80 @@ class rejik_worker extends worker {
     	echo "<p>В БД импортировано: ".$this->sql->affected_rows. " записей</p>\n";
     	//if ($response->num_rows == 0) return 0;
 	}
-
 } //end of rejik_worker
+// -----------------------------------------------------------------------------------------------------------------------------------------------
+class api_worker {
+  protected $rejik;
+
+  public function __construct ($rejik) {
+    if (is_object($rejik) && get_class($rejik)=='rejik_worker'){
+      $this->rejik = $rejik;
+    } else {
+      throw new api_exception("Error Processing Request", 1);
+    }
+  }
+
+  public function banlist_getUrlList($banlist) {
+    //Функция должна вернуть JSON обьект, содержащий ВСЕ ссылки в заданном банлисте
+  }
+
+  public function banlist_getUrlListEx($banlist, $offset, $length=0) {
+    // Description ...: Функция должна вернуть JSON обьект, содержащий ссылки по заданному смещению
+    // Parameters ....: $banlist - имя банлиста
+    //                  $offset - смещение, относительно начала
+    //                  $length - количество возвращаемых ссылок
+    // Return values .: Успех - Возвращает JSON обьект, содержащий:
+    //                          "banlist" - имя банлиста
+    //                          ("lenght" - общее количество ссылок в банлисте) - не знаю зачем нужно. УБРАТЬ если не понадобится
+    //                          "sended" - сколько ссылок передано в теле JSON обьекта
+    //                          "offset" - возвращает смещение
+    //                          "urls" - содержит обьект-ассоциативный массив, содержащий: {[ид ссылки] => [ссылка], ... }
+    //                        - Если банлист не содержит ссылок, то все-равно будет возвращен JSON обьект, указанный выше.
+    //                          При этом будет: length=0 и urls = []
+    //                  Неудача - Будет вызвано исключение api_exception
+    // -------------------------------------------------------------------------
+    try {
+      if (empty($banlist) or
+          !is_numeric($offset) or !is_numeric($length) or
+          !is_int($offset) or !is_int($length) or
+          $offset<0 or $length<0) throw new api_exception ("Invalid inputed parameter",2);
+
+      $rjk = $this->rejik;
+
+      if (!$rjk->is_banlist($banlist)) throw new api_exception ("Banlist not found",3);
+      
+      $urls = $rjk->get_banlist_urls ($banlist, true, $offset, $length);
+      //echo "{$offset} | {$length}";
+      $json_obj = array ('banlist'=>$banlist,
+                         /*'length'=>0,*/
+                         'sended'=>0,
+                         'offset'=>$offset,
+                         'urls'=>[]);
+  
+      $urls_counter = 0; //Инициализируем счетчик для ссылок
+      $urls_arr = array(); //Инициализируем массив для ссылок с ключами
+      //Заполняем массив ссылками
+      if ($urls!=0) {
+        foreach ($urls as $key => $value) {
+          $id= intval($value[0]);
+          $url=$value[1];
+          $urls_arr[$id]=$url;
+          $urls_counter++;
+        }
+      }
+      //$urls_arr = array('ya.ru/hi&a=1?b=2','<script>alert();</script>');
+  
+      $json_obj['urls']=$urls_arr;
+      $json_obj['sended']=$urls_counter;
+      $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+      
+      return $json_str;
+
+    } catch (exception $e) {
+      throw $e;
+    }
+  }
+}
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 function CheckSession () {
   //Проверяем, авторизован ли пользователь.
