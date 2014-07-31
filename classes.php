@@ -417,8 +417,11 @@ class rejik_worker extends worker {
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class api_worker {
   protected $rejik;
+  private $verison;
 
-  public function __construct ($rejik) {
+  public function __construct ($rejik, $version) {
+    $this->$version=$version;
+
     if (is_object($rejik) && get_class($rejik)=='rejik_worker'){
       $this->rejik = $rejik;
     } else {
@@ -426,19 +429,66 @@ class api_worker {
     }
   }
 
-  public function banlist_getUrlList($banlist) {
-    //Функция должна вернуть JSON обьект, содержащий ВСЕ ссылки в заданном банлисте
+  public static function validate ($data) {
+    //Функция проверяет входные данные
+    //Сюда нужно добавить поддержку проверки схемы
+    //echo "<pre>"; print_r ($data); echo "</pre>\n";
+
+    //Проверка на наличие ключевого свойства
+    if (!isset($data['action']) or ($data['action']=='')) throw new api_exception ("Не указано свойство 'action'",2);
+    if (!isset($data['sig']) or ($data['sig']=='')) throw new api_exception ("Не указано свойство 'sig'",2);
+
+    foreach ($data as $k => $v) {
+      if ($k=='offset' or $k=='limit') {
+        if (!ctype_digit($data[$k])) throw new api_exception ("Атрибут '{$k}' должен иметь числовое значение",2);
+      } 
+      if ($k=='banlist') {
+        if ($v=='') throw new api_exception ("Не указано свойство '{$k}'",2);
+      }  
+    }
+    return $data;
   }
 
-  public function banlist_getUrlListEx($banlist, $offset, $length=0) {
+  public function check_signature($data) {
+    $sig = $data['sig'];
+    unset($data['sig']);
+    ksort($data);
+    //echo "<pre>"; print_r ($data); echo "</pre>\n";
+    $str_data='';
+    foreach ($data as $k=>$v) $str_data.=$k."=".$v;
+    
+    $md5_data=md5($str_data);
+    if ($sig!=$md5_data) throw new api_exception ("Полученная сигнатура не совпадает с рассчитаной: [{$md5_data}]",3);
+    //echo "<pre>"; print_r ($str_data); echo "</pre>\n";
+  }
+
+  public function banlist_addurl($banlist, $url) {
+    try {
+      $rjk = $this->rejik;
+
+      
+    } catch (exception $e) {
+      throw $e;
+    }
+  }
+
+  public function banlist_changeurl($banlist, $url_id, $url) {
+
+  }
+
+  public function banlist_removeurl($banlist, $url_id) {
+
+  }
+
+  public function banlist_getUrlListEx($banlist, $offset=0, $limit=10) {
     // Description ...: Функция должна вернуть JSON обьект, содержащий ссылки по заданному смещению
     // Parameters ....: $banlist - имя банлиста
     //                  $offset - смещение, относительно начала
-    //                  $length - количество возвращаемых ссылок
+    //                  $limit - количество возвращаемых ссылок
     // Return values .: Успех - Возвращает JSON обьект, содержащий:
     //                          "banlist" - имя банлиста
-    //                          ("lenght" - общее количество ссылок в банлисте) - не знаю зачем нужно. УБРАТЬ если не понадобится
-    //                          "sended" - сколько ссылок передано в теле JSON обьекта
+    //                          "limit" - общее количество ссылок в банлисте
+    //                          "total" - сколько ссылок передано в теле JSON обьекта
     //                          "offset" - возвращает смещение
     //                          "urls" - содержит обьект-ассоциативный массив, содержащий: {[ид ссылки] => [ссылка], ... }
     //                        - Если банлист не содержит ссылок, то все-равно будет возвращен JSON обьект, указанный выше.
@@ -446,21 +496,16 @@ class api_worker {
     //                  Неудача - Будет вызвано исключение api_exception
     // -------------------------------------------------------------------------
     try {
-      if (empty($banlist) or
-          !is_numeric($offset) or !is_numeric($length) or
-          !is_int($offset) or !is_int($length) or
-          $offset<0 or $length<0) throw new api_exception ("Invalid inputed parameter",2);
-
       $rjk = $this->rejik;
 
       if (!$rjk->is_banlist($banlist)) throw new api_exception ("Banlist not found",3);
       
-      $urls = $rjk->get_banlist_urls ($banlist, true, $offset, $length);
-      //echo "{$offset} | {$length}";
+      $urls = $rjk->get_banlist_urls ($banlist, true, $offset, $limit);
+      //echo "{$offset} | {$limit}";
       $json_obj = array ('banlist'=>$banlist,
-                         /*'length'=>0,*/
-                         'sended'=>0,
+                         'limit'=>$limit,
                          'offset'=>$offset,
+                         'total'=>0,
                          'urls'=>[]);
   
       $urls_counter = 0; //Инициализируем счетчик для ссылок
@@ -477,7 +522,7 @@ class api_worker {
       //$urls_arr = array('ya.ru/hi&a=1?b=2','<script>alert();</script>');
   
       $json_obj['urls']=$urls_arr;
-      $json_obj['sended']=$urls_counter;
+      $json_obj['total']=$urls_counter;
       $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
       
       return $json_str;

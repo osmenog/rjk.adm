@@ -7,31 +7,40 @@
 
 //Сюда нужно добавить, чтобы в случае ошибки, ее текст не выводился.
 header('Accept: application/json');
-$action = (isset($_POST['action']) ? $_POST['action'] : '');
+$request_data = $_POST; //Источник данных
+
+$action = (isset($request_data['action']) ? $request_data['action'] : '');
+$api_version = (isset($_GET['v']) ? $_GET['v'] : 1);
 
 try {
   $rjk = new rejik_worker ($config['rejik_db']);
-  $api = new api_worker ($rjk);  
+  $api = new api_worker ($rjk, $api_version);  
+  $validated_data = $api::validate($request_data);
+  $api->check_signature($request_data);
 
   switch ($action) {
   	case 'banlist.geturllist': 
-  		$bl = isset($_POST['banlist']) ? $_POST['banlist'] : '';
-      $os = isset($_POST['offset'] ) ? $_POST['offset']  : 0;
-      $ln = isset($_POST['length'] ) ? $_POST['length']  : 0;
-      $r = $api->banlist_getUrlListEx($bl, intval($os), intval($ln));
+      $r = $api->banlist_getUrlListEx($validated_data['banlist'],
+                                      $validated_data['offset'],
+                                      $validated_data['limit']);
       echo $r;
   		break;
 
-    case 'change_url': 
+    case 'banlist.addurl': 
       //sleep(5000);
       echo '{"OK": 1}';
       break;
 
-    case 'delete_url': 
+    case 'banlist.removeurl': 
       //sleep(5000);
       echo '{"OK": 1}';
       break;
-
+    
+    case 'banlist.changeurl': 
+      //sleep(5000);
+      echo '{"OK": 1}';
+      break;
+        
     default:
       throw new api_exception("Invalid action",1);
       break;
