@@ -27,7 +27,7 @@ try {
   		break;
 
     case 'banlist.addurl': 
-      //sleep(5000);
+      $rjk->add_url($validated_data['banlist'],$validated_data['url']);
       echo '{"OK": 1}';
       break;
 

@@ -148,7 +148,7 @@
 		if ($pages_count>1) print_pagenator($pages_count, $current_page);
 
 		echo "<div class='panel panel-default'>\n";
-		echo "<table id='urls_table' class='table table-striped table-hover table-condensed' cols='3' data-urlscount='{$bl_count}'>\n";
+		echo "<table id='urls_table' class='table table-striped table-hover table-condensed' cols='3' data-banlist='{$banlist}' data-urlscount='{$bl_count}'>\n";
 		if ($bl_count!=0) {
 			$bl_urls = get_page ($banlist, $current_page, $urls_per_page);
 			foreach ($bl_urls as $value) {

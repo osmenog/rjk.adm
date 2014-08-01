@@ -264,7 +264,9 @@ class rejik_worker extends worker {
     	$response->close();
     	return $res;
 	}
-
+	// ==========================================================================================================================
+	// Работа со Ссылками
+	// ==========================================================================================================================
 	public function get_banlist_urls($banlist, $raw_mode=false, $offset=0, $length=0) {
 		// Description ...: Возвращает массив УРЛов относящихся к заданному $banlist
 		// Parameters ....: $banlist - название бан-листа
@@ -309,7 +311,6 @@ class rejik_worker extends worker {
 		//				  Неудача - Вызывает исключение если возникла ошибка
 		// -------------------------------------------------------------------------
 
-		
 		$response = $this->sql->query("SELECT Count(*) FROM urls WHERE `banlist`='{$banlist}'");
     	if (!$response) {
     		echo "get_banlist_urls_count. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
@@ -321,6 +322,24 @@ class rejik_worker extends worker {
    
     	$response->close();
     	return $urls_num[0];
+	}
+	public function add_url ($banlist, $url) {
+		//Добавляет URL в банлист
+		// 1. Проверяем, есть ли банлист в базе. Если нет - то исключение.
+		if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4);	
+		
+		// 2. Проверяем, есть ли адрес в базе
+		// ДОБАВИТЬ!!!
+
+		$query = "INSERT INTO urls SET `url`='$url', `banlist`='$banlist';";
+		$response = $this->sql->query($query);
+		
+		//2. Проверяем, выполнился запрос
+		if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+
+		//3. Запись в лог
+    	Logger::add (3, "Added URL '$url' in banlist '$banlist'");
+		return True;
 	}
 	// ==========================================================================================================================
 	// Работа с Пользователями

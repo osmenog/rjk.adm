@@ -182,6 +182,7 @@ var Rejik = {
   visible_urls: 0,
   real_urls_count: 0,
   urls_per_page: 200,
+  current_banlist: '',
   sign: function (data) {
     delete data['sig'];
     //Тут находится ненадежный код, т.к. массив data не сортируется по убыванию.
@@ -265,21 +266,48 @@ var Rejik = {
   },
 
   banlist_add_url: function () {
-    var url = $('#addurl_box').find('input');
-    
-    if ((url.val()).trim().length == 0) return false;  //Если поле пустое, то ничего не добавляем
+    var url_box = $('#addurl_box').find('input');
+    var url = (url_box.val()).trim();
+    if (url.length == 0) return false;  //Если поле пустое, то ничего не добавляем
 
-    var tmp = $("<tr>\n"+
-                "<td>"+url.val().trim()+"</td>\n"+
+    var json_data = {
+        action: 'banlist.addurl',
+        banlist: Rejik.current_banlist,
+        url: url
+    };
+    json_data.sig = Rejik.sign(json_data)
+
+    //Отправляем AJAX
+    $.ajax(Rejik.rejik_url, {
+      type: "POST",
+      dataType: 'json',
+      data: json_data,
+      success: function(response) {
+        if ("error" in response) {
+          console.log("API ErrorMsg: "+response.error.error_msg);
+          return;
+        }
+        var tmp = $("<tr>\n"+
+                "<td>"+url+"</td>\n"+
                 "<td width='5%'><a href='#' class='ctrl editurl'><span class='glyphicon glyphicon-pencil'></span></a></td>\n"+
                 "<td width='5%'><a href='#' class='ctrl removeurl'><span class='glyphicon glyphicon-trash'></span></a></td>\n"+
                 "</tr>\n");
-    $('#urls_table').prepend(tmp);
-    url.val('');
+        $('#urls_table').prepend(tmp);
+    
+        url_box.val('');
 
-    //Если добавление новой ссылки выполнилось успешно, то увеличиваем счетчик ссылок
-    Rejik.real_urls_count++;
-    Rejik.visible_urls++;
+        //Если добавление новой ссылки выполнилось успешно, то увеличиваем счетчик ссылок
+        Rejik.real_urls_count++;
+        Rejik.visible_urls++;
+      },
+      error: function(request, err_t, err_m) {
+        console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
+      },
+      timeout: 3000
+    });
+
+
+    
     return true; //Если все ОК - то возвращаем true
   },
 
@@ -291,6 +319,7 @@ var Rejik = {
     Rejik.visible_urls = $('table#urls_table').find('tr').length; //Инициализируем счетчик строк в таблице ссылок
     Rejik.real_urls_count = $('table#urls_table').data('urlscount');
     Rejik.urls_per_page = $('#urls_panel').data("urls_per_page");
+    Rejik.current_banlist = $('table#urls_table').data('banlist');
 
     $('table#urls_table').on('mouseenter','tr', function() {
       $(this).find('.ctrl').show();
@@ -343,7 +372,7 @@ var Rejik = {
 
     var data = {
         action: 'banlist.geturllist',
-        banlist: 'avto-moto',
+        banlist: Rejik.current_banlist,
         limit: Rejik.urls_per_page,
         offset: offset};
 
@@ -355,7 +384,6 @@ var Rejik = {
       data: data,
       beforeSend: function() {
         $('table#urls_table').fadeOut(200);
-
       },
       success: function(response) {
         if ("error" in response) {
