@@ -281,7 +281,7 @@ class rejik_worker extends worker {
 		if ($offset!=0 or $length!=0) {
 			//echo "<h3>$offset | $length</h3>";
 			//Запрос со смещением
-			$response = $this->sql->query("SELECT id, url FROM urls WHERE `banlist`='{$banlist}' LIMIT {$offset}, {$length}");
+			$response = $this->sql->query("SELECT id, url FROM urls WHERE `banlist`='{$banlist}' ORDER BY id DESC LIMIT {$offset}, {$length}");
 		} else {
 			$response = $this->sql->query("SELECT id, url FROM urls WHERE `banlist`='{$banlist}'");
 		}
@@ -338,9 +338,28 @@ class rejik_worker extends worker {
 		if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
 
 		//3. Запись в лог
-    	Logger::add (3, "Added URL '$url' in banlist '$banlist'");
+    	Logger::add (3, "Added URL \'$url\' in banlist \'$banlist\'");
 		return True;
 	}
+  public function change_url ($banlist, $id, $new_url_name) {
+    //Изменяет заданный URL в банлисте
+    // 1. Проверяем, есть ли банлист в базе. Если нет - то исключение.
+    if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4); 
+    
+    // 2. Проверяем, есть ли URL с заданным ID базе
+    // ДОБАВИТЬ!!!
+
+    $query = "UPDATE urls SET `url`='{$new_url_name}' WHERE `id`={$id};";
+    $response = $this->sql->query($query);
+    
+    //2. Проверяем, выполнился запрос
+    if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+
+    //3. Запись в лог
+      Logger::add (3, "URL #{$id} in banlist \'$banlist\' changed to \'{$new_url_name}\'.");
+    return True;
+  }
+  
 	// ==========================================================================================================================
 	// Работа с Пользователями
 	// ==========================================================================================================================
@@ -478,7 +497,7 @@ class api_worker {
     
     $md5_data=md5($str_data);
     if ($sig!=$md5_data) throw new api_exception ("Полученная сигнатура не совпадает с рассчитаной: [{$md5_data}]",3);
-    //echo "<pre>"; print_r ($str_data); echo "</pre>\n";
+    //echo "<pre>"; print_r ($md5_data); echo "</pre>\n";
   }
 
   public function banlist_addurl($banlist, $url) {

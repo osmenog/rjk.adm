@@ -184,7 +184,12 @@ var Rejik = {
   urls_per_page: 200,
   current_banlist: '',
   sign: function (data) {
-    delete data['sig'];
+    console.log (typeof(data));
+
+    if ("sig" in data) {
+      delete data['sig'];
+    }
+
     //Тут находится ненадежный код, т.к. массив data не сортируется по убыванию.
     var str_data='';
     for (var i in data) str_data+=i+'='+data[i];
@@ -209,18 +214,26 @@ var Rejik = {
       
       //Отправляем запрос на изменение ссылки
       //console.log ('change_url:  #'+id+'  '+new_url);    
-    
+      var json_data = {
+        action: 'banlist.changeurl',
+        banlist: Rejik.current_banlist,
+        id: id,
+        url: new_url
+      };
+      json_data['sig'] = Rejik.sign(json_data);
+
       //Отправляем AJAX
       $.ajax(Rejik.rejik_url, {
         type: "POST",
         dataType: 'json',
-        data: {action: 'change_url', id: id, url_name: new_url},
+        data: json_data,
         success: function(response) {
           if ("error" in response) {
             console.log("API ErrorMsg: "+response.error.error_msg);
-          }else {
-            row_elem.find('td:first').text(new_url);
+            return;
           }
+            row_elem.find('td:first').text(new_url);
+
         },
         error: function(request, err_t, err_m) {
           console.log("AJAX ErrorMsg: "+err_t+' '+err_m);

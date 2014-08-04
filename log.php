@@ -1,5 +1,6 @@
 <?php
 include_once "config.php";
+include_once "classes.php";
 // Типы сообщений
 // 1-Добавление связи
 // 2-Удаление связи
@@ -28,10 +29,7 @@ class logger {
 		$sqli = self::$sql;
 		
 		$res = $sqli->query("SELECT id,crc FROM log ORDER BY id DESC LIMIT 1;");
-		if (!$res) {
-			echo "Не удалось выполнить запрос (" . $sqli->errno . ") " . $sqli->error;
-			return;
-		}
+		if (!$res) throw new mysql_exception($this->sql->error, $this->sql->errno);
 		
 		$row = $res->fetch_row();
     	$res->close();
@@ -54,10 +52,8 @@ class logger {
 		$login = self::$login;
 		
 		$res = $sqli->query("INSERT INTO log VALUES (NULL, NOW(), {$event_type}, '{$message}', '{$login}', '{$ip}', '{$crc}');");
-		if (!$res) {
-			echo "Не удалось выполнить запрос (" . $sqli->errno . ") " . $sqli->error;
-			return;
-		}
+ 		
+ 		if (!$res) throw new mysql_exception($this->sql->error, $this->sql->errno);
 
 		self::$last_id .= 1; 		
 	}

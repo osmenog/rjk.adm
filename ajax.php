@@ -37,7 +37,7 @@ try {
       break;
     
     case 'banlist.changeurl': 
-      //sleep(5000);
+      $rjk->change_url ($validated_data['banlist'], $validated_data['id'], $validated_data['url']);
       echo '{"OK": 1}';
       break;
         
