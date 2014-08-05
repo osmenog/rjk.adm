@@ -213,7 +213,7 @@ var Rejik = {
       //Отправляем запрос на изменение ссылки
       //console.log ('change_url:  #'+id+'  '+new_url);    
       var json_data = {
-        action: 'banlist.changeurl',
+        action: 'banlist.changeURL',
         banlist: Rejik.current_banlist,
         id: id,
         url: new_url
@@ -254,7 +254,7 @@ var Rejik = {
 
 
     var json_data = {
-        action: 'banlist.removeurl',
+        action: 'banlist.removeURL',
         banlist: Rejik.current_banlist,
         id: id,
     };
@@ -290,7 +290,7 @@ var Rejik = {
     if (url.length == 0) return false;  //Если поле пустое, то ничего не добавляем
 
     var json_data = {
-        action: 'banlist.addurl',
+        action: 'banlist.addURL',
         banlist: Rejik.current_banlist,
         url: url
     };
@@ -306,7 +306,7 @@ var Rejik = {
           console.log("API ErrorMsg: "+response.error.error_msg);
           return;
         }
-        var id = 0;
+        var id = response.id;
         var tmp = $("<tr data-url-id='"+id+"'>\n"+
                 "<td>"+url+"</td>\n"+
                 "<td width='5%'><a href='#' class='ctrl editurl'><span class='glyphicon glyphicon-pencil'></span></a></td>\n"+
@@ -322,6 +322,9 @@ var Rejik = {
       },
       error: function(request, err_t, err_m) {
         console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
+      },
+      complete: function() {
+        $('table#urls_table').trigger("rowchange");
       },
       timeout: 3000
     });
@@ -364,6 +367,8 @@ var Rejik = {
 
     $('table#urls_table').on("rowchange", function (e){
       //Функция обновляет счетчики ссылок, и отображает, либо скрывает таблицу
+      e.preventDefault;
+      
       var tbl = $('table#urls_table');
 
       tbl.data('urlscount', Rejik.real_urls_count);
@@ -382,7 +387,6 @@ var Rejik = {
     $('#btn_addurl').on("click", function (e){
       e.preventDefault();
       Rejik.banlist_add_url()
-      $('table#urls_table').trigger("rowchange");
     });
   },
 
@@ -391,7 +395,7 @@ var Rejik = {
     var offset = (page-1) * Rejik.urls_per_page;
 
     var data = {
-        action: 'banlist.geturllist',
+        action: 'banlist.getURLlist',
         banlist: Rejik.current_banlist,
         limit: Rejik.urls_per_page,
         offset: offset};

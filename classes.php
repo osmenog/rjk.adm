@@ -144,9 +144,9 @@ class rejik_worker extends worker {
     if ($config ['admin_log']==True) logger::init($this->sql); //Инициализируем логер
   }
 
-// ==========================================================================================================================
-// Работа с Категориями (Бан-Листами)
-// ==========================================================================================================================
+  // ==========================================================================================================================
+  // Работа с Категориями (Бан-Листами)
+  // ==========================================================================================================================
   public function banlists_get ($raw_mode=false) {
     // Description ...: Возвращает массив банлистов с полной информацией о них или без.
     // Parameters ....: $raw_mode=[true|false] - вид возвращаемых данных.\
@@ -265,9 +265,9 @@ class rejik_worker extends worker {
     return $res;
   }
 
-// ==========================================================================================================================
-// Работа со Ссылками
-// ==========================================================================================================================
+  // ==========================================================================================================================
+  // Работа со Ссылками
+  // ==========================================================================================================================
   public function banlist_get_urls($banlist, $raw_mode=false, $offset=0, $length=0) {
     // Description ...: Возвращает массив УРЛов относящихся к заданному $banlist
     // Parameters ....: $banlist - название бан-листа
@@ -331,8 +331,8 @@ class rejik_worker extends worker {
     // 1. Проверяем, есть ли банлист в базе. Если нет - то исключение.
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4);	
   
-    // 2. Проверяем, есть ли адрес в базе
-    // ДОБАВИТЬ!!!
+    $this->check_url ($url);
+    return 0;
   
     $query = "INSERT INTO urls SET `url`='$url', `banlist`='$banlist';";
     $response = $this->sql->query($query);
@@ -341,12 +341,14 @@ class rejik_worker extends worker {
     if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
   
     //Получаем ID созданой ссылки.
-    $query = "SELECT `id` FROM `urls` WHERE `url`='$url', `banlist`='$banlist';";
+    $query = "SELECT `id` FROM `urls` WHERE `url`='$url' AND `banlist`='$banlist';";
     $response = $this->sql->query($query);
+    $row = $response->fetch_assoc();
+    //echo $row['id'];
 
     //3. Запись в лог
     Logger::add (3, "Added URL \'$url\' in banlist \'$banlist\'");
-    return True;
+    return $row['id'];
   }
 
   public function banlist_change_url ($banlist, $id, $new_url_name) {
@@ -385,9 +387,9 @@ class rejik_worker extends worker {
     return True;
   }
   
-// ==========================================================================================================================
-// Работа с Пользователями
-// ==========================================================================================================================
+  // ==========================================================================================================================
+  // Работа с Пользователями
+  // ==========================================================================================================================
   public function user_acl_get ($nick) {
     //Функция возвращает массив бан-листов, доступ к которым разрешен пользоваьелю.
     // $query = "SELECT\n"
@@ -460,9 +462,9 @@ class rejik_worker extends worker {
     Logger::add (2, "{$user} disabled user access to {$banlist}");
   }
 	
-// ==========================================================================================================================
-// Функции импорта
-// ==========================================================================================================================
+  // ==========================================================================================================================
+  // Функции импорта
+  // ==========================================================================================================================
   public function import_db($csv_file_path) {
     $query_txt = "LOAD DATA INFILE '{$csv_file_path}' REPLACE INTO TABLE `urls` FIELDS TERMINATED BY ';' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n' (`url`, `banlist`)" ;
     echo "<h1>$query_txt</h1>\n";
@@ -474,8 +476,27 @@ class rejik_worker extends worker {
   
     echo "<p>В БД импортировано: ".$this->sql->affected_rows. " записей</p>\n";
     //if ($response->num_rows == 0) return 0;
+  }
+
+  // ==========================================================================================================================
+  // Функции импорта
+  // ==========================================================================================================================
+  public function check_url ($url) {
+    $query = "SELECT * FROM urls WHERE `url` LIKE '%{$url}%';";
+    $response = $this->sql->query($query);
+
+    if ($response->num_rows == 0) return 0; //Если дубликатов нет, то выходим
+
+    $res=[];
+    while ($row = $response->fetch_assoc()) {
+      $res[] = $row;
+      // * Пытаемся распарсить ссылку на:
     }
-  } //end of rejik_worker
+
+    print_r ($res);
+  }
+
+} //end of rejik_worker
   
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class api_worker {
@@ -529,18 +550,42 @@ class api_worker {
     try {
       $rjk = $this->rejik;
       $result = $rjk->banlist_add_url ($banlist, $url);
-      
+
+      $json_obj = array ('id' => $result);
+      $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+      return $json_str;
+
     } catch (exception $e) {
       throw $e;
     }
   }
 
   public function banlist_changeurl($banlist, $url_id, $url) {
+    try {
+      $rjk = $this->rejik;
+      $result = $rjk->banlist_change_url ($banlist, $url_id, $url);
 
+      $json_obj = array ('result' => 1);
+      $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+      return $json_str;
+
+    } catch (exception $e) {
+      throw $e;
+    }
   }
 
   public function banlist_removeurl($banlist, $url_id) {
+    try {
+      $rjk = $this->rejik;
+      $result = $rjk->banlist_remove_url ($banlist, $url_id);
 
+      $json_obj = array ('result' => 1);
+      $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+      return $json_str;
+      
+    } catch (exception $e) {
+      throw $e;
+    }
   }
 
   public function banlist_getUrlListEx($banlist, $offset=0, $limit=10) {
