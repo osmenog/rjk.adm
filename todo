@@ -22,3 +22,27 @@ TODO:
   - Статистика посещений по дням и по часам
   - Диаграмма самых посещаемых сайтов
 * мониторинг размеров access.log и rejik.log и автоматический ротейт.
+
+
+
+
+JSON API:
+
+banlist.getURLlist		api->banlist_geturllist		rjk->banlist_get_urls
+banlist.addURL			api->banlist_addurl			rjk->banlist_banlist_add_url
+banlist.removeURL		api->banlist_removeurl		rjk->banlist_remove_url
+banlist.cahngeURL		api->banlist_changeurl		rjk->banlist_banlist_change_url
+													rjk->banlist_urls_count
+													rjk->banlist_urls_count
+													rjk->banlist_info 			
+													rjk->banlist_get_users		
+													rjk->banlist_create			
+
+													rjk->banlists_get			
+
+													rjk->user_acl_add			
+													rjk->user_acl_get			
+													rjk->user_acl_remove		
+
+													is_banlist
+													import_db

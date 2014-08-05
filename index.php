@@ -207,7 +207,7 @@ function layout_showbanlists() {
 	
 	try {
 		$rejik = new rejik_worker ($config['rejik_db']);
-		$list = $rejik->get_banlists(true);
+		$list = $rejik->banlists_get(true);
 		
 		if ($list==0) {
 			echo "<div class='alert alert-danger'>В базе нет ни одного бан-листа.</div>\n";
@@ -296,11 +296,11 @@ function layout_getuser ($nick) {
 
 	//Получаем список бан-листов, которые не применяются к пользователю.
 	$rejik = new rejik_worker ($config['rejik_db']);
-	$user_banlists = $rejik->get_user_acl($nick);
+	$user_banlists = $rejik->user_acl_get($nick);
 	//echo "<pre>"; print_r($user_banlists); echo "</pre>";
 
 	//Получаем список банлистов
-	$banlists = $rejik->get_banlists(true);
+	$banlists = $rejik->banlists_get(true);
 	
 	if ($banlists==0) {
 			echo "<div class='alert alert-danger'>В базе нет ни одного бан-листа.</div>\n";
@@ -334,7 +334,7 @@ function layout_getuser ($nick) {
 	};
 
 	//Выполняем, привязан ли пользователь к каким-либо удаленным банлистам.
-	$banlists = $rejik->get_banlists();
+	$banlists = $rejik->banlists_get();
 
 	foreach ($user_banlists as $value) {
 		//Если бан листа пользователя нет в глобальном списке
@@ -374,7 +374,7 @@ function set_user_acl($user, $banlists) {
 	}
 
 	//2. Получаем список бан-листов пользователя
-	$user_banlists = $rejik->get_user_acl($user);
+	$user_banlists = $rejik->user_acl_get($user);
 
 	//3. Удаляем дубликаты из входящего списка банлистов
 	// В данном случае попадание сюда дубликатов невозможно,
@@ -388,14 +388,14 @@ function set_user_acl($user, $banlists) {
 			case 0:
 				//Бан листы на удаление
 				if (array_search($key, $user_banlists)!==FALSE) {
-					$rejik->remove_user_acl($user, $key);
+					$rejik->user_acl_remove($user, $key);
 					$result_log.= "Банлист <i>$key</i> будет применяться к пользователю <i>$user</i><br/>\n";
 				}
 				break;
 			
 			case 1:
 				if (array_search($key, $user_banlists)===FALSE) {
-					$rejik->add_user_acl($user, $key); 
+					$rejik->user_acl_add($user, $key); 
 					$result_log.= "Банлист <i>$key</i> не будет применяться к пользователю <i>$user</i><br/>\n";
 				}
 				break;
@@ -419,7 +419,7 @@ function apply_and_reconfigure() {
 	try {
 		echo "<h2>Создание списков пользователей:</h2>\n";
 
-		$banlists = $rejik->get_banlists();
+		$banlists = $rejik->banlists_get();
 			
 		//1. Подготовка
 		$path=$_SERVER['DOCUMENT_ROOT']."/{$config ['proj_name']}/users/";
@@ -433,7 +433,7 @@ function apply_and_reconfigure() {
 
 		//2. Для каждого банлиста получаем список юзеров
 		foreach ($banlists as $value) {
-			$users = $rejik->get_banlist_users($value);
+			$users = $rejik->banlist_get_users($value);
 			//echo "<pre>"; print_r($users); echo "</pre>";
 
 			//4. Создаем списки пользователей для каждого бан листа
@@ -471,7 +471,7 @@ function apply_and_reconfigure() {
 		echo "<h2>Создание банлистов:</h2>\n";
 		foreach ($banlists as $value) {
 			//Получаем список УРЛов по банлисту
-			$urls = $rejik->get_banlist_urls($value);
+			$urls = $rejik->banlist_get_urls($value);
 
 			//Создаем каталог для банлиста
 			$p = $path."{$value}/";
@@ -510,7 +510,7 @@ function create_banlist ($name, $short_desc, $full_desc) {
 	global $config;
 	$rejik = new rejik_worker ($config['rejik_db']);
 	try {
-		if ($rejik->add_banlist($name, $short_desc, $full_desc)) {
+		if ($rejik->banlist_create($name, $short_desc, $full_desc)) {
 			echo "<div class='alert alert-success'>Создание бан-листа <i>{$name}</i> успешно выполнено!</div>\n";
 		}
 	} catch (rejik_exception $e) {

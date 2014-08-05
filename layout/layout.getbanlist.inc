@@ -5,7 +5,7 @@
   try{
 		$prx = new proxy_worker ($config['sams_db']);
 		$rejik = new rejik_worker ($config['rejik_db']);
-		$bl_info = $rejik->get_banlist_info ($banlist);
+		$bl_info = $rejik->banlist_info ($banlist);
 
 		if ($bl_info == 0) {
 			echo "<div class='alert alert-danger'><b>Ошибка!</b> Банлист <i>$banlist</i> не найден в базе.</div>\n";
@@ -36,7 +36,7 @@
 		echo "  </div>\n";
 		echo "</div>\n";
 
-		$users_in_banlist = $rejik->get_banlist_users ($banlist);
+		$users_in_banlist = $rejik->banlist_get_users ($banlist);
 		//--------------- Заголовок страницы ---------------
 		echo "<div class='page-header'>\n";
 		echo "<h2>Банлист: <b>{$banlist}</b><br/><small>{$bl_info['full_desc']}</small></h2>\n";
@@ -86,7 +86,7 @@
 		echo "</div>\n"; //of panel-body
 
 		//====================================================== Раздел адресов (URLs) ========================================================================
-		$bl_count = $rejik->get_banlist_urls_count ($banlist);
+		$bl_count = $rejik->banlist_urls_count ($banlist);
 		$urls_per_page = $config ['urls_per_page']; // Определяем, сколько УРЛов выводить на страницу 
 
 		//Высчитываем кольчество страниц и количество групп страниц
@@ -119,7 +119,7 @@
 			global $config;
 			$rejik = new rejik_worker ($config['rejik_db']);
 
-			return $rejik->get_banlist_urls($banlist, true, ($page-1)*$urls_per_page, $urls_per_page);
+			return $rejik->banlist_get_urls($banlist, true, ($page-1)*$urls_per_page, $urls_per_page);
 		}
 
 		function print_pagenator($pages_count, $current_page=1) {

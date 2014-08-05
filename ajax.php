@@ -19,26 +19,26 @@ try {
   $api->check_signature($request_data);
 
   switch ($action) {
-  	case 'banlist.geturllist': 
+  	case 'banlist.getURLlist': 
       $r = $api->banlist_getUrlListEx($validated_data['banlist'],
                                       $validated_data['offset'],
                                       $validated_data['limit']);
       echo $r;
   		break;
 
-    case 'banlist.addurl': 
-      $rjk->add_url($validated_data['banlist'],$validated_data['url']);
-      echo '{"OK": 1}';
+    case 'banlist.addURL':
+      $r = $api->banlist_addurl($validated_data['banlist'],$validated_data['url']);
+      echo $r;
       break;
 
-    case 'banlist.removeurl': 
-      //sleep(5000);
-      echo '{"OK": 1}';
+    case 'banlist.removeURL': 
+      $r = $api->banlist_removeurl($validated_data['banlist'],$validated_data['id']);
+      echo $r;
       break;
     
-    case 'banlist.changeurl': 
-      $rjk->change_url ($validated_data['banlist'], $validated_data['id'], $validated_data['url']);
-      echo '{"OK": 1}';
+    case 'banlist.changeURL': 
+      $r = $api->banlist_changeurl($validated_data['banlist'], $validated_data['id'], $validated_data['url']);
+      echo $r;
       break;
         
     default:

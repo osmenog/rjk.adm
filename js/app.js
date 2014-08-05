@@ -184,8 +184,6 @@ var Rejik = {
   urls_per_page: 200,
   current_banlist: '',
   sign: function (data) {
-    console.log (typeof(data));
-
     if ("sig" in data) {
       delete data['sig'];
     }
@@ -254,22 +252,30 @@ var Rejik = {
     //Вставляем старый УРЛ в поле для ввода
     var id = row_elem.data('url-id');
 
+
+    var json_data = {
+        action: 'banlist.removeurl',
+        banlist: Rejik.current_banlist,
+        id: id,
+    };
+    json_data['sig'] = Rejik.sign(json_data);
+
     //Отправляем AJAX
     $.ajax(Rejik.rejik_url, {
       type: "POST",
       dataType: 'json',
-      data: {action: 'delete_url', id: id},
+      data: json_data,
       success: function(response) {
         if ("error" in response) {
           console.log("API ErrorMsg: "+response.error.error_msg);
-        } else {
-          row_elem.fadeOut(150).detach();
-          
-          //Уменьшаем счетчик ссылок и посылаем событие
-          Rejik.visible_urls--;
-          Rejik.real_urls_count--; 
-          $('table#urls_table').trigger("rowchange");
+          return;
         }
+        row_elem.fadeOut(150).detach();
+          
+        //Уменьшаем счетчик ссылок и посылаем событие
+        Rejik.visible_urls--;
+        Rejik.real_urls_count--; 
+        $('table#urls_table').trigger("rowchange");
       },
       error: function(request, err_t, err_m) {
         console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
@@ -300,7 +306,8 @@ var Rejik = {
           console.log("API ErrorMsg: "+response.error.error_msg);
           return;
         }
-        var tmp = $("<tr>\n"+
+        var id = 0;
+        var tmp = $("<tr data-url-id='"+id+"'>\n"+
                 "<td>"+url+"</td>\n"+
                 "<td width='5%'><a href='#' class='ctrl editurl'><span class='glyphicon glyphicon-pencil'></span></a></td>\n"+
                 "<td width='5%'><a href='#' class='ctrl removeurl'><span class='glyphicon glyphicon-trash'></span></a></td>\n"+
