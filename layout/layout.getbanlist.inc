@@ -105,9 +105,9 @@
 		echo "      </div>\n";
 		echo "      <div class='col-sm-5'>\n";
 		echo "        <div class='search-box-small input-group'>\n";
-		echo "          <input type='text' class='form-control' placeholder='Поиск'>\n";
+		echo "          <input id='inpt_search_url' type='text' class='form-control' placeholder='Поиск'>\n";
 		echo "          <span class='input-group-btn'>\n";
-		echo "            <button class='btn btn-default' type='button'><span class='glyphicon glyphicon-search'></button>\n";
+		echo "            <button id='btn_searchurl' class='btn btn-default' type='button'><span class='glyphicon glyphicon-search'></button>\n";
 		echo "          </span>\n";
 		echo "        </div>\n"; // of search-box
 		echo "      </div>\n"; //of col-sm-5

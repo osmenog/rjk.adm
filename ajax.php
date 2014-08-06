@@ -41,6 +41,11 @@ try {
       echo $r;
       break;
         
+    case 'banlist.searchURL':
+      $r = $api->banlist_searchurl($validated_data['banlist'], $validated_data['query']);
+      echo $r;
+      break;
+
     default:
       throw new api_exception("Invalid action",1);
       break;

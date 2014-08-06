@@ -331,9 +331,9 @@ class rejik_worker extends worker {
     // 1. Проверяем, есть ли банлист в базе. Если нет - то исключение.
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4);	
   
-    $this->check_url ($url);
-    return 0;
-  
+    $dup = $this->find_duplicate($url, $banlist);
+    if ($dup!=0 and is_array($dup)) throw new rejik_exception("URL уже существует в банлисте {$banlist}",4); 
+
     $query = "INSERT INTO urls SET `url`='$url', `banlist`='$banlist';";
     $response = $this->sql->query($query);
   
@@ -387,6 +387,40 @@ class rejik_worker extends worker {
     return True;
   }
   
+  public function banlist_search ($banlist, $search) {
+    /*Осуществляет поиск URL по маске в заданном банлисте*/
+
+    $parsed_url = parse_url($search);
+    if (!$parsed_url) return -1;
+
+    $host = isset($parsed_url['host']) ? $parsed_url['host'] : ''; 
+    $port = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : ''; 
+    $path = isset($parsed_url['path']) ? $parsed_url['path'] : ''; 
+    
+    $n_url = $host.$port.$path;
+    //echo $n_url."\n";
+    
+    $parsed_arr = explode('.', $host);
+    if ($parsed_arr[0]=='www') unset ($parsed_arr[0]);  //Убираем www
+    array_splice($parsed_arr, 0, count($parsed_arr)-2); //Оставляем только домен 2-го уровня
+
+    $host = implode('.', $parsed_arr);
+
+    //echo $host."\n";
+
+    $query = "SELECT * FROM urls WHERE `url` LIKE '%{$n_url}%';";
+    $response = $this->sql->query($query);
+
+    if ($response->num_rows == 0) return 0; //Если дубликатов нет, то выходим
+
+    $res=[];
+    while ($row = $response->fetch_row()) {
+      $res[$row[0]] = $row[1];
+      // * Пытаемся распарсить ссылку на:
+    }
+    //print_r ($res);
+    return $res;
+  }
   // ==========================================================================================================================
   // Работа с Пользователями
   // ==========================================================================================================================
@@ -482,15 +516,7 @@ class rejik_worker extends worker {
   // Дополнительные функции
   // ==========================================================================================================================
   public function check_url ($url) {
-    /*Проверяет, применяется по отношении к данной ссылки более глобальное правило
-      
-      Например пользователь ввел: [http://www.google.com/search/adv?a=1]
-      Но в банлисте есть УРЛ: [google.com]
-      В таком случае функция вернет: 1 - "Существует более глобальное правило" и ссылку на этот УРЛ
-
-      Если пользоваетль ввел: [http://www.google.com]
-
-    */
+    /*Проверяет, применяется по отношении к данной ссылки более глобальное правило*/
 
     $parsed_url = parse_url($url);
     if (!$parsed_url) return -1;
@@ -504,20 +530,12 @@ class rejik_worker extends worker {
 
     
     $parsed_arr = explode('.', $host);
-    if ($parsed_arr[0]=='www') unset ($parsed_arr[0]); //Убираем www
-    
-    echo "count: ".count($parsed_arr)."\n";
-    while (count($parsed_arr)>2) {
-     unset ($parsed_arr[0]);  //Убираем домен n-го уровня, пока не останется домен 2го уровня
-
-    }
-    
-    print_r ($parsed_arr);
-    
+    if ($parsed_arr[0]=='www') unset ($parsed_arr[0]);  //Убираем www
+    array_splice($parsed_arr, 0, count($parsed_arr)-2); //Оставляем только домен 2-го уровня
 
     $host = implode('.', $parsed_arr);
 
-    //echo $n_url."\n";
+    echo $host."\n";
 
     $query = "SELECT * FROM urls WHERE `url` LIKE '{$parsed_url}%';";
     $response = $this->sql->query($query);
@@ -531,6 +549,33 @@ class rejik_worker extends worker {
     }
 
     print_r ($res);
+  }
+
+  public function find_duplicate($url, $banlist='') {
+    $parsed_url = parse_url($url);
+    if (!$parsed_url) return -1;
+
+    $host = isset($parsed_url['host']) ? $parsed_url['host'] : ''; 
+    $port = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : ''; 
+    $path = isset($parsed_url['path']) ? $parsed_url['path'] : ''; 
+    
+    $n_url = $host.$port.$path;
+    if ($banlist=='') {
+      $query = "SELECT * FROM urls WHERE `url`='$n_url';";
+    } else {
+      $query = "SELECT * FROM urls WHERE `banlist`='{$banlist}' AND `url`='$n_url';";
+    }
+    $response = $this->sql->query($query);
+
+    if ($response->num_rows == 0) return 0; //Если дубликатов нет, то выходим
+
+    $res=[];
+    while ($row = $response->fetch_assoc()) {
+      $res[] = $row;
+      // * Пытаемся распарсить ссылку на:
+    }
+
+    return $res;
   }
 
 } //end of rejik_worker
@@ -666,6 +711,38 @@ class api_worker {
       }
       //$urls_arr = array('ya.ru/hi&a=1?b=2','<script>alert();</script>');
   
+      $json_obj['urls']=$urls_arr;
+      $json_obj['total']=$urls_counter;
+      $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+      
+      return $json_str;
+
+    } catch (exception $e) {
+      throw $e;
+    }
+  }
+
+  public function banlist_searchurl($banlist, $query) {
+    try {
+      $rjk = $this->rejik;
+      if (!$rjk->is_banlist($banlist)) throw new api_exception ("Banlist not found",3);
+
+      $founded_urls = $rjk->banlist_search($banlist, $query);
+
+      $json_obj = array ('total'=>0, 'urls'=>[]);
+  
+      $urls_counter = 0; //Инициализируем счетчик для ссылок
+      $urls_arr = array(); //Инициализируем массив для ссылок с ключами
+      //Заполняем массив ссылками
+      if ($founded_urls!=0) {
+        foreach ($founded_urls as $key => $value) {
+          $id= intval($key);
+          $url=$value;
+          $urls_arr[$id]=$url;
+          $urls_counter++;
+        }
+      }
+
       $json_obj['urls']=$urls_arr;
       $json_obj['total']=$urls_counter;
       $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);

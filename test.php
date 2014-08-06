@@ -6,8 +6,14 @@
   global $config;
 
   $rjk = new rejik_worker ($config['rejik_db']);
-  $url = "http://hui.ad.google.com/search?asd=1";
+  $url = "http://hui.ad.google.com/s1earch?asd=1";
 
-  echo $rjk->check_url($url);
+  //echo $rjk->check_url($url);
+  $dup = $rjk->find_duplicate($url);
+  if ($dup!=0 and is_array($dup)) {
+    echo "<pre>"; print_r($dup); echo "</pre>"; 
+  } else {
+    echo "dub not found";
+  }
 
 ?>

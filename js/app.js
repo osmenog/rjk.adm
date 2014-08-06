@@ -338,6 +338,50 @@ var Rejik = {
     $('input#bl_name').popover('show');  
   },
 
+  banlist_search_url: function(query) {
+    var json_data = {
+        action: 'banlist.searchURL',
+        banlist: Rejik.current_banlist,
+        query: query
+    };
+    json_data.sig = Rejik.sign(json_data)
+
+    $.ajax(Rejik.rejik_url, {
+      type: "POST",
+      dataType: 'json',
+      data: json_data,
+      beforeSend: function() {
+        $('table#urls_table').fadeOut(200);
+      },
+      success: function(response) {
+        if ("error" in response) {
+          console.log("API ErrorMsg: "+response.error.error_msg);
+        } else {
+          $('table#urls_table').find('tbody').detach();
+          
+          var key;
+          var tmp = $('<tbody></tbody>');
+          var urls = response.urls;
+          for (key in urls) {
+            var row = $("<tr data-url-id='"+key+"'></tr>");
+            row.append('<td>'+urls[key]+'</td>');
+            row.append("<td width='5%'><a href='#' class='ctrl editurl'><span class='glyphicon glyphicon-pencil'></span></a></td>");
+            row.append("<td width='5%'><a href='#' class='ctrl removeurl'><span class='glyphicon glyphicon-trash'></span></a></td>");
+            tmp.append (row);
+          }
+          $('table#urls_table').append (tmp);
+        }
+      },
+      error: function(request, err_t, err_m) {
+        console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
+      },
+      complete: function() {
+        $('table#urls_table').fadeIn(200);
+      },
+      timeout: 3000
+    });
+  },
+
   banlist_editor_init: function() {
     Rejik.visible_urls = $('table#urls_table').find('tr').length; //Инициализируем счетчик строк в таблице ссылок
     Rejik.real_urls_count = $('table#urls_table').data('urlscount');
@@ -387,6 +431,12 @@ var Rejik = {
     $('#btn_addurl').on("click", function (e){
       e.preventDefault();
       Rejik.banlist_add_url()
+    });
+
+    $('#btn_searchurl').on('click', function (e){
+      e.preventDefault();
+      var query = $('#inpt_search_url').val();
+      Rejik.banlist_search_url(query);
     });
   },
 
