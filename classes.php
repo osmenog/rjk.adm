@@ -479,10 +479,47 @@ class rejik_worker extends worker {
   }
 
   // ==========================================================================================================================
-  // Функции импорта
+  // Дополнительные функции
   // ==========================================================================================================================
   public function check_url ($url) {
-    $query = "SELECT * FROM urls WHERE `url` LIKE '%{$url}%';";
+    /*Проверяет, применяется по отношении к данной ссылки более глобальное правило
+      
+      Например пользователь ввел: [http://www.google.com/search/adv?a=1]
+      Но в банлисте есть УРЛ: [google.com]
+      В таком случае функция вернет: 1 - "Существует более глобальное правило" и ссылку на этот УРЛ
+
+      Если пользоваетль ввел: [http://www.google.com]
+
+    */
+
+    $parsed_url = parse_url($url);
+    if (!$parsed_url) return -1;
+
+    $host = isset($parsed_url['host']) ? $parsed_url['host'] : ''; 
+    $port = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : ''; 
+    $path = isset($parsed_url['path']) ? $parsed_url['path'] : ''; 
+    
+    $n_url = $host.$port.$path;
+    echo $n_url."\n";
+
+    
+    $parsed_arr = explode('.', $host);
+    if ($parsed_arr[0]=='www') unset ($parsed_arr[0]); //Убираем www
+    
+    echo "count: ".count($parsed_arr)."\n";
+    while (count($parsed_arr)>2) {
+     unset ($parsed_arr[0]);  //Убираем домен n-го уровня, пока не останется домен 2го уровня
+
+    }
+    
+    print_r ($parsed_arr);
+    
+
+    $host = implode('.', $parsed_arr);
+
+    //echo $n_url."\n";
+
+    $query = "SELECT * FROM urls WHERE `url` LIKE '{$parsed_url}%';";
     $response = $this->sql->query($query);
 
     if ($response->num_rows == 0) return 0; //Если дубликатов нет, то выходим
