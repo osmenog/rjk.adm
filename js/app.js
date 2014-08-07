@@ -178,12 +178,14 @@ var MD5 = function (string) {
 }
 
 var Rejik = {
-  rejik_url: '/rejik2/ajax.php?v=1',
-  visible_urls: 0,
-  real_urls_count: 0,
-  urls_per_page: 200,
-  current_banlist: '',
+  rejik_url: '/rejik2/ajax.php?v=1',    // Путь до AJAX API
+  visible_urls: 0,                      // Количество ссылок, отображаемых на экране (меняется при удалении или добавлении ссылок)
+  real_urls_count: 0,                   // Общее количество ссылок в банлисте
+  urls_per_page: 200,                   // Макс. количество ссылок на одной странице
+  current_banlist: '',                  // Текущий просматриваемый банлист (необходимо для ajax)
+  
   sign: function (data) {
+    //Функция добавляет подпись к массиву data
     if ("sig" in data) {
       delete data['sig'];
     }
@@ -240,7 +242,7 @@ var Rejik = {
           modal.off('click.editurl');
           modal.modal('hide');    
         },
-        timeout: 3000
+        timeout: 10000
       });
     })
 
@@ -280,7 +282,7 @@ var Rejik = {
       error: function(request, err_t, err_m) {
         console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
       },
-      timeout: 3000
+      timeout: 10000
     });
   },
 
@@ -304,6 +306,7 @@ var Rejik = {
       success: function(response) {
         if ("error" in response) {
           console.log("API ErrorMsg: "+response.error.error_msg);
+          $('#addurl_box').addClass("has-error has-feedback");
           return;
         }
         var id = response.id;
@@ -326,7 +329,7 @@ var Rejik = {
       complete: function() {
         $('table#urls_table').trigger("rowchange");
       },
-      timeout: 3000
+      timeout: 10000
     });
 
 
@@ -378,12 +381,13 @@ var Rejik = {
       complete: function() {
         $('table#urls_table').fadeIn(200);
       },
-      timeout: 3000
+      timeout: 10000
     });
   },
 
   banlist_editor_init: function() {
-    Rejik.visible_urls = $('table#urls_table').find('tr').length; //Инициализируем счетчик строк в таблице ссылок
+    //Инициализируем глобальные переменные
+    Rejik.visible_urls = $('table#urls_table').find('tr').length;
     Rejik.real_urls_count = $('table#urls_table').data('urlscount');
     Rejik.urls_per_page = $('#urls_panel').data("urls_per_page");
     Rejik.current_banlist = $('table#urls_table').data('banlist');
@@ -486,27 +490,23 @@ var Rejik = {
       complete: function() {
         $('table#urls_table').fadeIn(200);
       },
-      timeout: 3000
+      timeout: 10000
     });
   }
 };
 
-
-
 $(document).ready (function() {
+
   Rejik.banlist_editor_init();
-
   var pages_num = $('#urls_panel').data("pagescount");
-
-//http://esimakin.github.io/twbs-pagination/#demo
-$('#pagination-demo').twbsPagination({
-  totalPages: pages_num,
-  visiblePages: 10,
-  onPageClick: function (event, page) {
-    event.preventDefault;
-    Rejik.get_page(page);
-  }
-});
-
+  //http://esimakin.github.io/twbs-pagination/#demo
+  $('#pagination-demo').twbsPagination({
+    totalPages: pages_num,
+    visiblePages: 10,
+    onPageClick: function (event, page) {
+      event.preventDefault;
+      Rejik.get_page(page);
+    }
+  });
 
 });

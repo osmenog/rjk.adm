@@ -280,14 +280,15 @@ class rejik_worker extends worker {
     // -------------------------------------------------------------------------
   
     if ($offset!=0 or $length!=0) {
-      //echo "<h3>$offset | $length</h3>";
       //Запрос со смещением
-      $response = $this->sql->query("SELECT id, url FROM urls WHERE `banlist`='{$banlist}' ORDER BY id DESC LIMIT {$offset}, {$length}");
+      $query = "SELECT id, url FROM urls WHERE `banlist`='{$banlist}' ORDER BY id DESC LIMIT {$offset}, {$length}";  
     } else {
-      $response = $this->sql->query("SELECT id, url FROM urls WHERE `banlist`='{$banlist}' ORDER BY id DESC LIMIT");
+      $query = "SELECT id, url FROM urls WHERE `banlist`='{$banlist}' ORDER BY id DESC";
     }
-  
-    if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
+    
+    $response = $this->sql->query($query);
+    
+    if (!$response) throw new mysql_exception($this->sql->error."\n".$query, $this->sql->errno);
   
     if ($response->num_rows == 0) return 0;
   
@@ -332,7 +333,10 @@ class rejik_worker extends worker {
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4);	
   
     $dup = $this->find_duplicate($url, $banlist);
-    if ($dup!=0 and is_array($dup)) throw new rejik_exception("URL уже существует в банлисте {$banlist}",4); 
+    if ($dup!=0 and is_array($dup)) {
+      print_r($dup);
+      throw new rejik_exception("URL уже существует в банлисте {$banlist}",5); 
+    }
 
     $query = "INSERT INTO urls SET `url`='$url', `banlist`='$banlist';";
     $response = $this->sql->query($query);
@@ -572,7 +576,6 @@ class rejik_worker extends worker {
     $res=[];
     while ($row = $response->fetch_assoc()) {
       $res[] = $row;
-      // * Пытаемся распарсить ссылку на:
     }
 
     return $res;

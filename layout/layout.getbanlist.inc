@@ -23,10 +23,12 @@
 		echo "      </div>\n";
 		echo "      <div class='modal-body'>\n";
 		echo "        <p>Укажите новый адрес:</p>\n";
+		
 		echo "				<div class='input-group'>\n";
 		echo "					<input type='text' class='form-control' placeholder='Введите сюда URL адрес' value='<Тут будет редактируемая ссылка>'>";
 		echo "					<span class='input-group-addon'>@</span>\n";
 		echo "				</div>\n";
+		
 		echo "      </div>\n";
 		echo "      <div class='modal-footer'>\n";
 		echo "        <button id='btn_close' type='button' class='btn btn-default' data-dismiss='modal'>Закрыть</button>\n";
@@ -134,13 +136,14 @@
 			echo "    <li><a href='#'>&raquo;</a></li>\n";
 			echo "  </ul>\n";
 		}
-
+	echo "<div class='form-group'>";
 		echo "<div id='addurl_box' class='input-group'>\n";
 		echo "   <input type='text' class='form-control'>\n";
 		echo "   <span class='input-group-btn'>\n";
 		echo "      <button id='btn_addurl' class='btn btn-success' type='button'><span class='glyphicon glyphicon-plus'></span> Добавить URL</button>\n";
 		echo "   </span>\n";
 		echo "</div><br/>\n";
+	echo "</div>";
 
 		//echo "<h1>{$pages_count}|curr={$current_page}</h1>\n";
 
