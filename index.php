@@ -105,8 +105,8 @@ function print_layout () {
 			//Извлекаем список банлистов из тела запроса
 			$banlists=array();
 			foreach ($_POST as $key => $value) {
-				if (strpos ($key,'bl_')!==false) $banlists[substr($key, 3)] = $value;
-			}
+        if (strpos($key, 'bl_') !== false) {$banlists[substr($key, 3)] = $value;}
+      }
 
 			if (count($banlists)==0) {
 				echo "<div class='alert alert-danger'><b>Ошибка!</b> В запросе не указаны банлисты.</div>\n";

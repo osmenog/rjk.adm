@@ -648,7 +648,7 @@ class api_worker {
   public function banlist_changeurl($banlist, $url_id, $url) {
     try {
       $rjk = $this->rejik;
-      $result = $rjk->banlist_change_url ($banlist, $url_id, $url);
+      $rjk->banlist_change_url ($banlist, $url_id, $url);
 
       $json_obj = array ('result' => 1);
       $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
@@ -662,8 +662,7 @@ class api_worker {
   public function banlist_removeurl($banlist, $url_id) {
     try {
       $rjk = $this->rejik;
-      $result = $rjk->banlist_remove_url ($banlist, $url_id);
-
+      $rjk->banlist_remove_url ($banlist, $url_id);
       $json_obj = array ('result' => 1);
       $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
       return $json_str;
@@ -728,7 +727,7 @@ class api_worker {
   public function banlist_searchurl($banlist, $query) {
     try {
       $rjk = $this->rejik;
-      if (!$rjk->is_banlist($banlist)) throw new api_exception ("Banlist not found",3);
+      if (!$rjk->is_banlist($banlist)) {throw new api_exception ("Banlist not found",3);}
 
       $founded_urls = $rjk->banlist_search($banlist, $query);
 
@@ -786,9 +785,9 @@ function GetClientIP () {
 }
 
 function num_case ($num, $v1, $v2, $v3) {
-	if ($num == 1) return $v1;
-	if (($num >= 2 && $num <5) || ($num == 0)) return $v2;
-	if ($num >= 5) return $v3;
+  if ($num == 1) {return $v1;}
+  if (($num >= 2 && $num <5) || ($num == 0)) {return $v2;}
+  if ($num >= 5) {return $v3;}
 }
 
 // case "reconfigure":
