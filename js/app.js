@@ -1,34 +1,29 @@
 $(document).ready (function() {
 
+  panel_urls = $('#panel_urls');
+  table_urls = $('table#urls_table');
   Rejik.banlist_editor_init();
-  var pages_num = $('#urls_panel').data("pagescount");
-  //http://esimakin.github.io/twbs-pagination/#demo
-  $('#pagination-demo').twbsPagination({
-    totalPages: pages_num,
-    visiblePages: 10,
-    onPageClick: function (event, page) {
-      event.preventDefault;
-      Rejik.get_page(page);
-    }
-  });
+
+
 
 });
+
+var panel_urls, table_urls;
+
 var Rejik = {
   rejik_url: '/rejik2/ajax.php?v=1',    // Путь до AJAX API
   visible_urls: 0,                      // Количество ссылок, отображаемых на экране (меняется при удалении или добавлении ссылок)
   real_urls_count: 0,                   // Общее количество ссылок в банлисте
   urls_per_page: 200,                   // Макс. количество ссылок на одной странице
   current_banlist: '',                  // Текущий просматриваемый банлист (необходимо для ajax)
-  
+  pages_num: 0,                         // Количество отображаемых страниц
+
   sign: function (data) {
     //Функция добавляет подпись к массиву data
     if ("sig" in data) {
       delete data['sig'];
     }
-    
-    // console.log ("Перед: " + data);
-    // data.sort();
-    // console.log ("После: " + data);
+  
     //Тут находится ненадежный код, т.к. массив data не сортируется по убыванию.
     
     var str_data='';
@@ -147,6 +142,11 @@ var Rejik = {
         if ("error" in response) {
           console.log("API ErrorMsg: "+response.error.error_msg);
           $('#addurl_box').addClass("has-error has-feedback");
+          url_box.data('toggle', "popover");
+          url_box.data('content', response.error.error_msg);
+          url_box.data('placement', "left");
+          url_box.attr('title', 'Ошибка');
+          url_box.popover('show');  
           return;
         }
         var id = response.id;
@@ -165,6 +165,7 @@ var Rejik = {
       },
       error: function(request, err_t, err_m) {
         console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
+        $('#addurl_box').popover('show'); 
       },
       complete: function() {
         $('table#urls_table').trigger("rowchange");
@@ -227,33 +228,34 @@ var Rejik = {
 
   banlist_editor_init: function() {
     //Инициализируем глобальные переменные
-    Rejik.visible_urls = $('table#urls_table').find('tr').length;
-    Rejik.real_urls_count = $('table#urls_table').data('urlscount');
-    Rejik.urls_per_page = $('#urls_panel').data("urls_per_page");
-    Rejik.current_banlist = $('table#urls_table').data('banlist');
+    Rejik.visible_urls = table_urls.find('tr').length;
+    Rejik.real_urls_count = table_urls.data('urlscount');
+    Rejik.urls_per_page = panel_urls.data("urls_per_page");
+    Rejik.current_banlist = table_urls.data('banlist');
+    Rejik.pages_num = panel_urls.data("pagescount");
 
-    $('table#urls_table').on('mouseenter','tr', function() {
+    table_urls.on('mouseenter','tr', function() {
       $(this).find('.ctrl').show();
       //console.log ('mouseenter');
     });
 
-    $('table#urls_table').on('mouseleave','tr', function() {
+    table_urls.on('mouseleave','tr', function() {
       $(this).find('.ctrl').hide();
       //console.log ('mouseenter');
     });
 
-    $('table#urls_table').on('click', '.editurl', function (e){
+    table_urls.on('click', '.editurl', function (e){
       e.preventDefault();
       Rejik.banlist_edit_url($(this).closest('tr'));
     });
 
-    $('table#urls_table').on('click', '.removeurl', function (e){
+    table_urls.on('click', '.removeurl', function (e){
       e.preventDefault();
       var row = $(this).closest('tr');
       Rejik.banlist_delete_url(row);
     });
 
-    $('table#urls_table').on("rowchange", function (e){
+    table_urls.on("rowchange", function (e){
       //Функция обновляет счетчики ссылок, и отображает, либо скрывает таблицу
       e.preventDefault;
       
@@ -277,15 +279,24 @@ var Rejik = {
       Rejik.banlist_add_url()
     });
 
-    $('#btn_searchurl').on('click', function (e){
-      e.preventDefault();
-      var query = $('#inpt_search_url').val();
-      Rejik.banlist_search_url(query);
+    // $('#btn_searchurl').on('click', function (e){
+    //   e.preventDefault();
+    //   var query = $('#inpt_search_url').val();
+    //   Rejik.banlist_search_url(query);
+    // });
+
+    $('#pagination-demo').twbsPagination({
+      totalPages: Rejik.pages_num,
+      visiblePages: 10,
+      onPageClick: function (event, page) {
+        event.preventDefault;
+        Rejik.get_page(page);
+      }
     });
   },
 
   get_page: function(page) {
-    console.log (page);
+    //console.log (page);
     var offset = (page-1) * Rejik.urls_per_page;
 
     var data = {
@@ -334,6 +345,20 @@ var Rejik = {
     });
   }
 };
+
+function ksort(w) {
+  var sArr = [], tArr = [], n = 0;
+
+  for (i in w){
+    tArr[n++] = i;
+  }
+
+  tArr = tArr.sort();
+  for (var i=0, n = tArr.length; i<n; i++) {
+    sArr[tArr[i]] = w[tArr[i]];
+  }
+  return sArr;
+}
 
 var MD5 = function (string) {
     function RotateLeft(lValue, iShiftBits) {

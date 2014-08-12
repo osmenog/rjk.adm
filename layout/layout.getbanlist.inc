@@ -2,17 +2,7 @@
   include_once "config.php";
   global $config;
 
-  try{
-		$prx = new proxy_worker ($config['sams_db']);
-		$rejik = new rejik_worker ($config['rejik_db']);
-		$bl_info = $rejik->banlist_info ($banlist);
-
-		if ($bl_info == 0) {
-			echo "<div class='alert alert-danger'><b>Ошибка!</b> Банлист <i>$banlist</i> не найден в базе.</div>\n";
-			return; //Выходим, если бан лист пустой.
-		}
-
-		//--------------- Инициализация модального окна ---------------
+  function print_modal_box() {
 		echo "<!-- Modal -->\n";
 		echo "<div class='modal fade' id='superModal'>\n";
 		echo "  <div class='modal-dialog'>\n";
@@ -36,18 +26,33 @@
 		echo "      </div>\n";
 		echo "    </div>\n";
 		echo "  </div>\n";
-		echo "</div>\n";
+		echo "</div> <!-- end of Modal -->\n";
+  };
 
-		$users_in_banlist = $rejik->banlist_get_users ($banlist);
+  try{
+		$prx = new proxy_worker ($config['sams_db']);
+		$rejik = new rejik_worker ($config['rejik_db']);
+		$bl_info = $rejik->banlist_info ($banlist);
+
+		if ($bl_info == 0) {
+			echo "<div class='alert alert-danger'><b>Ошибка!</b> Банлист <i>$banlist</i> не найден в базе.</div>\n";
+			return; //Выходим, если бан лист пустой.
+		}
+
+		//--------------- Инициализация модального окна ---------------
+		print_modal_box();
+
 		//--------------- Заголовок страницы ---------------
 		echo "<div class='page-header'>\n";
 		echo "<h2>Банлист: <b>{$banlist}</b><br/><small>{$bl_info['full_desc']}</small></h2>\n";
 		echo "</div>\n";
 		
-		//--------------- Раздел пользователей ---------------
+		//====================================================== Раздел пользователей ========================================================================
+		$users_in_banlist = $rejik->banlist_get_users ($banlist);
 		$users_count = ($users_in_banlist!=0) ? count($users_in_banlist) : 0;
+		
 		//Заголовок панельки
-		echo "<div id='user_panel' class='panel panel-default'>\n";
+		echo "<div id='panel_users' class='panel panel-default'>\n";
 		echo "  <div class='panel-heading'>";
 		echo "    <div class='row' style='line-height: 27px;'>\n";
 		echo "      <div class='col-sm-7'>\n";
@@ -56,7 +61,7 @@
 		echo "        </span>\n";	
 		echo "      </div>\n";
 		echo "      <div class='col-sm-5'>\n";
-		echo "        <div class='search-box-small input-group'>\n";
+		echo "        <div id='searchBox_users' class='search-box-small input-group'>\n";
 		echo "          <input type='text' class='form-control' placeholder='Поиск'>\n";
 		echo "          <span class='input-group-btn'>\n";
 		echo "            <button class='btn btn-default' type='button'><span class='glyphicon glyphicon-search'></button>\n";
@@ -71,7 +76,7 @@
 		if ($users_in_banlist!=0) {			
 			echo "<div class='panel panel-default'>\n";
 			echo "<table class='table table-striped table-hover'>\n";
-		    echo "  <tr><th>Логин</th><th>ФИО</th></tr>\n";
+		  echo "  <tr><th>Логин</th><th>ФИО</th></tr>\n";
 			foreach ($users_in_banlist as $value) {
 				echo "<tr>\n";
 				echo "  <td><a href='?action=getuser&user={$value}'>{$value}</a></td>\n";
@@ -99,17 +104,17 @@
 		$current_page = (isset($_GET['p']) && intval($_GET['p'])) ? intval($_GET['p']) : 1;
 		if ($current_page>$pages_count || $current_page<1) $current_page=1;
 
-		echo "<div id='urls_panel' class='panel panel-default' data-pagescount='{$pages_count}' data-urls_per_page='{$urls_per_page}'>\n";
+		echo "<div id='panel_urls' class='panel panel-default' data-pagescount='{$pages_count}' data-urls_per_page='{$urls_per_page}'>\n";
 		echo "  <div class='panel-heading'>";
 		echo "    <div class='row' style='line-height: 27px;'>\n";
 		echo "      <div class='col-sm-7'>\n";
-		echo "        <span>URL Адреса <small>(всего <b><span id='url_counter'>{$bl_count}</span></b> ".num_case ($bl_count, 'сайт', 'сайта', 'сайтов').")</small></span>\n";	
+		echo "        <span>URL Адреса <small>(всего <b><span id='url_counter'>{$bl_count}</span></b> ".num_case ($bl_count, 'запись', 'записи', 'записей').")</small></span>\n";	
 		echo "      </div>\n";
 		echo "      <div class='col-sm-5'>\n";
-		echo "        <div class='search-box-small input-group'>\n";
-		echo "          <input id='inpt_search_url' type='text' class='form-control' placeholder='Поиск'>\n";
+		echo "        <div id='searchBox_urls' class='search-box-small input-group'>\n";
+		echo "          <input id='searchBox_inpt_urls' type='text' class='form-control' placeholder='Поиск'>\n";
 		echo "          <span class='input-group-btn'>\n";
-		echo "            <button id='btn_searchurl' class='btn btn-default' type='button'><span class='glyphicon glyphicon-search'></button>\n";
+		echo "            <button id='searchBox_btn_urls' class='btn btn-default' type='button'><span class='glyphicon glyphicon-search'></button>\n";
 		echo "          </span>\n";
 		echo "        </div>\n"; // of search-box
 		echo "      </div>\n"; //of col-sm-5

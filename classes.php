@@ -334,7 +334,7 @@ class rejik_worker extends worker {
   
     $dup = $this->find_duplicate($url, $banlist);
     if ($dup!=0 and is_array($dup)) {
-      print_r($dup);
+      //print_r($dup);
       throw new rejik_exception("URL уже существует в банлисте {$banlist}",5); 
     }
 
