@@ -1,12 +1,9 @@
 #My
-banlists/
-users/
-sql/
 *.sublime-project
 *.sublime-workspace
 import.csv
-config.php
 .htaccess
+nbproject/
 
 # Windows image file caches
 Thumbs.db

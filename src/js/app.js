@@ -2,6 +2,7 @@ $(document).ready (function() {
 
   panel_urls = $('#panel_urls');
   table_urls = $('table#urls_table');
+  
   Rejik.banlist_editor_init();
 
 
@@ -112,7 +113,7 @@ var Rejik = {
         //Уменьшаем счетчик ссылок и посылаем событие
         Rejik.visible_urls--;
         Rejik.real_urls_count--; 
-        $('table#urls_table').trigger("rowchange");
+        table_urls.trigger("rowchange");
       },
       error: function(request, err_t, err_m) {
         console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
@@ -121,15 +122,14 @@ var Rejik = {
     });
   },
 
-  banlist_add_url: function () {
-    var url_box = $('#addurl_box').find('input');
-    var url = (url_box.val()).trim();
-    if (url.length == 0) return false;  //Если поле пустое, то ничего не добавляем
+  banlist_add_url: function (new_url) {
+    var deferer = $.Deferred();
 
+    //Готовим данные
     var json_data = {
         action: 'banlist.addURL',
         banlist: Rejik.current_banlist,
-        url: url
+        url: new_url
     };
     json_data.sig = Rejik.sign(json_data)
 
@@ -140,42 +140,21 @@ var Rejik = {
       data: json_data,
       success: function(response) {
         if ("error" in response) {
-          console.log("API ErrorMsg: "+response.error.error_msg);
-          $('#addurl_box').addClass("has-error has-feedback");
-          url_box.data('toggle', "popover");
-          url_box.data('content', response.error.error_msg);
-          url_box.data('placement', "left");
-          url_box.attr('title', 'Ошибка');
-          url_box.popover('show');  
-          return;
+          deferer.reject(response.error.error_msg);
+          return deferer;
         }
-        var id = response.id;
-        var tmp = $("<tr data-url-id='"+id+"'>\n"+
-                "<td>"+url+"</td>\n"+
-                "<td width='5%'><a href='#' class='ctrl editurl'><span class='glyphicon glyphicon-pencil'></span></a></td>\n"+
-                "<td width='5%'><a href='#' class='ctrl removeurl'><span class='glyphicon glyphicon-trash'></span></a></td>\n"+
-                "</tr>\n");
-        $('#urls_table').prepend(tmp);
-    
-        url_box.val('');
-
-        //Если добавление новой ссылки выполнилось успешно, то увеличиваем счетчик ссылок
-        Rejik.real_urls_count++;
-        Rejik.visible_urls++;
+        deferer.resolve(response.id);
       },
       error: function(request, err_t, err_m) {
-        console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
-        $('#addurl_box').popover('show'); 
+        deferer.reject("AJAX ErrorMsg: "+err_t+' '+err_m);
       },
-      complete: function() {
-        $('table#urls_table').trigger("rowchange");
-      },
+      // complete: function() {
+      //   table_urls.trigger("rowchange");
+      // },
       timeout: 10000
     });
 
-
-    
-    return true; //Если все ОК - то возвращаем true
+    return deferer;
   },
 
   banlist_create_showpopup: function() {
@@ -201,7 +180,7 @@ var Rejik = {
         if ("error" in response) {
           console.log("API ErrorMsg: "+response.error.error_msg);
         } else {
-          $('table#urls_table').find('tbody').detach();
+          table_urls.find('tbody').detach();
           
           var key;
           var tmp = $('<tbody></tbody>');
@@ -213,14 +192,14 @@ var Rejik = {
             row.append("<td width='5%'><a href='#' class='ctrl removeurl'><span class='glyphicon glyphicon-trash'></span></a></td>");
             tmp.append (row);
           }
-          $('table#urls_table').append (tmp);
+          table_urls.append (tmp);
         }
       },
       error: function(request, err_t, err_m) {
         console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
       },
       complete: function() {
-        $('table#urls_table').fadeIn(200);
+        table_urls.fadeIn(200);
       },
       timeout: 10000
     });
@@ -274,9 +253,55 @@ var Rejik = {
       }
     });
 
-    $('#btn_addurl').on("click", function (e){
+    $('#addurl_box').on("click", "button", function (e){
       e.preventDefault();
-      Rejik.banlist_add_url()
+      var url_box = $(this).closest(".input-group").find("input");
+
+      
+      //Если поле пустое, то ничего не добавляем
+      var url = (url_box.val()).trim();
+      if (url.length == 0) return false;  
+      
+      var add_url = Rejik.banlist_add_url(url);
+      
+      //Обработчик событий в случае успеха
+      add_url.done(function(id){
+        var tmp = $("<tr data-url-id='"+id+"'>\n"+
+                "<td>"+url+"</td>\n"+
+                "<td width='5%'><a href='#' class='ctrl editurl'><span class='glyphicon glyphicon-pencil'></span></a></td>\n"+
+                "<td width='5%'><a href='#' class='ctrl removeurl'><span class='glyphicon glyphicon-trash'></span></a></td>\n"+
+                "</tr>\n");
+        $('#urls_table').prepend(tmp);
+    
+        url_box.val('');
+
+        //Если добавление новой ссылки выполнилось успешно, то увеличиваем счетчик ссылок
+        Rejik.real_urls_count++;
+        Rejik.visible_urls++;
+      });
+
+      //Обработчик событий в случае ошибки
+      add_url.fail(function(err_msg){
+        console.log("API ErrorMsg: "+err_msg);
+        $('#addurl_box').addClass("has-error has-feedback");
+        url_box.data('toggle', "popover");
+        url_box.data('content', err_msg);
+        url_box.data('placement', "left");
+        url_box.attr('title', 'Ошибка');
+        url_box.popover('show'); 
+      });
+
+      ////Обработчик событий при исполнении
+      add_url.always(function(){
+        table_urls.trigger("rowchange");
+      })
+              
+    });
+
+    $('#addurl_box').on("click", "input", function (e){
+      e.preventDefault();
+      var url_box = $(this).closest(".input-group").find("input");
+      url_box.popover('hide');
     });
 
     // $('#btn_searchurl').on('click', function (e){
@@ -318,7 +343,7 @@ var Rejik = {
         if ("error" in response) {
           console.log("API ErrorMsg: "+response.error.error_msg);
         } else {
-          $('table#urls_table').find('tbody').detach();
+          table_urls.find('tbody').detach();
           
           var key;
           var tmp = $('<tbody></tbody>');
@@ -330,7 +355,7 @@ var Rejik = {
             row.append("<td width='5%'><a href='#' class='ctrl removeurl'><span class='glyphicon glyphicon-trash'></span></a></td>");
             tmp.append (row);
           }
-          $('table#urls_table').append (tmp);
+          table_urls.append (tmp);
           
 
         }
@@ -339,7 +364,7 @@ var Rejik = {
         console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
       },
       complete: function() {
-        $('table#urls_table').fadeIn(200);
+        table_urls.fadeIn(200);
       },
       timeout: 10000
     });
