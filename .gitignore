@@ -4,6 +4,8 @@
 import.csv
 .htaccess
 nbproject/
+sql/
+/sql/config.php
 
 # Windows image file caches
 Thumbs.db
@@ -43,3 +45,4 @@ Icon
 .Spotlight-V100
 .Trashes
 /nbproject/private/
+src/config.php

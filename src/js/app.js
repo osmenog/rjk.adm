@@ -284,10 +284,9 @@ var Rejik = {
       add_url.fail(function(err_msg){
         console.log("API ErrorMsg: "+err_msg);
         $('#addurl_box').addClass("has-error has-feedback");
-        url_box.data('toggle', "popover");
-        url_box.data('content', err_msg);
-        url_box.data('placement', "left");
-        url_box.attr('title', 'Ошибка');
+        var url_box = $('#addurl_box');
+        url_box.data({toggle:"popover", content: err_msg, placement: "left"});
+        url_box.attr("title", "Ошибка");
         url_box.popover('show'); 
       });
 
@@ -298,11 +297,11 @@ var Rejik = {
               
     });
 
-    $('#addurl_box').on("click", "input", function (e){
-      e.preventDefault();
-      var url_box = $(this).closest(".input-group").find("input");
-      url_box.popover('hide');
-    });
+    // $('#addurl_box').on("click", "input", function (e){
+    //   e.preventDefault();
+    //   //var url_box = $(this).closest(".input-group").find("input");
+    //   //url_box.popover('hide');
+    // });
 
     // $('#btn_searchurl').on('click', function (e){
     //   e.preventDefault();
