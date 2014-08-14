@@ -360,6 +360,13 @@ class rejik_worker extends worker {
     // 1. Проверяем, есть ли банлист в базе. Если нет - то исключение.
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4); 
   
+    //Проверяем, существует ли в банлисте URL с новым именем.
+    $dup = $this->find_duplicate($new_url_name, $banlist);
+    if ($dup!=0 and is_array($dup)) {
+      //print_r($dup);
+      throw new rejik_exception("URL уже существует в банлисте {$banlist}",5); 
+    }
+
     // 2. Проверяем, есть ли URL с заданным ID базе
     // ДОБАВИТЬ!!!
   

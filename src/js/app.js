@@ -33,57 +33,90 @@ var Rejik = {
     return md5_data;
   },
 
-  banlist_edit_url: function(row_elem) {
+  show_modal: function(row_elem) {
     //Функция открывает модальное окно для редактирования ссылки
-
     var modal = $('#superModal');
 
-    //Вставляем старый УРЛ в поле для ввода
+    //Вставляем старый УРЛ в поле для редактирования в модальном окне
     var old_url = row_elem.find('td:first').text();
     modal.find('input').val(old_url);
-    var id = row_elem.data('url-id');
+    
+    //Удаляем всплывающее сообщение, если оно есть
+    modal.find('.input-group').popover('destroy').removeClass("has-error has-feedback");
 
     //Инициализируем обработчики событий
-    modal.on('click.editurl', '#btn_save', function() {
-      //console.log (_rejik);
+    modal.on('click.save', '#btn_save', function() {
+      //Получаем новый УРЛ, проверяем его, и выполняем отправку запроса
       var new_url = modal.find('input').val(); //Тут нужно выполнить ряд проверок
+      var id = row_elem.data('url-id');
       
-      //Отправляем запрос на изменение ссылки
-      //console.log ('change_url:  #'+id+'  '+new_url);    
-      var json_data = {
-        action: 'banlist.changeURL',
-        banlist: Rejik.current_banlist,
-        id: id,
-        url: new_url
-      };
-      json_data['sig'] = Rejik.sign(json_data);
-
-      //Отправляем AJAX
-      $.ajax(Rejik.rejik_url, {
-        type: "POST",
-        dataType: 'json',
-        data: json_data,
-        success: function(response) {
-          if ("error" in response) {
-            console.log("API ErrorMsg: "+response.error.error_msg);
-            return;
-          }
-            row_elem.find('td:first').text(new_url);
-
-        },
-        error: function(request, err_t, err_m) {
-          console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
-        },
-        complete: function() {
-          modal.off('click.editurl');
-          modal.modal('hide');    
-        },
-        timeout: 10000
+      var edit_url = Rejik.banlist_edit_url(id, new_url);
+      
+      //Обработчик событий в случае успеха
+      edit_url.done(function(){
+        row_elem.find('td:first').text(new_url);
+        modal.find('#btn_close').trigger('click');
       });
-    })
 
+      //Обработчик событий в случае ошибки
+      edit_url.fail(function(err_msg){
+        var inpt_group = modal.find('.input-group');
+        inpt_group.addClass("has-error has-feedback");
+        inpt_group.popover({
+          title: "Ошибка!",
+          //container: "body",
+          content: err_msg,
+          placement: "left",
+          trigger: "manual"
+        });
+        inpt_group.popover('show'); 
+      });
+
+    });
+
+    modal.on('click.close', '#btn_close', function() {
+      modal.off('click');
+      modal.modal('hide');
+    })
+    
     //Отображаем модальное окно
     modal.modal('show');
+
+    //Устанавливаем фокус
+    modal.find('input').focus();
+  },
+
+  banlist_edit_url: function(id, new_url) {
+    //Отправляем запрос на изменение ссылки
+    var deferer = $.Deferred();
+    //console.log ('change_url:  #'+id+'  '+new_url);    
+    var json_data = { action: 'banlist.changeURL',
+                        banlist: Rejik.current_banlist,
+                        id: id,
+                        url: new_url
+                      };
+    json_data['sig'] = Rejik.sign(json_data);
+
+    //Отправляем AJAX
+    $.ajax(Rejik.rejik_url, {
+      type: "POST",
+      dataType: 'json',
+      data: json_data,
+      success: function(response) {
+        if ("error" in response) {
+          deferer.reject(response.error.error_msg);
+          return deferer;
+        }
+        deferer.resolve(response.result);
+      },
+      error: function(request, err_t, err_m) {
+        deferer.reject("AJAX ErrorMsg: "+err_t+' '+err_m);
+      },
+
+      timeout: 10000
+    });
+
+    return deferer;
   },
   
   banlist_delete_url: function(row_elem) {
@@ -225,7 +258,7 @@ var Rejik = {
 
     table_urls.on('click', '.editurl', function (e){
       e.preventDefault();
-      Rejik.banlist_edit_url($(this).closest('tr'));
+      Rejik.show_modal($(this).closest('tr'));
     });
 
     table_urls.on('click', '.removeurl', function (e){
@@ -255,12 +288,15 @@ var Rejik = {
 
     $('#addurl_box').on("click", "button", function (e){
       e.preventDefault();
-      var url_box = $(this).closest(".input-group").find("input");
-
+      var url_box = $(this).closest(".input-group");
+      var input_box = url_box.find("input");
+      
+      url_box.popover('destroy'); //Убираем старое сообщение об ошибке
+      url_box.removeClass("has-error has-feedback");
       
       //Если поле пустое, то ничего не добавляем
-      var url = (url_box.val()).trim();
-      if (url.length == 0) return false;  
+      var url = (input_box.val()).trim();
+      if (input_box.length == 0) return false;  
       
       var add_url = Rejik.banlist_add_url(url);
       
@@ -274,7 +310,6 @@ var Rejik = {
         $('#urls_table').prepend(tmp);
     
         url_box.val('');
-
         //Если добавление новой ссылки выполнилось успешно, то увеличиваем счетчик ссылок
         Rejik.real_urls_count++;
         Rejik.visible_urls++;
@@ -282,11 +317,15 @@ var Rejik = {
 
       //Обработчик событий в случае ошибки
       add_url.fail(function(err_msg){
-        console.log("API ErrorMsg: "+err_msg);
-        $('#addurl_box').addClass("has-error has-feedback");
-        var url_box = $('#addurl_box');
-        url_box.data({toggle:"popover", content: err_msg, placement: "left"});
-        url_box.attr("title", "Ошибка");
+        //console.log("API ErrorMsg: "+err_msg);
+        url_box.addClass("has-error has-feedback");
+        url_box.popover({
+          title: "Ошибка!",
+          content: err_msg,
+          placement: "left",
+          trigger: 'manual'
+        });
+
         url_box.popover('show'); 
       });
 
@@ -296,12 +335,6 @@ var Rejik = {
       })
               
     });
-
-    // $('#addurl_box').on("click", "input", function (e){
-    //   e.preventDefault();
-    //   //var url_box = $(this).closest(".input-group").find("input");
-    //   //url_box.popover('hide');
-    // });
 
     // $('#btn_searchurl').on('click', function (e){
     //   e.preventDefault();
@@ -336,7 +369,7 @@ var Rejik = {
       dataType: 'json',
       data: data,
       beforeSend: function() {
-        $('table#urls_table').fadeOut(200);
+        table_urls.fadeOut(200);
       },
       success: function(response) {
         if ("error" in response) {
