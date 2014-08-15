@@ -25,7 +25,7 @@ class mysql_exception extends rejik_exception {}
 class api_exception extends rejik_exception {}
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class worker {
-	protected $sql;
+	public $sql;
 	
 	protected $db_host		= '';
 	protected $db_login		= '';
@@ -128,13 +128,6 @@ class proxy_worker extends worker {
 } //end of proxy worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class rejik_worker extends worker {
-  // public $err_code = 0;
-  // public $err_msg  = "";
-  // private function set_error_state ($code = 0, $msg="") {
-  // 	$this->$err_code = $code;
-  // 	$this->$err_msg = $msg;
-  // }
-
   // ==========================================================================================================================
   public function __construct ($db_config) {
     parent::__construct($db_config);
@@ -172,6 +165,52 @@ class rejik_worker extends worker {
     $response->close();
     //echo "<pre>"; print_r ($res); echo "</pre>\n";
     return $res;
+  }
+
+  private function banlist_set_crc ($banlist, $crc) {
+    //Устанавливает поле CRC для заданного банлиста
+    if (count($crc) == 0) return false;
+    $query = "UPDATE banlists SET `crc`='{$crc}' WHERE `name`='{$banlist}';";
+    $response = $this->sql->query($query);
+
+    if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+    return true;
+  }
+
+  public function banlist_export ($banlist, $root_path){
+    //Функция сохраняет все записи бан-листа в файле
+    //Таким образом данные передаются в режик
+    
+    //Проверяем, существует ли банлист
+    if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4); 
+
+    //Получаем список URL по банлисту
+    $urls = $this->banlist_get_urls($banlist);
+
+    //Создаем каталог для банлиста
+    $p = $root_path."{$banlist}/";
+    if (!file_exists($p)) {
+      if (!mkdir($p, 0, true)) throw new rejik_exception("Не могу создать каталог {$p}",111);
+    }
+
+    $hdl = fopen("{$p}/urls", "w");
+    if(!$hdl) throw new rejik_exception("Не могу записать в файл {$p}/urls",112);  
+    
+    //Если в бан-листе нету УРЛов, то пропускаем его.
+    if ($urls != 0) {
+      //Построчно записываем в файл список пользователей.
+      foreach ($urls as $row) {
+        fwrite($hdl, $row."\r\n");
+      } 
+    }
+    fclose($hdl);
+
+    //Проверяем контрольную сумму файла
+    $file_hash = sha1_file ("{$p}/urls");
+    $this->banlist_set_crc ($banlist, $file_hash);
+
+    Logger::add (111, "Банлист {$banlist} успешно экспортирован в файл");
+    return true;
   }
 
   public function banlist_create ($name, $short_desc, $full_desc='') {

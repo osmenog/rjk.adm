@@ -434,7 +434,6 @@ function apply_and_reconfigure() {
 		//2. Для каждого банлиста получаем список юзеров
 		foreach ($banlists as $value) {
 			$users = $rejik->banlist_get_users($value);
-			//echo "<pre>"; print_r($users); echo "</pre>";
 
 			//4. Создаем списки пользователей для каждого бан листа
 			$hdl = fopen("{$path}/{$value}", "w");
@@ -450,8 +449,9 @@ function apply_and_reconfigure() {
 					fwrite($hdl, $row."\r\n");
 				}
 			}
-			
 			fclose($hdl);	
+
+
 			echo "<p><h4 class='text-success'><span class='glyphicon glyphicon-ok'></span> Список пользователей для <b>{$value}</b> успешно создан!</h4></p>\n";
 		}
 
@@ -470,35 +470,14 @@ function apply_and_reconfigure() {
 		//3.2 Процесс
 		echo "<h2>Создание банлистов:</h2>\n";
 		foreach ($banlists as $value) {
-			//Получаем список УРЛов по банлисту
-			$urls = $rejik->banlist_get_urls($value);
-
-			//Создаем каталог для банлиста
-			$p = $path."{$value}/";
-			if (!file_exists($p)) {
-				if (!mkdir($p, 0, true)) {
-					echo "<div class='alert alert-danger'><b>Ошибка!</b> Не могу создать каталог {$p}</div>\n";
-					return;
-				}
+			try {
+				$result = $rejik->banlist_export ($value, $path);	
+			} catch (exception $e) {
+				echo "<div class='alert alert-danger'><b>Ошибка</b><br/>{$e->getCode()} : {$e->getMessage()}</div>\n";
+				if ($e->getCode() == 112) continue; 
 			}
-
-			$hdl = fopen("{$p}/urls", "w");
-			if(!$hdl) {
-				echo "<h4 class='text-danger'><span class='glyphicon glyphicon-remove'></span> Банлист <b>{$value}</b> не создан</h4>\n";
-				echo "<p>Не могу создать файл {$value}</p>\n";
-				continue;
-			}
-			
-			//Если в бан-листе нету УРЛов, то пропускаем его.
-			if ($urls != 0) {
-				//Построчно записываем в файл список пользователей.
-				foreach ($urls as $row) {
-					fwrite($hdl, $row."\r\n");
-				}	
-			}
-			fclose($hdl);
-
-			echo "<p><h4 class='text-success'><span class='glyphicon glyphicon-ok'></span> Банлист <b>{$value}</b> успешно создан (".(($urls == 0) ? 0 : count ($urls))." записей)</h4></p>\n";
+			$urls = -1;
+			echo "<p><h4 class='text-success'><span class='glyphicon glyphicon-ok'></span> Банлист <b>{$value}</b> успешно создан (".(($urls == 0) ? 0 : count ($urls))." записей)</h4></p>\n";	
 		}
 
 	} catch (exception $e) {
