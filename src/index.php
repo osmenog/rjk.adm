@@ -55,6 +55,10 @@
 		  	  -->
 		  	</ul>
 		  </li>
+		  
+		  <li class='bg-warning'><a href='?action=showstats'><span class="glyphicon glyphicon-stats"></span> Статистика</a></li>
+		  <li class='bg-warning'><a href='?action=showjournal'><span class="glyphicon glyphicon-eye-open"></span> Журнал событий</a></li>
+		  <li class='bg-warning'><a href='?action=showtasksman'><span class="glyphicon glyphicon-calendar"></span> Планировщик</a></li>
 		  <li class='bg-success'><a href='?action=reconfigure'><span class="glyphicon glyphicon-send"></span> Применить конфигурацию</a></li>
 		</ul>
 		<!-- Right Nav -->
@@ -166,7 +170,7 @@ function print_layout () {
 			break;
 
 		case 'reconfigure':
-			apply_and_reconfigure();
+			layout_reconfigure();
 			break;
 
 		default:
@@ -244,44 +248,41 @@ function layout_newbanlist() {
   echo "<div class='page-header'>\n";
   echo "  <h2>Создание нового бан-листа</h2>\n";
   echo "</div>\n";
-  
-echo <<<END
-  	<div class='panel panel-default'>
-  	  <div class='panel-body'>
-  	  <form class='form' method='post' action='index.php?action=showbanlists'>
-  	  	<input class='hidden' name='p_action' value='newbanlist'>
-  	    <div class='form-group'>
-  	      <label class=''>Имя:</label>
-  	      <div class=''>
-  	        <input type='text' id='bl_name' class='form-control' data-toggle='popover' data-placement='left' title='Внимание!!!' data-content='Имя банлиста должно быть в английской раскладке.' name='bl_name' placeholder='Уникальное имя для банлиста' required>
-  	      </div>
-  	    </div>
-  	    <div class='form-group'>
-  	      <label class=''>Краткое описание:</label>
-  	      <div class=''>
-  	        <input type='text' class='form-control' name='bl_shortdesc' required>
-  	      </div>
-  	    </div>
-  	    <div class='form-group'>
-  	      <label class=''>Полное описание:</label>
-  	      <div class=''> 
-  	        <textarea class='form-control' name='bl_fulldesc' style='height: 150px;' required></textarea>
-  	      </div>
-  	    </div>
-  	    <div class='form-group'>
-  	      <div class='btn-group btn-group-justified'>
-  	        <div class='btn-group'>
-  	          <button class='btn btn-success'>Создать</button>
-  	        </div>
-  	        <div class='btn-group'>
-  	          <button class='btn btn-default'>Очистить поля</button>
-  	        </div>
-  	      </div>
-  	    </div>
-  	  </form>
-  	  </div>
-  	</div>
-END;
+  echo "	<div class='panel panel-default'>\n";
+  echo "	  <div class='panel-body'>\n";
+  echo "	  <form class='form' method='post' action='index.php?action=showbanlists'>\n";
+  echo "	  	<input class='hidden' name='p_action' value='newbanlist'>\n";
+  echo "	    <div class='form-group'>\n";
+  echo "	      <label class=''>Имя:</label>\n";
+  echo "	      <div class=''>\n";
+  echo "	        <input type='text' id='bl_name' class='form-control' data-toggle='popover' data-placement='left' title='Внимание!!!' data-content='Имя банлиста должно быть в английской раскладке.' name='bl_name' placeholder='Уникальное имя для банлиста' required>\n";
+  echo "	      </div>\n";
+  echo "	    </div>\n";
+  echo "	    <div class='form-group'>\n";
+  echo "	      <label class=''>Краткое описание:</label>\n";
+  echo "	      <div class=''>\n";
+  echo "	        <input type='text' class='form-control' name='bl_shortdesc' required>\n";
+  echo "	      </div>\n";
+  echo "	    </div>\n";
+  echo "	    <div class='form-group'>\n";
+  echo "	      <label class=''>Полное описание:</label>\n";
+  echo "	      <div class=''> \n";
+  echo "	        <textarea class='form-control' name='bl_fulldesc' style='height: 150px;' required></textarea>\n";
+  echo "	      </div>\n";
+  echo "	    </div>\n";
+  echo "	    <div class='form-group'>\n";
+  echo "	      <div class='btn-group btn-group-justified'>\n";
+  echo "	        <div class='btn-group'>\n";
+  echo "	          <button class='btn btn-success'>Создать</button>\n";
+  echo "	        </div>\n";
+  echo "	        <div class='btn-group'>\n";
+  echo "	          <button class='btn btn-default'>Очистить поля</button>\n";
+  echo "	        </div>\n";
+  echo "	      </div>\n";
+  echo "	    </div>\n";
+  echo "	  </form>\n";
+  echo "	  </div>\n";
+  echo "	</div>\n";
 }
 
 function layout_getuser ($nick) {
@@ -409,80 +410,8 @@ function set_user_acl($user, $banlists) {
 	if ($result_log!='') echo "<div class='alert alert-success'>\n{$result_log}\n</div>\n";
 }
 
-function apply_and_reconfigure() {
-	//Применить настройки и реконфигурировать СКВИД
-
-	//1. Получаем список банлистов
-	global $config;
-	$rejik = new rejik_worker ($config['rejik_db']);
-	
-	try {
-		echo "<h2>Создание списков пользователей:</h2>\n";
-
-		$banlists = $rejik->banlists_get();
-			
-		//1. Подготовка
-		$path=$_SERVER['DOCUMENT_ROOT']."/{$config ['proj_name']}/users/";
-		//$p = $path."/{$value['name']}/";
-		if (!file_exists($path)) {
-			if (!mkdir($path, 0, true)) {
-				echo "<div class='alert alert-danger'><b>Ошибка!</b> Не могу создать каталог {$p}</div>\n";
-				return;
-			}
-		}
-
-		//2. Для каждого банлиста получаем список юзеров
-		foreach ($banlists as $value) {
-			$users = $rejik->banlist_get_users($value);
-
-			//4. Создаем списки пользователей для каждого бан листа
-			$hdl = fopen("{$path}/{$value}", "w");
-			if(!$hdl) {
-				echo "<h4 class='text-danger'><span class='glyphicon glyphicon-remove'></span> Список пользователей для <b>{$value}</b> не создан</h4>\n";
-				echo "<p>Не могу создать файл {$value}</p>\n";
-				continue;
-			}
-			
-			//Построчно записываем в файл список пользователей.
-			if (!empty($users)) {
-				foreach ($users as $row) {
-					fwrite($hdl, $row."\r\n");
-				}
-			}
-			fclose($hdl);	
-
-
-			echo "<p><h4 class='text-success'><span class='glyphicon glyphicon-ok'></span> Список пользователей для <b>{$value}</b> успешно создан!</h4></p>\n";
-		}
-
-		//3. Создаем списки УРЛов
-
-		//3.1 Подготовка
-		$path=$_SERVER['DOCUMENT_ROOT']."/{$config ['proj_name']}/banlists/";
-		//$p = $path."{$value['name']}/";
-		if (!file_exists($path)) {
-			if (!mkdir($path, 0, true)) {
-				echo "<div class='alert alert-danger'><b>Ошибка!</b> Не могу создать каталог {$path}</div>\n";
-				return;
-			}
-		}
-
-		//3.2 Процесс
-		echo "<h2>Создание банлистов:</h2>\n";
-		foreach ($banlists as $value) {
-			try {
-				$result = $rejik->banlist_export ($value, $path);	
-			} catch (exception $e) {
-				echo "<div class='alert alert-danger'><b>Ошибка</b><br/>{$e->getCode()} : {$e->getMessage()}</div>\n";
-				if ($e->getCode() == 112) continue; 
-			}
-			$urls = -1;
-			echo "<p><h4 class='text-success'><span class='glyphicon glyphicon-ok'></span> Банлист <b>{$value}</b> успешно создан (".(($urls == 0) ? 0 : count ($urls))." записей)</h4></p>\n";	
-		}
-
-	} catch (exception $e) {
-		echo "<div class='alert alert-danger'><b>Ошибка</b>Вылетело исключение.<br/>{$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
-	}		
+function layout_reconfigure() {
+	include "layout/layout.reconfigure.inc";
 }
 
 function create_banlist ($name, $short_desc, $full_desc) {

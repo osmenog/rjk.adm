@@ -177,6 +177,16 @@ class rejik_worker extends worker {
     return true;
   }
 
+  private function banlist_set_user_crc ($banlist, $user_crc) {
+    //Устанавливает поле CRC для заданного банлиста
+    if (count($user_crc) == 0) return false;
+    $query = "UPDATE banlists SET `users_crc`='{$user_crc}' WHERE `name`='{$banlist}';";
+    $response = $this->sql->query($query);
+
+    if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+    return true;
+  }
+
   public function banlist_export ($banlist, $root_path){
     //Функция сохраняет все записи бан-листа в файле
     //Таким образом данные передаются в режик
@@ -196,11 +206,13 @@ class rejik_worker extends worker {
     $hdl = fopen("{$p}/urls", "w");
     if(!$hdl) throw new rejik_exception("Не могу записать в файл {$p}/urls",112);  
     
+    $counter=0;
     //Если в бан-листе нету УРЛов, то пропускаем его.
     if ($urls != 0) {
       //Построчно записываем в файл список пользователей.
       foreach ($urls as $row) {
         fwrite($hdl, $row."\r\n");
+        $counter++;
       } 
     }
     fclose($hdl);
@@ -210,7 +222,7 @@ class rejik_worker extends worker {
     $this->banlist_set_crc ($banlist, $file_hash);
 
     Logger::add (111, "Банлист {$banlist} успешно экспортирован в файл");
-    return true;
+    return $counter;
   }
 
   public function banlist_create ($name, $short_desc, $full_desc='') {
@@ -546,6 +558,38 @@ class rejik_worker extends worker {
     Logger::add (2, "{$user} disabled user access to {$banlist}");
   }
 	
+  public function users_acl_export ($banlist, $root_path){
+    //Функция сохраняет всех пользователей бан-листа в файле
+    //Таким образом данные передаются в режик
+    
+    //Проверяем, существует ли банлист
+    if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4); 
+
+    //Получаем список пользователей для банлиста
+    $users = $this->banlist_get_users($banlist);            
+
+    //Определяем путь до папки с файлами, содержащими списки пользователей         
+    if(!($hdl=fopen("{$root_path}/{$banlist}", "w"))) {
+      throw new rejik_exception("Не могу записать в файл {$p}/urls",112);
+    }else{
+      $counter=0;
+      //Построчно записываем в файл список пользователей.
+      if (!empty($users)) {
+        foreach ($users as $row) {
+          fwrite($hdl, $row."\r\n");
+          $counter++;
+        }
+      }
+      fclose($hdl);
+    }
+
+    //Проверяем контрольную сумму файла
+    $file_hash = sha1_file ("{$root_path}/{$banlist}");
+    $this->banlist_set_user_crc ($banlist, $file_hash);
+
+    Logger::add (111, "Пользователи банлиста {$banlist} успешно экспортированы в файл");
+    return $counter;  
+  }
   // ==========================================================================================================================
   // Функции импорта
   // ==========================================================================================================================

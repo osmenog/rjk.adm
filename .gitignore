@@ -6,6 +6,8 @@ import.csv
 nbproject/
 sql/
 /sql/config.php
+/src/banlists/
+/src/users/
 
 # Windows image file caches
 Thumbs.db
