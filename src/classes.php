@@ -177,6 +177,19 @@ class rejik_worker extends worker {
     return true;
   }
 
+  public function banlist_get_crc ($banlist) {
+    if (count($banlist)==0) return false;
+
+    $query = "SELECT `crc` FROM banlists WHERE `name`='{$banlist}';";
+    $response = $this->sql->query($query);
+
+    if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+    $tmp = $response->fetch_row();
+    $response->close();
+    
+    return $tmp[0];
+  }
+
   private function banlist_set_user_crc ($banlist, $user_crc) {
     //Устанавливает поле CRC для заданного банлиста
     if (count($user_crc) == 0) return false;
@@ -218,7 +231,7 @@ class rejik_worker extends worker {
     fclose($hdl);
 
     //Проверяем контрольную сумму файла
-    $file_hash = sha1_file ("{$p}/urls");
+    $file_hash = sha1_file ("{$p}/urls",true);
     $this->banlist_set_crc ($banlist, $file_hash);
 
     Logger::add (111, "Банлист {$banlist} успешно экспортирован в файл");
@@ -584,7 +597,7 @@ class rejik_worker extends worker {
     }
 
     //Проверяем контрольную сумму файла
-    $file_hash = sha1_file ("{$root_path}/{$banlist}");
+    $file_hash = sha1_file ("{$root_path}/{$banlist}",true);
     $this->banlist_set_user_crc ($banlist, $file_hash);
 
     Logger::add (111, "Пользователи банлиста {$banlist} успешно экспортированы в файл");

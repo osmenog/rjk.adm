@@ -42,6 +42,9 @@
           echo "<table class='table table-hover'>\n";
             echo "<tr><th>Банлист</th><th>пользователей / ссылок</th><th>Статус</th></tr>\n";
             // -----------------------------------------
+            
+            $time_start = microtime(true); // Замеряем время
+
             $u_path=$_SERVER['DOCUMENT_ROOT']."/{$config['proj_name']}/users/";
             $b_path=$_SERVER['DOCUMENT_ROOT']."/{$config ['proj_name']}/banlists/";
             $banlists = $rejik->banlists_get();
@@ -52,14 +55,18 @@
               $err_flag=false;
 
               try {
+                $users_time_start = microtime(true); // Замеряем время
                 $users_count = $rejik->users_acl_export ($value, $u_path);
+                $users_time = microtime(true) - $users_time_start;
               } catch (exception $e) {
                 echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
                 $err_flag = true;
               }
 
               try {
-                $urls_count = $rejik->banlist_export ($value, $b_path); 
+                $urls_time_start = microtime(true); // Замеряем время
+                $urls_count = $rejik->banlist_export ($value, $b_path);
+                $urls_time = microtime(true) - $urls_time_start; 
               } catch (exception $e) {
                 echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
                 $err_flag = true;
@@ -69,18 +76,21 @@
                 echo "<td>0 / 0</td>\n";
                 echo "<td><span class='glyphicon glyphicon-remove'></span> Ошибка!</td>\n";
               } else {
-                echo "<td>{$users_count} / {$urls_count}</td>\n";
+                echo "<td>{$users_count} / {$urls_count}<br/><small>".round($users_time,3)." / ".round($urls_time,3)."</small></td>\n";
                 echo "<td><span class='glyphicon glyphicon-ok'></span> OK</td>\n";
               }
               echo "</tr>\n";
             }
+
+            $time_end = microtime(true);
+            $time = $time_end - $time_start;
             // -----------------------------------------
 
           echo "</table>\n";  
         echo "</div>\n"; //of panel
       echo "</div>\n"; //of panel-body
     echo "</div>\n"; //of panel
-
+    echo "<div class='alert alert-warning'>Данный скрипт выполнялся {$time} сек.</div>\n";
   } catch (mysql_exception $e) {
     echo "<div class='alert alert-danger'><b>Ошибка SQL!</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
   } catch (exception $e) {

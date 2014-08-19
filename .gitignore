@@ -8,6 +8,7 @@ sql/
 /sql/config.php
 /src/banlists/
 /src/users/
+.idea
 
 # Windows image file caches
 Thumbs.db
