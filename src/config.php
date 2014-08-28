@@ -1,7 +1,7 @@
-<?php
+﻿<?php
 	//Параметры БД САМС
-	//$config ['sams_db']	 = array ('proxy.bankom.omsk.su', 'sams', 'qwerty', 'squidctrl', 'utf8'); //Боевой
-	$config ['sams_db']	 = array ('localhost', 'root', '', 'squidctrl', 'utf8'); //Домашний
+	$config ['sams_db']	 = array ('proxy.bankom.omsk.su', 'sams', 'qwerty', 'squidctrl', 'utf8');
+	//$config ['sams_db']	 = array ('localhost', 'root', '', 'squidctrl', 'utf8'); //Домашний
 	
 	//Если этот параметр существует, то при выыводи информации из БД САМС будет выполнятся преобразование кодировки
 	//$config ['conv'] = array ('cp1252','utf-8');
