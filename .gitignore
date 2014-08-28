@@ -5,7 +5,7 @@ import.csv
 .htaccess
 nbproject/
 sql/
-/sql/config.php
+/src/config.php
 /src/banlists/
 /src/users/
 

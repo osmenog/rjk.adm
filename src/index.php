@@ -18,8 +18,8 @@
   <link href="css/bootstrap.min.css" rel="stylesheet">
   <link href="css/style.css" rel="stylesheet">
   
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-  <!--<script src="js/jquery.min.js"></script>-->
+  <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script> -->
+  <script src="js/jquery.min.js"></script>
   <script src='js/bootstrap.min.js'></script>
   <script src='js/jquery.twbsPagination.min.js'></script>
   <script src='js/app.js'></script> 
@@ -167,6 +167,18 @@ function print_layout () {
 				break;
 			}
 			layout_getbanlist($banlist);
+			break;
+
+		case 'showstats':
+			layout_showstats();
+			break;
+
+		case 'showjournal':
+			layout_showjournal();
+			break;
+
+		case 'showtasksman':
+			layout_showtasksman();
 			break;
 
 		case 'reconfigure':
@@ -432,6 +444,17 @@ function create_banlist ($name, $short_desc, $full_desc) {
 	}
 
 	return;
+}
+
+function layout_showstats () {
+	include "layout/layout.showstats.inc";
+}
+
+function layout_showjournal () {
+	include "layout/layout.showjournal.inc";
+}
+function layout_showtasksman () {
+	include "layout/layout.showtasksman.inc";
 }
 
 ?>
