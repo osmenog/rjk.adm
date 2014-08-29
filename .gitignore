@@ -10,6 +10,11 @@ sql/
 /src/users/
 .idea
 
+# Eclipse IDE
+.settings
+.project
+.buildpath
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db

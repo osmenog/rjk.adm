@@ -17,6 +17,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="css/bootstrap.min.css" rel="stylesheet">
   <link href="css/style.css" rel="stylesheet">
+  <link href="css/font-awesome.min.css" rel="stylesheet">
   
   <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>-->
   <script src="js/jquery.min.js"></script>
@@ -56,13 +57,27 @@
 		  	</ul>
 		  </li>
 		  
-		  <li class='bg-warning'><a href='?action=showstats'><span class="glyphicon glyphicon-stats"></span> Статистика</a></li>
-		  <li class='bg-warning'><a href='?action=showjournal'><span class="glyphicon glyphicon-eye-open"></span> Журнал событий</a></li>
-		  <li class='bg-warning'><a href='?action=showtasksman'><span class="glyphicon glyphicon-calendar"></span> Планировщик</a></li>
+		  <!-- Будут доступны в будущем
+		   <li class='bg-warning'><a href='?action=showstats'><span class="glyphicon glyphicon-stats"></span> Статистика</a></li>
+		   <li class='bg-warning'><a href='?action=showjournal'><span class="glyphicon glyphicon-eye-open"></span> Журнал событий</a></li>
+		   <li class='bg-warning'><a href='?action=showtasksman'><span class="glyphicon glyphicon-calendar"></span> Планировщик</a></li>
+		  fa-exclamation-circle
+      check
+      -->
 		  <li class='bg-success'><a href='?action=reconfigure'><span class="glyphicon glyphicon-send"></span> Применить конфигурацию</a></li>
 		</ul>
 		<!-- Right Nav -->
 		<ul class="nav navbar-nav navbar-right">
+      <?php
+        echo "<li class='text-center' style='padding-top:6px'>\n";
+        $st = CheckSelfTestResult();
+        if ($st[2]=="OK") {
+          echo "<button class='btn btn-success btn-sm' href='#'><i class='fa fa-check-circle fa-2x'></i></button>\n";  
+        } else {
+          echo "<button class='btn btn-danger btn-sm'><i class='fa fa-exclamation-circle fa-2x'></i></button>\n";
+        }
+        echo "</li>\n";
+      ?>
 			<li class="text-center"><a><small>Вы вошли как: <u>Admin</u></small></a></li>
 		</ul>
 	</div>

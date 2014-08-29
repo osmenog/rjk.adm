@@ -180,7 +180,7 @@ class rejik_worker extends worker {
   public function banlist_get_crc ($banlist) {
     if (count($banlist)==0) return false;
 
-    $query = "SELECT `crc` FROM banlists WHERE `name`='{$banlist}';";
+    $query = "SELECT HEX(`crc`) FROM banlists WHERE `name`='{$banlist}';";
     $response = $this->sql->query($query);
 
     if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
@@ -199,6 +199,19 @@ class rejik_worker extends worker {
 
     if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
     return true;
+  }
+
+  public function banlist_get_user_crc ($banlist) {
+    if (count($banlist)==0) return false;
+
+    $query = "SELECT HEX(`users_crc`) FROM banlists WHERE `name`='{$banlist}';";
+    $response = $this->sql->query($query);
+
+    if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+    $tmp = $response->fetch_row();
+    $response->close();
+    
+    return $tmp[0];
   }
 
   public function banlist_export ($banlist, $root_path){
@@ -232,7 +245,7 @@ class rejik_worker extends worker {
     fclose($hdl);
 
     //Проверяем контрольную сумму файла
-    $file_hash = sha1_file ("{$p}/urls",true);
+    $file_hash = sha1_file ("{$p}/urls");
     $this->banlist_set_crc ($banlist, $file_hash);
 
     Logger::add (111, "Банлист {$banlist} успешно экспортирован в файл");
@@ -874,6 +887,18 @@ function CheckSession () {
   if (!isset($_SESSION['auth']) || $_SESSION['auth'] == 0) {
     header("Location: /{$config ['proj_name']}/login.php"); // ... если нет, то ридеректим на страницу ввода пароля
   }
+}
+
+function CheckSelfTestResult () {
+	global $config;
+	$l_full_path = $_SERVER['DOCUMENT_ROOT']."/{$config['proj_name']}/cron/lastcheck.log";
+  if (!file_exists($l_full_path)) return False;
+
+  if (!$hdl = fopen($l_full_path, "r")) return False;
+  $msg = explode(" ", fgets ($hdl));
+  fclose($hdl);
+
+  return $msg;
 }
 
 function GetClientIP () {
