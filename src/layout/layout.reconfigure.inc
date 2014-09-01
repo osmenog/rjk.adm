@@ -97,7 +97,6 @@
     echo "<div class='alert alert-danger'><b>Неопознанная ошибка!</b><br/><pre>{$e->getTraceAsString()}</pre></div>\n";
   }
 
-  exit;
 
 
 

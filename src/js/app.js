@@ -3,6 +3,11 @@ $(document).ready (function() {
   panel_urls = $('#panel_urls');
   table_urls = $('table#urls_table');
   
+  //Это небольшой хак, для того чтобы тултипы работали нормально
+  $('body').tooltip({
+    selector: '[rel="tooltip"]'
+  });
+
   Rejik.banlist_editor_init();
 
 

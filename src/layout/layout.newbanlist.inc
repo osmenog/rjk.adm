@@ -1,0 +1,43 @@
+<?php
+  include_once "config.php";
+  global $config;
+
+  echo "<div class='page-header'>\n";
+  echo "  <h2>Создание нового бан-листа</h2>\n";
+  echo "</div>\n";
+  echo "	<div class='panel panel-default'>\n";
+  echo "	  <div class='panel-body'>\n";
+  echo "	  <form class='form' method='post' action='index.php?action=showbanlists'>\n";
+  echo "	  	<input class='hidden' name='p_action' value='newbanlist'>\n";
+  echo "	    <div class='form-group'>\n";
+  echo "	      <label class=''>Имя:</label>\n";
+  echo "	      <div class=''>\n";
+  echo "	        <input type='text' id='bl_name' class='form-control' data-toggle='popover' data-placement='left' title='Внимание!!!' data-content='Имя банлиста должно быть в английской раскладке.' name='bl_name' placeholder='Уникальное имя для банлиста' required>\n";
+  echo "	      </div>\n";
+  echo "	    </div>\n";
+  echo "	    <div class='form-group'>\n";
+  echo "	      <label class=''>Краткое описание:</label>\n";
+  echo "	      <div class=''>\n";
+  echo "	        <input type='text' class='form-control' name='bl_shortdesc' required>\n";
+  echo "	      </div>\n";
+  echo "	    </div>\n";
+  echo "	    <div class='form-group'>\n";
+  echo "	      <label class=''>Полное описание:</label>\n";
+  echo "	      <div class=''> \n";
+  echo "	        <textarea class='form-control' name='bl_fulldesc' style='height: 150px;' required></textarea>\n";
+  echo "	      </div>\n";
+  echo "	    </div>\n";
+  echo "	    <div class='form-group'>\n";
+  echo "	      <div class='btn-group btn-group-justified'>\n";
+  echo "	        <div class='btn-group'>\n";
+  echo "	          <button class='btn btn-success'>Создать</button>\n";
+  echo "	        </div>\n";
+  echo "	        <div class='btn-group'>\n";
+  echo "	          <button class='btn btn-default'>Очистить поля</button>\n";
+  echo "	        </div>\n";
+  echo "	      </div>\n";
+  echo "	    </div>\n";
+  echo "	  </form>\n";
+  echo "	  </div>\n";
+  echo "	</div>\n";
+?>

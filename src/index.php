@@ -71,10 +71,11 @@
       <?php
         echo "<li class='text-center' style='padding-top:6px'>\n";
         $st = CheckSelfTestResult();
+        $tooltip = "rel='tooltip' data-title='Последняя проверка:\n{$st[0]} {$st[1]}' data-placement='bottom' data-container='body' data-trigger='hover focus'";
         if ($st[2]=="OK") {
-          echo "<button class='btn btn-success btn-sm' href='#'><i class='fa fa-check-circle fa-2x'></i></button>\n";  
+          echo "<button id='checker_btn' class='btn btn-success btn-sm' onClick='location.href=\"?action=selftest\"' {$tooltip}><i class='fa fa-check-circle fa-2x'></i></button>\n";  
         } else {
-          echo "<button class='btn btn-danger btn-sm'><i class='fa fa-exclamation-circle fa-2x'></i></button>\n";
+          echo "<button id='checker_btn' class='btn btn-danger btn-sm' onClick='location.href=\"?action=selftest\"' {$tooltip}><i class='fa fa-exclamation-circle fa-2x'></i></button>\n";
         }
         echo "</li>\n";
       ?>
@@ -107,6 +108,7 @@
 
 <?php
 function print_layout () {
+  global $config;
 	//Так как обработчик сообщений аякс писать было впадлу, будет использована классическая отправка с формы.
 	//Вначале обрабатываем данные в POST запросе, выполняем его p_action
 	//Выполнение этого запроса предусматривает вывод окошечка с результатом выполнения.
@@ -188,6 +190,14 @@ function print_layout () {
 			layout_reconfigure();
 			break;
 
+    case 'selftest':
+      layout_selftest();
+      break;
+    
+    case 'check':
+      header("Location: /{$config ['proj_name']}/index.php?action=selftest&result=successful"); // ... если нет, то ридеректим на страницу ввода пароля
+      break;
+
 		default:
 			echo "<h1>action=$action</h1>\n";
 			break;
@@ -196,179 +206,19 @@ function print_layout () {
 
 //Функции с префиксом layout_ отвечают за вывод содержимого для указанного действия (action)
 function layout_showusers() {
-	global $config;
-	//Выводим список пользователей, зарегистрированных на прокси
-	$prx = new proxy_worker ($config['sams_db']);
-	$list = $prx->get_userslist();
-  echo "  <div class='page-header'>\n";
-  echo "    <h2>Список пользователей</h2>\n";
-  echo "  </div>\n";
-  echo "    <div class='search-box input-group'>\n";
-  echo "      <input type='text' class='form-control' placeholder='Введите имя, фамилию или логин пользователя' disabled>\n";
-  echo "      <span class='input-group-btn'>\n";
-  echo "        <button class='btn btn-default' type='button'>Искать</button>\n";
-  echo "      </span>\n";
-  echo "    </div><!-- /input-group -->\n";
-  echo "  <div class='userlist panel panel-default'>\n";
-  echo "    <table class='table table-striped table-condensed'>\n";
-  echo "      <tr><th>Выбор</th><th>Логин</th><th>ФИО</th></tr>\n\n";
-    foreach ($list as $row) {
-      echo "<tr>\n  <td></td>\n";
-      echo "  <td><a href='?action=getuser&user={$row['nick']}'>".$row['nick']."</a></td>\n";
-      echo "  <td>{$row['family']} {$row['name']} {$row['soname']}</td>\n</tr>\n";
-    };
-  echo "	</table>\n";
-  echo "</div>\n";
+  include "layout/layout.showusers.inc";
 }
 
 function layout_showbanlists() {
-	global $config;
-	
-	try {
-		$rejik = new rejik_worker ($config['rejik_db']);
-		$list = $rejik->banlists_get(true);
-		
-		if ($list==0) {
-			echo "<div class='alert alert-danger'>В базе нет ни одного бан-листа.</div>\n";
-			return;
-		}
-		
-		//echo "<pre>"; print_r($list); echo "</pre>";
-		echo "
-		<div class='blacklist_box'>
-		<div class='page-header'>
-	      <h2>Бан-листы</h2>
-  		</div>
-	  	<div class='search'></div>
-	  	<div class='banlists panel panel-default'>
-	    <table class='table table-striped'>
-	      <tr><th>Бан-лист</th><th>Описание</th></tr>\n";
-
-		foreach ($list as $row) {
-			echo "<tr>\n";
-			echo "  <td> <a href='?action=getbanlist&banlist={$row['name']}'>{$row['name']}</a></td>\n";
-			echo "  <td>{$row['short_desc']}</td>\n";
-			echo "</tr>\n";
-		};
-
-		echo "</table>
-		  </div>
-		</div>\n";
-	} catch (mysql_exception $e) {
-		echo "<div class='alert alert-danger'><b>Ошибка SQL!</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
-	}
+  include "layout/layout.showbanlists.inc";
 }
 
 function layout_newbanlist() {
-  echo "<div class='page-header'>\n";
-  echo "  <h2>Создание нового бан-листа</h2>\n";
-  echo "</div>\n";
-  echo "	<div class='panel panel-default'>\n";
-  echo "	  <div class='panel-body'>\n";
-  echo "	  <form class='form' method='post' action='index.php?action=showbanlists'>\n";
-  echo "	  	<input class='hidden' name='p_action' value='newbanlist'>\n";
-  echo "	    <div class='form-group'>\n";
-  echo "	      <label class=''>Имя:</label>\n";
-  echo "	      <div class=''>\n";
-  echo "	        <input type='text' id='bl_name' class='form-control' data-toggle='popover' data-placement='left' title='Внимание!!!' data-content='Имя банлиста должно быть в английской раскладке.' name='bl_name' placeholder='Уникальное имя для банлиста' required>\n";
-  echo "	      </div>\n";
-  echo "	    </div>\n";
-  echo "	    <div class='form-group'>\n";
-  echo "	      <label class=''>Краткое описание:</label>\n";
-  echo "	      <div class=''>\n";
-  echo "	        <input type='text' class='form-control' name='bl_shortdesc' required>\n";
-  echo "	      </div>\n";
-  echo "	    </div>\n";
-  echo "	    <div class='form-group'>\n";
-  echo "	      <label class=''>Полное описание:</label>\n";
-  echo "	      <div class=''> \n";
-  echo "	        <textarea class='form-control' name='bl_fulldesc' style='height: 150px;' required></textarea>\n";
-  echo "	      </div>\n";
-  echo "	    </div>\n";
-  echo "	    <div class='form-group'>\n";
-  echo "	      <div class='btn-group btn-group-justified'>\n";
-  echo "	        <div class='btn-group'>\n";
-  echo "	          <button class='btn btn-success'>Создать</button>\n";
-  echo "	        </div>\n";
-  echo "	        <div class='btn-group'>\n";
-  echo "	          <button class='btn btn-default'>Очистить поля</button>\n";
-  echo "	        </div>\n";
-  echo "	      </div>\n";
-  echo "	    </div>\n";
-  echo "	  </form>\n";
-  echo "	  </div>\n";
-  echo "	</div>\n";
+  include "layout/layout.newbanlist.inc";
 }
 
 function layout_getuser ($nick) {
-	global $config;
-	
-	//Проверяем, зарегистрирован пользователь в системе
-	$prx = new proxy_worker ($config['sams_db']);
-	if (!($prx->is_user($nick))) {
-		echo "<h1>Пользователь $nick не найден в базе SAMS</h1>\n";
-		return;
-	}
-
-	//Получаем список бан-листов, которые не применяются к пользователю.
-	$rejik = new rejik_worker ($config['rejik_db']);
-	$user_banlists = $rejik->user_acl_get($nick);
-	//echo "<pre>"; print_r($user_banlists); echo "</pre>";
-
-	//Получаем список банлистов
-	$banlists = $rejik->banlists_get(true);
-	
-	if ($banlists==0) {
-			echo "<div class='alert alert-danger'>В базе нет ни одного бан-листа.</div>\n";
-			return;
-	}
-	
-	//Выводим красивую табличку
-	echo "<h4>К каким категориям будет иметь доступ пользователь <b>{$nick}</b>:</h2>\n";
-	echo "<div class='panel panel-default'>\n";
-
-	echo "<form id='acl' action='?action=getuser&user=$nick' method='POST'>\n";
-	echo "<input class='hidden' name='p_action' value='set_user_acl' />\n";
-	echo "<input class='hidden' name='user' value='$nick' />\n";
-	echo "<table class='table table-striped'>\n";
-	echo "  <tr><th>Выбор</th><th>Бан-лист</th><th>Описание</th></tr>\n";
-
-	foreach ($banlists as $row) {
-		echo "<tr>\n";
-
-		//Помечаем те бан-листы, которые не применяются к пользователю
-		echo "  <td>\n";
-		echo "    <input type='hidden' name='bl_{$row['name']}' value='0' />\n";
-		echo "    <input type='CHECKBOX' ".(
-			( array_search($row['name'], $user_banlists)!==false ) ? "checked " : ""
-		)."name='bl_{$row['name']}' value='1' />\n";
-		echo "  </td>\n";
-
-		echo "  <td>{$row['name']}</td>\n";
-		echo "  <td>{$row['full_desc']}</td>\n";
-		echo "</tr>\n";
-	};
-
-	//Выполняем, привязан ли пользователь к каким-либо удаленным банлистам.
-	$banlists = $rejik->banlists_get();
-
-	foreach ($user_banlists as $value) {
-		//Если бан листа пользователя нет в глобальном списке
-		if (array_search($value, $banlists)===false) {			
-			echo "<tr class='danger'>\n";
-			echo "  <td></td>\n";
-			echo "  <td><b><i>{$value}<i></b></td>\n";
-			echo "  <td><b><i>Банлист был удален из системы</i></b></td>\n";
-			echo "</tr>\n";
-		}
-	}
-
-	echo "</table>\n";
-	
-	//Кнопка "Отправить"
-	echo "</div>\n";
-	echo "<button class='btn btn-primary' form='acl'>Применить</button>\n";
-	echo "</form>\n";
+  include "layout/layout.getuser.inc";
 }
 
 function layout_getbanlist($banlist) {
@@ -423,6 +273,10 @@ function set_user_acl($user, $banlists) {
 	}
 
 	if ($result_log!='') echo "<div class='alert alert-success'>\n{$result_log}\n</div>\n";
+}
+
+function layout_selftest() {
+  include "layout/layout.selftest.inc";
 }
 
 function layout_reconfigure() {

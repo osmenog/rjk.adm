@@ -53,6 +53,10 @@ class worker {
 		$this->sql = $mysqli;
 		//print_r ($this->conf['hostaddr']);
 	}
+
+  public function closedb(){
+    $this->sql->close();
+  }
 } //end of worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class proxy_worker extends worker {
