@@ -57,12 +57,11 @@
 		  	</ul>
 		  </li>
 		  
+		  
+		   <li><a href='?action=showjournal'><span class="glyphicon glyphicon-eye-open"></span> Журнал событий</a></li>
 		  <!-- Будут доступны в будущем
-		   <li class='bg-warning'><a href='?action=showstats'><span class="glyphicon glyphicon-stats"></span> Статистика</a></li>
-		   <li class='bg-warning'><a href='?action=showjournal'><span class="glyphicon glyphicon-eye-open"></span> Журнал событий</a></li>
+       <li class='bg-warning'><a href='?action=showstats'><span class="glyphicon glyphicon-stats"></span> Статистика</a></li>
 		   <li class='bg-warning'><a href='?action=showtasksman'><span class="glyphicon glyphicon-calendar"></span> Планировщик</a></li>
-		  fa-exclamation-circle
-      check
       -->
 		  <li class='bg-success'><a href='?action=reconfigure'><span class="glyphicon glyphicon-send"></span> Применить конфигурацию</a></li>
 		</ul>
@@ -199,6 +198,10 @@ function print_layout () {
       header("Location: /{$config ['proj_name']}/index.php?action=selftest&result=successful");
       break;
 
+    case 'showjournal':
+      layout_showjournal();
+      break;
+
 		default:
 			echo "<h1>action=$action</h1>\n";
 			break;
@@ -224,6 +227,10 @@ function layout_getuser ($nick) {
 
 function layout_getbanlist($banlist) {
 	include "layout/layout.getbanlist.inc";
+}
+
+function layout_showjournal() {
+  include "layout/layout.showjournal.inc";
 }
 
 function set_user_acl($user, $banlists) {
