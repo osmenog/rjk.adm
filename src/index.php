@@ -195,7 +195,8 @@ function print_layout () {
       break;
     
     case 'check':
-      header("Location: /{$config ['proj_name']}/index.php?action=selftest&result=successful"); // ... если нет, то ридеректим на страницу ввода пароля
+      include "cron/check.php";  
+      header("Location: /{$config ['proj_name']}/index.php?action=selftest&result=successful");
       break;
 
 		default:

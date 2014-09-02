@@ -1,7 +1,7 @@
 <?php
-  include_once "../config.php";
-  include_once "../log.php";
-  require_once "../classes.php";
+  include_once $_SERVER['DOCUMENT_ROOT']."/rejik2"."/config.php";
+  include_once $_SERVER['DOCUMENT_ROOT']."/rejik2"."/log.php";
+  include_once $_SERVER['DOCUMENT_ROOT']."/rejik2"."/classes.php";
   global $config;
 	
   function create_logfile ($full_path, $dt, $message) {
@@ -16,7 +16,7 @@
     $query = "INSERT INTO `checker`(`file`, `lastcheck`, `msg`) VALUES ('$filename','$dt','$message');";
     $res = $sql->query($query);
     if (!$res) {
-      echo "[{$res}] sql error: ".$sql->errno." ".$sql->error."\n";
+      //echo "[{$res}] sql error: ".$sql->errno." ".$sql->error."\n";
       return false;
     }
     return true;
@@ -44,7 +44,7 @@
     $b_file = $b_path.$bl."/urls"; //Определяем имя файла для банлиста
 
     if (!file_exists($b_file)) {
-      echo "[{$b_file}] not found!\n";
+      //echo "[{$b_file}] not found!\n";
       checker_db_insert ($checker_db, $b_file, $dt, 'not found');
       $error_flag = true;
       continue;
@@ -56,21 +56,21 @@
 
     //Сравниваем контрольные суммы
     if ($db_crc!=$file_crc) {
-  	  echo "[{$b_file}] checksum error!\n";
+  	  //echo "[{$b_file}] checksum error!\n";
       checker_db_insert ($checker_db, $b_file, $dt,'checksum error');
       $error_flag = true;
     }
   }
 
-  echo "Banlist check - ".(($error_flag) ? "ERROR" : "Ok")."\n";
+  //echo "Banlist check - ".(($error_flag) ? "ERROR" : "Ok")."\n";
   
   //Перебираем всех пользователей
   $error_flag = false;
   foreach ($banlists as $bl) {
     $u_file = $u_path.$bl;
     if (!file_exists($u_file)) {
-      echo "[{$u_file}] not found!\n";
-      checker_db_insert ($checker_db, $u_file, $dt,'checksum error');
+      //echo "[{$u_file}] not found!\n";
+      checker_db_insert ($checker_db, $u_file, $dt,'not found');
       $error_flag = true;
       continue;
     }
@@ -79,12 +79,12 @@
     $file_crc = strtolower(sha1_file($u_file));
 
     if ($db_crc!=$file_crc) {
-      echo "[{$u_file}] checksum error!\n";
+      //echo "[{$u_file}] checksum error!\n";
       checker_db_insert ($checker_db, $u_file, $dt,'checksum error');
       $error_flag = true;
     }
   }
-  echo "Userlist check - ".(($error_flag) ? "ERROR" : "Ok")."\n";
+  //echo "Userlist check - ".(($error_flag) ? "ERROR" : "Ok")."\n";
 
 
   $logfile_result = create_logfile (
