@@ -24,7 +24,7 @@
 
   //Инициализация подключений к БД и логера
   $rejik = new rejik_worker ($config['rejik_db']);
-  logger::init($rejik->sql);
+  logger::init();
   $checker_db = $rejik->sql;
 
   //Обьявляем пути до файлов

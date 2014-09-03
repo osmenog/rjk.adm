@@ -21,7 +21,9 @@ class rejik_exception extends Exception {
     return json_encode($obj);
   }
 }
-class mysql_exception extends rejik_exception {}
+class mysql_exception extends rejik_exception {
+  private $sql_query="";
+}
 class api_exception extends rejik_exception {}
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class worker {
@@ -138,7 +140,8 @@ class rejik_worker extends worker {
     $this->sql->set_charset("utf8"); //Устанавливаем кодировку соединения с БД Режика
 
     global $config;
-    if ($config ['admin_log']==True) logger::init($this->sql); //Инициализируем логер
+    if ($config ['admin_log']==True) logger::init(); //Инициализируем логер
+    //Logger::stop();
   }
 
   // ==========================================================================================================================
@@ -876,7 +879,7 @@ class api_worker {
       throw $e;
     }
   }
-}
+} //enf of api_worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 function CheckSession () {
   //Проверяем, авторизован ли пользователь.

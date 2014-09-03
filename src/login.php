@@ -39,84 +39,91 @@ function print_login_box() {
 	echo "</html>	\n";
 }
 
-  function process_requests() {
-  	global $alert_message;
-    $action = (isset($_POST['action']) ? $_POST['action'] : '');
-    switch ($action) {
-      case 'logon':
-        if (!isset($_POST['login']) || !isset($_POST['password'])) {
-          $alert_message .= "<div class='alert alert-danger'>Ошибка: Не указан один из параметров!</div>\n";
-          $alert_message .= "<!-- Хуй тебе! -->\n";
-          return;
-        }
-        $r = login ($_POST['login'], $_POST['password']);
+function process_requests() {
+	global $alert_message;
+  $action = (isset($_POST['action']) ? $_POST['action'] : '');
+  switch ($action) {
+    case 'logon':
+      if (!isset($_POST['login']) || !isset($_POST['password'])) {
+        $alert_message .= "<div class='alert alert-danger'>Ошибка: Не указан один из параметров!</div>\n";
+        $alert_message .= "<!-- Хуй тебе! -->\n";
+        return;
+      }
+      $r = login ($_POST['login'], $_POST['password']);
 
-        break;
+      break;
 
-      default:
-        //$alert_message .= "<h5>action=$action</h5>\n";
-        break;
-    }
+    default:
+      //$alert_message .= "<h5>action=$action</h5>\n";
+      break;
   }
+}
 
   
 
-  function login ($login, $pass) {
-    global $config;
-    global $alert_message;
-
-    //1. Извлекаем из БД SAMS логин и хэш-пароль
-	@$sql = new mysqli($config['sams_db'][0], $config['sams_db'][1], $config['sams_db'][2], $config['sams_db'][3]);
-	
-	//Если произошла ошибка подключения к SAMS
-	if ($sql->connect_errno) {
-		$alert_message .= "<div class='alert alert-danger'>Не могу подключиться к базе SAMS:<br/>{$sql->connect_error}</div>\n";
-		return -1;
-	}
-
-	//Получаем логин и хэш-пароль пользователя из базы.
-	$login = $sql->real_escape_string ($login);
-	$response = $sql->query("SELECT `user`,`pass`,`access` FROM `passwd` WHERE `user`='{$login}'");
-	if (!$response) {
-		$alert_message .= "<div class='alert alert-danger'>Не могу подключиться к базе SAMS:<br/>{$sql->errno} {$sql->error}</div>\n";
-		return;
-	}
-
-	if ($response->num_rows == 0) {
-		$alert_message .= "<div class='alert alert-danger'>Логин или пароль введены не правильно. Попробуйте еще раз.</div>\n";
-		return;	//Логина нет в базе
-	}
-
-  $ip = GetClientIP ();
-
-	//Сравниваем хэши паролей
-	$row = $response->fetch_row();
-	$db_hash = $row[1];
-
-	$usr_hash = crypt($pass, "00");
-	$sid = 0;
-  //echo "<h1>{$usr_hash} = {$db_hash}</h1>\n";
-
-  $usr_hash = $db_hash;
-    //2. Сравниваем с введенными значениями
-	if ($db_hash == $usr_hash) {
-        //3. Устанавливаем печеньку
-    	session_name('sid');
-    	session_set_cookie_params (3600,"/{$config['proj_name']}/");
-		session_start();
-
-    	$_SESSION['auth'] = 1;
-    	$_SESSION['login'] = $login;
-    	$_SESSION['ip'] = $ip;
-    	header("Location: /{$config ['proj_name']}/index.php?action=showusers");
-	}
-	
-	$sql->close();
-
-
-
-    
+function login ($login, $pass) {
+  global $config;
+  global $alert_message;
+  
+  logger::init(); //Инициализируем логер
+  
+  //1. Извлекаем из БД SAMS логин и хэш-пароль
+  @$sql = new mysqli($config['sams_db'][0], $config['sams_db'][1], $config['sams_db'][2], $config['sams_db'][3]);
+  
+  //Если произошла ошибка подключения к SAMS
+  if ($sql->connect_errno) {
+    $alert_message .= "<div class='alert alert-danger'>Не могу подключиться к базе SAMS:<br/>{$sql->connect_error}</div>\n";
+    return -1;
   }
+  
+  //Получаем логин и хэш-пароль пользователя из базы.
+  $login = $sql->real_escape_string ($login);
+  $response = $sql->query("SELECT `user`,`pass`,`access` FROM `passwd` WHERE `user`='{$login}'");
+  if (!$response) {
+    $alert_message .= "<div class='alert alert-danger'>Не могу подключиться к базе SAMS:<br/>{$sql->errno} {$sql->error}</div>\n";
+    return;
+  }
+  
+  if ($response->num_rows == 0) {
+    $alert_message .= "<div class='alert alert-danger'>Логин или пароль введены не правильно. Попробуйте еще раз.</div>\n";
+    logger::add(0, "При идентификации был указан неверный логин [{$login}]", $login);
+    return;	//Логина нет в базе. Но чтобы обмануть доверчивого юзера, говорим ему что-то про пароль.
+  }
+  
+  $ip = GetClientIP ();
+  
+  //Сравниваем хэши паролей
+  $row = $response->fetch_row();
+  $db_hash = $row[1];
+  
+  $usr_hash = crypt($pass, "00");
+  $sid = 0;
+  
+  // -!!!- ВНИМАНИЕ ---------------------------------------------------
+  // - Эта строчка нужна только на момент отладки.
+  //$usr_hash = $db_hash;
+  // -!!!--------------------------------------------------------------
+
+  //2. Сравниваем с введенными значениями
+  if ($db_hash == $usr_hash) {
+    //3. Устанавливаем печеньку
+    session_name('sid');
+    session_set_cookie_params (3600,"/{$config['proj_name']}/");
+    session_start();
+    
+    $_SESSION['auth'] = 1;
+    $_SESSION['login'] = $login;
+    $_SESSION['ip'] = $ip;
+
+    header("Location: /{$config ['proj_name']}/index.php?action=showusers");
+  } else {
+    $alert_message .= "<div class='alert alert-danger'>Логин или пароль введены не правильно. Попробуйте еще раз.</div>\n";
+    //$alert_message .= "<h4>{$usr_hash} = {$db_hash}</h4>\n";
+    return; //А сейчас проблема в том, что не совпал пароль
+  }
+  
+  $sql->close(); 
+}
 
 
 ?>
