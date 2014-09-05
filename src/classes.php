@@ -255,7 +255,7 @@ class rejik_worker extends worker {
     $file_hash = sha1_file ("{$p}/urls");
     $this->banlist_set_crc ($banlist, $file_hash);
 
-    Logger::add (111, "Банлист {$banlist} успешно экспортирован в файл");
+    Logger::add (41, "Банлист [{$banlist}] экспортирован в файл. h=[{$file_hash}]", $banlist);
     return $counter;
   }
 
@@ -375,19 +375,19 @@ class rejik_worker extends worker {
     
     if (!$response) throw new mysql_exception($this->sql->error."\n".$query, $this->sql->errno);
   
-    if ($response->num_rows == 0) return 0;
-  
     $res = array();
-    while ($row = $response->fetch_row()) {
-      //echo "<pre>"; print_r ($row); echo "</pre>";
-      if ($raw_mode) {
-        $res[] = $row;
-      } else {
-        $res[] = $row[1];
-      }
+    if ($response->num_rows != 0) {
+      while ($row = $response->fetch_row()) {
+        //echo "<pre>"; print_r ($row); echo "</pre>";
+        if ($raw_mode) {
+          $res[] = $row;
+        } else {
+          $res[] = $row[1];
+        }
+      }  
     }
-  
     $response->close();
+
     return $res;
   }
 
@@ -436,7 +436,7 @@ class rejik_worker extends worker {
     //echo $row['id'];
 
     //3. Запись в лог
-    Logger::add (3, "Added URL \'$url\' in banlist \'$banlist\'");
+    Logger::add (21, "В банлист [{$banlist}] добавлен адрес [{$url}]", $banlist);
     return $row['id'];
   }
 
@@ -462,7 +462,7 @@ class rejik_worker extends worker {
     if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
   
     //3. Запись в лог
-    Logger::add (3, "URL #{$id} in banlist \'$banlist\' changed to \'{$new_url_name}\'.");
+    Logger::add (23, "В банлисте [{$banlist}] изменен адрес #{$id} [{$new_url_name}]", $banlist);
     return True;
   }
 
@@ -479,7 +479,7 @@ class rejik_worker extends worker {
     if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
   
     //3. Запись в лог
-    Logger::add (3, "Remove URL #{$id} in banlist \'$banlist\'.");
+    Logger::add (22, "Из банлиста [{$banlist}] удален адрес #{$id}", $banlist);
     return True;
   }
   
@@ -567,7 +567,7 @@ class rejik_worker extends worker {
     }
   
     //Запись в лог
-    Logger::add (1, "{$user} added user access to {$banlist}");
+    Logger::add (11, "Добавление привилегий на [{$banlist}] пользователю [{$user}]", $user);
   }
 
   public function user_acl_remove ($user, $banlist) {
@@ -589,7 +589,7 @@ class rejik_worker extends worker {
     }
   
     //Запись в лог
-    Logger::add (2, "{$user} disabled user access to {$banlist}");
+    Logger::add (12, "Удаление привилегий на [{$banlist}] у пользователя [{$user}]", $user);
   }
 	
   public function users_acl_export ($banlist, $root_path){
@@ -621,7 +621,7 @@ class rejik_worker extends worker {
     $file_hash = sha1_file ("{$root_path}/{$banlist}");
     $this->banlist_set_user_crc ($banlist, $file_hash);
 
-    Logger::add (111, "Пользователи банлиста {$banlist} успешно экспортированы в файл");
+    Logger::add (42, "Список пользователей [{$banlist}] экспортирован в файл. h=[{$file_hash}]", $banlist);
     return $counter;  
   }
   // ==========================================================================================================================
@@ -926,6 +926,18 @@ function num_case ($num, $v1, $v2, $v3) {
   if ($num >= 5) {return $v3;}
 }
 
+function print_pagenator($pages_count, $current_page=1) {
+  echo "  <ul id='pagination-demo' class='pagination pagination-sm' style='margin: 0 0 10px 0;'>\n";
+  echo "    <li><a href='#'>&laquo;</a></li>\n";
+  
+  $tmp = ($pages_count<=10) ? $pages_count : 10;
+  for ($i=1; $i<=$tmp; $i++) {
+    echo "<li".(($i==$current_page) ? " class='active' " : "")."><a href='#'>{$i}</a></li>\n";  
+  }
+
+  echo "    <li><a href='#'>&raquo;</a></li>\n";
+  echo "  </ul>\n";
+}
 // case "reconfigure":
 // echo('<div id="right_frame_align">');
 // $fp = fsockopen('localhost',8081);

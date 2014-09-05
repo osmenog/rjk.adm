@@ -129,18 +129,7 @@
 			return $rejik->banlist_get_urls($banlist, true, ($page-1)*$urls_per_page, $urls_per_page);
 		}
 
-		function print_pagenator($pages_count, $current_page=1) {
-			echo "  <ul id='pagination-demo' class='pagination pagination-sm' style='margin: 0 0 10px 0;'>\n";
-			echo "    <li><a href='#'>&laquo;</a></li>\n";
-			
-			$tmp = ($pages_count<=10) ? $pages_count : 10;
-			for ($i=1; $i<=$tmp; $i++) {
-				echo "<li".(($i==$current_page) ? " class='active' " : "")."><a href='#'>{$i}</a></li>\n";	
-			}
 
-			echo "    <li><a href='#'>&raquo;</a></li>\n";
-			echo "  </ul>\n";
-		}
 	echo "<div class='form-group'>";
 		echo "<div id='addurl_box' class='input-group'>\n";
 		echo "   <input type='text' class='form-control'>\n";

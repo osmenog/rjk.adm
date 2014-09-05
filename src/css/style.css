@@ -39,6 +39,11 @@
 	line-height: 1.1;
 }
 
+#table-log {
+  font-size: 8pt;
+  
+}
+
 .ctrl {
   display: none;
   text-decoration: none;

@@ -46,6 +46,7 @@
     if (!file_exists($b_file)) {
       //echo "[{$b_file}] not found!\n";
       checker_db_insert ($checker_db, $b_file, $dt, 'not found');
+
       $error_flag = true;
       continue;
     }
@@ -58,6 +59,7 @@
     if ($db_crc!=$file_crc) {
   	  //echo "[{$b_file}] checksum error!\n";
       checker_db_insert ($checker_db, $b_file, $dt,'checksum error');
+      Logger::add (32, "Checker выявил ошибку хэша в банлисте [$bl]", $bl, $dt);
       $error_flag = true;
     }
   }
@@ -81,11 +83,14 @@
     if ($db_crc!=$file_crc) {
       //echo "[{$u_file}] checksum error!\n";
       checker_db_insert ($checker_db, $u_file, $dt,'checksum error');
+      Logger::add (33, "Checker выявил ошибку хэша в списке пользователей [$bl]", $bl, $dt);
       $error_flag = true;
     }
   }
   //echo "Userlist check - ".(($error_flag) ? "ERROR" : "Ok")."\n";
-
+  if (!$error_flag) {
+    Logger::add (31, "Checker успешно выполнил проверку по расписанию", "", $dt);
+  }
 
   $logfile_result = create_logfile (
                                     $l_full_path, $dt,

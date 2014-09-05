@@ -9,12 +9,36 @@ class logger {
 	private static $is_init = False;
 	private static $login;
 	private static $worker;
+	private static $events_count=0;
+	private static $is_cached=False;
+
+	public static function get_length () {
+		if (self::$is_init == False) return False;
+		if (self::$is_cached) {
+			return self::$events_count;
+		} else {
+			return self::count_log_events();
+		}
+	}
 
 	public static function init () {
 		global $config;
 
+		if (isset($config['log_db'][0])) $db_host = $config['log_db'][0];
+		if (isset($config['log_db'][1])) $db_login = $config['log_db'][1];
+		if (isset($config['log_db'][2])) $db_passwd = $config['log_db'][2];
+		if (isset($config['log_db'][3])) $db_name = $config['log_db'][3];
+		if (isset($config['log_db'][4])) $db_codepage = $config['log_db'][4];
+
 		//Инициализируем подключение к БД
-		self::$worker = new worker($config ['log_db']);
+		@$sql_con = new mysqli($db_host, $db_login, $db_passwd, $db_name);
+		if ($sql_con->connect_errno) {
+    	echo "Не удалось подключиться к MySQL: (" . $sql_con->connect_errno . ") " . $sql_con->connect_error;
+    	return false;
+		}
+		$sql_con->set_charset("utf8"); //Устанавливаем кодировку соединения с БД Режика
+
+		self::$sql = $sql_con;
 		//self::get_last_crc();
 		self::$is_init = True;
 		//echo self::$last_crc." - ".self::$last_id;
@@ -23,13 +47,13 @@ class logger {
 		self::$login = isset($_SESSION['login']) ? $_SESSION['login'] : "";
 	}
 
-	public static function stop () {
-		self::$worker->closedb();
+	public static function stop() {
+		if (self::$is_init) self::$sql->close();
 	}
 
 	public function add ($event_code, $event_msg, $event_attrib="", $datentime=-1) {
 		if (self::$is_init == False) return False;
-		$sql_obj = self::$worker->sql;
+		$sql_obj = self::$sql;
 
 		//Подготавливаем данные
 		$crc = "none";
@@ -38,7 +62,7 @@ class logger {
 		$login = self::$login;
 		
 		$query_str = "INSERT INTO `log` (`datentime`,`code`,`message`,`attribute`,`user_login`,`user_ip`,`crc`)
-									VALUES (".($datentime==-1 ? "NOW()" : $datentime).",
+									VALUES (".($datentime==-1 ? "NOW()" : "'{$datentime}'").",
 												 {$event_code},
 												 '{$event_msg}',
 												 '{$event_attrib}',
@@ -47,11 +71,56 @@ class logger {
 												 '{$crc}');";
 		
 		$response = $sql_obj->query($query_str);
- 		if (!$response) throw new mysql_exception($sql_obj->error, $sql_obj->errno);
+ 		if (!$response) {
+ 			//Выброс исключения опасен
+ 			//throw new mysql_exception($sql_obj->error, $sql_obj->errno);
+ 		}
 
 		//self::$last_id .= 1;
 	}
 
+	private static function count_log_events() {
+		if (self::$is_init == False) return False;
+		$sql_obj = self::$sql;
+
+		//Выполняем запрос, считающий количество записей
+		$sql_res = $sql_obj->query ("SELECT Count(*) FROM log;", MYSQLI_USE_RESULT);
+		if (!$sql_res) throw new mysql_exception($sql_obj->error, $sql_obj->errno);
+		$row = $sql_res->fetch_row();
+		
+		self::$events_count = $row[0];
+		self::$is_cached = true;
+
+		$sql_res->free_result();
+
+		return self::$events_count;
+	}
+
+	public function get ($start=0, $len=250) {
+		if (self::$is_init == False) return False;
+		$sql_obj = self::$sql;
+
+		self::count_log_events();
+
+		//Подготавливаем запрос
+		$query_str = "SELECT `id`,`datentime`,`code`,`message`,`attribute`,`user_login`,`user_ip`,`crc` FROM log ORDER BY id ASC LIMIT {$start}, {$len}";
+		//echo "<pre>".$query_str."</pre>";
+
+		$sql_res = $sql_obj->query ($query_str, MYSQLI_USE_RESULT);
+		if (!$sql_res) throw new mysql_exception($sql_obj->error, $sql_obj->errno);
+
+		//echo "<pre>".$sql_res->num_rows."</pre>";
+
+		//Заполняем массив данными, полученными от SQL
+		$result=array();
+		while ($row=$sql_res->fetch_row()) {
+			$result[]=$row;
+		}
+
+		$sql_res->free_result();
+		
+		return $result;
+	}
 /*	private function get_crc ($in){
 		global $config;
 		//sort ($in); //Сортируем по-возрастанию

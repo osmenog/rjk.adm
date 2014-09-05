@@ -86,7 +86,7 @@ function login ($login, $pass) {
   
   if ($response->num_rows == 0) {
     $alert_message .= "<div class='alert alert-danger'>Логин или пароль введены не правильно. Попробуйте еще раз.</div>\n";
-    logger::add(0, "При идентификации был указан неверный логин [{$login}]", $login);
+    logger::add(3, "При идентификации был указан неверный логин [{$login}]", $login);
     return;	//Логина нет в базе. Но чтобы обмануть доверчивого юзера, говорим ему что-то про пароль.
   }
   
@@ -115,9 +115,11 @@ function login ($login, $pass) {
     $_SESSION['login'] = $login;
     $_SESSION['ip'] = $ip;
 
+    logger::add(1, "Успешная аутентификация пользователя [{$login}]", $login);
     header("Location: /{$config ['proj_name']}/index.php?action=showusers");
   } else {
     $alert_message .= "<div class='alert alert-danger'>Логин или пароль введены не правильно. Попробуйте еще раз.</div>\n";
+    logger::add(2, "При аутентификации пользователя [{$login}] был указан неверный пароль", $login);
     //$alert_message .= "<h4>{$usr_hash} = {$db_hash}</h4>\n";
     return; //А сейчас проблема в том, что не совпал пароль
   }

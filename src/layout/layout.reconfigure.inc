@@ -84,6 +84,12 @@
 
             $time_end = microtime(true);
             $time = $time_end - $time_start;
+
+            if ($err_flag==true) {
+              Logger::add (46, "Реконфигурация выполнена с ошибкой");  
+            } else {
+              Logger::add (45, "Реконфигурация выполнена успешно");
+            }
             // -----------------------------------------
 
           echo "</table>\n";  
