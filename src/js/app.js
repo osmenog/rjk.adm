@@ -1,26 +1,48 @@
+var panel_urls, table_urls;
+
 $(document).ready (function() {
 
-  panel_urls = $('#panel_urls');
-  table_urls = $('table#urls_table');
-  
   //Это небольшой хак, для того чтобы тултипы работали нормально
   $('body').tooltip({
     selector: '[rel="tooltip"]'
   });
 
-  Rejik.banlist_editor_init();
+  /*var r = new RegExp ("");
+  var action = r.exec (window.location.href);
+  console.log (action);*/
 
+  //Внимание МЕГА ГАВНОКОД. Когда я изучу регулярки,- раскоментирую строки выше.
+  var l = String(window.location.href);
+  var p = l.indexOf('action=')+7; //Начало
+  
+  if (p!=0) {
+    var p2 = l.indexOf('&',p);
+    if (p2 == -1) {
+      var action = l.substr(p);  
+    } else {
+      var action = l.substr(p,p2-p);  
+    }
+  };
 
-
+  switch (action) {
+    case 'getbanlist':
+      panel_urls = $('#panel_urls');
+      table_urls = $('table#urls_table');
+      
+      Rejik.banlist_editor_init();  
+      break;
+    case 'showjournal':
+      Rejik.journal_viewer_init();
+      break;
+  }
 });
-
-var panel_urls, table_urls;
 
 var Rejik = {
   rejik_url: '/rejik2/ajax.php?v=1',    // Путь до AJAX API
   visible_urls: 0,                      // Количество ссылок, отображаемых на экране (меняется при удалении или добавлении ссылок)
   real_urls_count: 0,                   // Общее количество ссылок в банлисте
   urls_per_page: 200,                   // Макс. количество ссылок на одной странице
+  events_per_page: 200,
   current_banlist: '',                  // Текущий просматриваемый банлист (необходимо для ajax)
   pages_num: 0,                         // Количество отображаемых страниц
 
@@ -346,18 +368,36 @@ var Rejik = {
     //   var query = $('#inpt_search_url').val();
     //   Rejik.banlist_search_url(query);
     // });
-
+    
     $('#pagination-demo').twbsPagination({
       totalPages: Rejik.pages_num,
       visiblePages: 10,
       onPageClick: function (event, page) {
         event.preventDefault;
-        Rejik.get_page(page);
+        Rejik.banlist_get_page(page);
       }
     });
   },
 
-  get_page: function(page) {
+  journal_viewer_init: function() {
+    var pagenator = $('#pagination-journal');
+    var pages_count = pagenator.data("pages-count");
+
+    pagenator.twbsPagination({
+      totalPages: pages_count,
+      visiblePages: 10,
+      first: '',
+      last: '',
+      prev: '<',
+      next: '>',
+      onPageClick: function (event, page) {
+        event.preventDefault;
+        Rejik.banlist_get_page(page);
+      }
+    });
+  },
+
+  banlist_get_page: function(page) {
     //console.log (page);
     var offset = (page-1) * Rejik.urls_per_page;
 
@@ -365,6 +405,55 @@ var Rejik = {
         action: 'banlist.getURLlist',
         banlist: Rejik.current_banlist,
         limit: Rejik.urls_per_page,
+        offset: offset};
+
+    data.sig = Rejik.sign(data);
+    //Отправляем AJAX
+    $.ajax(Rejik.rejik_url, {
+      type: "POST",
+      dataType: 'json',
+      data: data,
+      beforeSend: function() {
+        table_urls.fadeOut(200);
+      },
+      success: function(response) {
+        if ("error" in response) {
+          console.log("API ErrorMsg: "+response.error.error_msg);
+        } else {
+          table_urls.find('tbody').detach();
+          
+          var key;
+          var tmp = $('<tbody></tbody>');
+          var urls = response.urls;
+          for (key in urls) {
+            var row = $("<tr data-url-id='"+key+"'></tr>");
+            row.append('<td>'+urls[key]+'</td>');
+            row.append("<td width='5%'><a href='#' class='ctrl editurl'><span class='glyphicon glyphicon-pencil'></span></a></td>");
+            row.append("<td width='5%'><a href='#' class='ctrl removeurl'><span class='glyphicon glyphicon-trash'></span></a></td>");
+            tmp.append (row);
+          }
+          table_urls.append (tmp);
+          
+
+        }
+      },
+      error: function(request, err_t, err_m) {
+        console.log("AJAX ErrorMsg: "+err_t+' '+err_m);
+      },
+      complete: function() {
+        table_urls.fadeIn(200);
+      },
+      timeout: 10000
+    });
+  },
+
+  events_get_page: function(page) {
+    //console.log (page);
+    var offset = (page-1) * Rejik.events_per_page;
+
+    var data = {
+        action: 'banlist.getURLlist',
+        limit: Rejik.events_per_page,
         offset: offset};
 
     data.sig = Rejik.sign(data);

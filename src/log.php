@@ -104,12 +104,13 @@ class logger {
 
 		//Подготавливаем запрос
 		$query_str = "SELECT `id`,`datentime`,`code`,`message`,`attribute`,`user_login`,`user_ip`,`crc` FROM log ORDER BY id ASC LIMIT {$start}, {$len}";
-		//echo "<pre>".$query_str."</pre>";
+		echo "<pre>".$query_str."</pre>";
 
 		$sql_res = $sql_obj->query ($query_str, MYSQLI_USE_RESULT);
 		if (!$sql_res) throw new mysql_exception($sql_obj->error, $sql_obj->errno);
-
+		
 		//echo "<pre>".$sql_res->num_rows."</pre>";
+		//if ($sql_res->num_rows==0) return False;
 
 		//Заполняем массив данными, полученными от SQL
 		$result=array();
@@ -119,8 +120,15 @@ class logger {
 
 		$sql_res->free_result();
 		
-		return $result;
+		//Если результат выборки пустой, то функция возвращает FALSE
+		if (!empty($result)) {
+			return $result;
+		} else {
+			return FALSE;
+		}
 	}
+
+
 /*	private function get_crc ($in){
 		global $config;
 		//sort ($in); //Сортируем по-возрастанию

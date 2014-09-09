@@ -879,6 +879,42 @@ class api_worker {
       throw $e;
     }
   }
+
+  public function log_get($start, $len) {
+    try {
+      Logger::init();
+      $log = Logger::get($start, $len);
+
+      $json_obj = array (  'limit' => $len,
+                          'offset' => $start,
+                           'total' => 0,
+                          'events' => []);
+      $events_counter = 0;
+      $events_arr = array();
+
+      if (!$log) {
+        foreach ($log as $key => $value) {
+          $id= intval($value[0]);
+          $row=$value[1];
+          $events_arr[$id]=$row;
+
+          $events_counter++;
+        }
+      }
+      
+      $json_obj['events']=$events_arr;
+      $json_obj['total']=$events_counter;
+      
+      $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);  
+      
+      Logger::stop();
+
+      return $json_str;
+
+    } catch (exception $e) {
+      throw $e;
+    }
+  }
 } //enf of api_worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 function CheckSession () {
@@ -926,8 +962,8 @@ function num_case ($num, $v1, $v2, $v3) {
   if ($num >= 5) {return $v3;}
 }
 
-function print_pagenator($pages_count, $current_page=1) {
-  echo "  <ul id='pagination-demo' class='pagination pagination-sm' style='margin: 0 0 10px 0;'>\n";
+function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
+  echo "  <ul id='{$id}' class='pagination pagination-sm' style='margin: 0 0 10px 0;' data-pages-count='{$pages_count}'>\n";
   echo "    <li><a href='#'>&laquo;</a></li>\n";
   
   $tmp = ($pages_count<=10) ? $pages_count : 10;

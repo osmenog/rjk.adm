@@ -46,6 +46,11 @@ try {
       echo $r;
       break;
 
+    case 'logger.get':
+      $r = $api->log_get($validated_data['offset'], $validated_data['limit']);
+      echo $r;
+      break;
+
     default:
       throw new api_exception("Invalid action",1);
       break;
