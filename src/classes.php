@@ -141,6 +141,7 @@ class rejik_worker extends worker {
 
     global $config;
     if ($config ['admin_log']==True) logger::init(); //Инициализируем логер
+    Logger::tmp_init();
     //Logger::stop();
   }
 

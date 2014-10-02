@@ -11,6 +11,10 @@ class logger {
 	private static $worker;
 	private static $events_count=0;
 	private static $is_cached=False;
+	//--
+	private static $tmp_hdl;
+	private static $is_tmp_created=False;
+
 
 	public static function get_length () {
 		if (self::$is_init == False) return False;
@@ -19,6 +23,12 @@ class logger {
 		} else {
 			return self::count_log_events();
 		}
+	}
+
+	public function tmp_init() {
+		$hdl = fopen("tmp.log", "a");
+		self::$tmp_hdl = $hdl;
+		self::$is_tmp_created = True;
 	}
 
 	public static function init () {
@@ -49,6 +59,7 @@ class logger {
 
 	public static function stop() {
 		if (self::$is_init) self::$sql->close();
+		if (self::$is_tmp_created) fclose(self::$tmp_hdl);
 	}
 
 	public function add ($event_code, $event_msg, $event_attrib="", $datentime=-1) {
@@ -128,7 +139,19 @@ class logger {
 		}
 	}
 
+<<<<<<< HEAD
 
+=======
+	public function tmp_write($msg) {
+		if (self::$is_tmp_created) {
+			fwrite(self::$tmp_hdl, $msg."\r\n");	
+			return True;
+		} else {
+			return False;
+		}
+	}
+	
+>>>>>>> ex2
 /*	private function get_crc ($in){
 		global $config;
 		//sort ($in); //Сортируем по-возрастанию
