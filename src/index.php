@@ -194,7 +194,7 @@ function print_layout () {
       break;
     
     case 'check':
-      include "cron/check.php";  
+      checker_init();  
       header("Location: /{$config ['proj_name']}/index.php?action=selftest&result=successful");
       break;
 

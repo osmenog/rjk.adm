@@ -54,3 +54,4 @@ Icon
 .Trashes
 /nbproject/private/
 src/config.php
+src/cron/lastcheck.log

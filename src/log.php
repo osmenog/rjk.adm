@@ -57,6 +57,13 @@ class logger {
 		self::$login = isset($_SESSION['login']) ? $_SESSION['login'] : "";
 	}
 
+	public static function init_checker() {
+		if (self::$is_init==False) {
+			self::init();
+		}
+		self::$login = "auto_checker";
+	}
+
 	public static function stop() {
 		if (self::$is_init) self::$sql->close();
 		if (self::$is_tmp_created) fclose(self::$tmp_hdl);
@@ -139,9 +146,6 @@ class logger {
 		}
 	}
 
-<<<<<<< HEAD
-
-=======
 	public function tmp_write($msg) {
 		if (self::$is_tmp_created) {
 			fwrite(self::$tmp_hdl, $msg."\r\n");	
@@ -151,7 +155,6 @@ class logger {
 		}
 	}
 	
->>>>>>> ex2
 /*	private function get_crc ($in){
 		global $config;
 		//sort ($in); //Сортируем по-возрастанию
