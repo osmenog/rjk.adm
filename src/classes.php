@@ -1,31 +1,9 @@
 <?php
 include_once "config.php";
+include_once "exceptions.php";
 include_once "log.php";
-  //Класс proxy_worker
-  //Конструктор - подключается к мускл и хранит обьект-дескриптор
-  //деструктор - закрывает соединение к субд
-  //Методы:
-  // get_userinfo (nick) - возвращает информацию по пользователю в виде ассоциативного массива
-  // get_userscount - возвращает количество пользователей
-  // get_groupscount
-  // get_groupslist
-// -----------------------------------------------------------------------------------------------------------------------------------------------
-class rejik_exception extends Exception {
-  function get_json(){
-    //Функция возвращает JSON обьект содержащий параметры ошибки
-    $obj = array('error' => array(
-                          'error_type'  => get_class($this),
-                          'error_code'  => $this->getCode(),
-                          'error_msg'   => $this->getMessage(),
-                          'error_trace' => $this->getTraceAsString()));
-    return json_encode($obj);
-  }
-}
-class mysql_exception extends rejik_exception {
-  private $sql_query="";
-}
-class api_exception extends rejik_exception {}
-// -----------------------------------------------------------------------------------------------------------------------------------------------
+include_once "sync.php";
+
 class worker {
 	public $sql;
 	
@@ -134,6 +112,8 @@ class proxy_worker extends worker {
 } //end of proxy worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class rejik_worker extends worker {
+  private $sync_provider;
+
   // ==========================================================================================================================
   public function __construct ($db_config) {
     parent::__construct($db_config);
@@ -143,6 +123,13 @@ class rejik_worker extends worker {
     if ($config ['admin_log']==True) logger::init(); //Инициализируем логер
     Logger::tmp_init();
     //Logger::stop();
+    
+    //Включаем модуль синхронизации
+    if ($config['sync_enabled']) {
+      try {
+        $this->sync_provider = new SyncProvider();  
+      } catch (exception $e) {}  
+    }
   }
 
   // ==========================================================================================================================
@@ -438,6 +425,12 @@ class rejik_worker extends worker {
 
     //3. Запись в лог
     Logger::add (21, "В банлист [{$banlist}] добавлен адрес [{$url}]", $banlist);
+
+    //Если включена синхронизация, то добавляем URL в пул задач
+    if ($this->sync_provider !== null) {
+      $this->sync_provider->add_url_to_queue(1, $banlist, $url, $row['id']);
+    }
+
     return $row['id'];
   }
 
@@ -977,6 +970,21 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------
+class Checker {
+  /**
+   * Статическая переменная, в которой мы
+   * будем хранить экземпляр класса
+   *
+   * @var SingletonTest
+   */
+  protected static $_instance;
+
+  private function __construct(){
+  }
+ 
+  private function __clone(){
+  }
+
   /**
    * Функция создает на диске лог-файл @full-path, и записывает туда строку сообщение
    * @param type $full_path Полный путь до лог-файла
@@ -984,13 +992,13 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
    * @param type $message Сообщение
    * @return type Возвращает true в случае успеха или false если произошла ошибка
    */
-  function create_logfile ($full_path, $dt, $message) {
+  private function create_logfile ($full_path, $dt, $message) {
     if (!($hdl=fopen($full_path, "w"))) return false;    
     fwrite($hdl, $dt." ".$message);
     fclose($hdl);
     return true;
-  };
-  
+  }
+
   /**
    * Добавляет в БД запись о проверенном файле и результате проверки
    * @param type $sql 
@@ -999,7 +1007,7 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
    * @param type $message 
    * @return type В случае ошибки возвращаем False. Если все ОК - то True
    */
-  function checker_db_insert ($sql, $filename, $dt, $message) {
+  private function checker_db_insert ($sql, $filename, $dt, $message) {
     $filename = mysql_real_escape_string ($filename);
     $query = "INSERT INTO `checker`(`file`, `lastcheck`, `msg`) VALUES ('$filename','$dt','$message');";
     $res = $sql->query($query);
@@ -1008,14 +1016,14 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
       return false;
     }
     return true;
-  };
+  }
 
   /**
    * Запускает механизм самопроверки 
    * @param type $is_autochecker Указывает на то, кто запускает скрипт
    * @return type
    */
-  function checker_init ($is_autochecker=false){
+  public function start ($is_autochecker=false){
     global $config;
     //Инициализация подключений к БД и логера
     $rejik = new rejik_worker ($config['rejik_db']);
@@ -1051,7 +1059,7 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
       if (!file_exists($b_file)) {
         //echo "[{$b_file}] not found!\n";
         Logger::add (34, "Checker не смог найти файл", $b_file, $dt);
-        checker_db_insert ($checker_db, $b_file, $dt, 'not found');
+        $this->checker_db_insert ($checker_db, $b_file, $dt, 'not found');
         $error_flag = true;
         continue;
       }
@@ -1063,7 +1071,7 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
       //Если контрольные суммы не совпадают, то выполняем запись сообщения в БД и делаем запись в лог 
       if ($db_crc!=$file_crc) {
         //echo "[{$b_file}] checksum error!\n";
-        checker_db_insert ($checker_db, $b_file, $dt,'checksum error');
+        $this->checker_db_insert ($checker_db, $b_file, $dt,'checksum error');
         Logger::add (32, "Checker выявил ошибку хэша в банлисте [$bl]", $bl, $dt);
         $error_flag = true;
       }
@@ -1081,7 +1089,7 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
       if (!file_exists($u_file)) {
         //echo "[{$u_file}] not found!\n";
         Logger::add (34, "Checker не смог найти файл", $u_file, $dt);
-        checker_db_insert ($checker_db, $u_file, $dt,'not found');
+        $this->checker_db_insert ($checker_db, $u_file, $dt,'not found');
         $error_flag = true;
         continue;
       }
@@ -1093,7 +1101,7 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
       //Если контрольные суммы не совпадают, то выполняем запись сообщения в БД и делаем запись в лог 
       if ($db_crc!=$file_crc) {
         //echo "[{$u_file}] checksum error!\n";
-        checker_db_insert ($checker_db, $u_file, $dt,'checksum error');
+        $this->checker_db_insert ($checker_db, $u_file, $dt,'checksum error');
         Logger::add (33, "Checker выявил ошибку хэша в списке пользователей [$bl]", $bl, $dt);
         $error_flag = true;
       }
@@ -1107,7 +1115,7 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
       Logger::add (35, "Checker завершил работу с ошибкой", "", $dt);
     }
 
-    $logfile_result = create_logfile (
+    $logfile_result = $this->create_logfile (
                                     $l_full_path, $dt,
                                     ($error_flag==true)?"ERROR":"OK"
                                    );
@@ -1116,6 +1124,17 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
 
     $rejik->closedb();
   }
+
+  public static function getInstance() {
+    // проверяем актуальность экземпляра
+    if (null === self::$_instance) {
+      // создаем новый экземпляр
+      self::$_instance = new self();
+    }
+    // возвращаем созданный или существующий экземпляр
+    return self::$_instance;
+  }
+}
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 
 
