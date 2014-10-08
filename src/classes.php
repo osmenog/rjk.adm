@@ -463,9 +463,21 @@ class rejik_worker extends worker {
   public function banlist_remove_url ($banlist, $id) {
     //Удаляет заданный URL из банлиста
 
-    // 1. Проверяем, есть ли банлист в базе. Если нет - то исключение.
+    // Проверяем, есть ли банлист в базе. Если нет - то исключение.
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4); 
     
+    //Получаем значение url по заданному id
+    $query = "SELECT `url` FROM `urls` WHERE `banlist`='{$banlist}' AND `id`={$id};";
+    $response = $this->sql->query($query);
+
+    //Если ошибка, то бросаем исключение
+    if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+
+    //Сохраняем значение url и очищаем выборку
+    $row = $response->fetch_row();
+    $url = $row[0];
+    $response->free_result();
+
     $query = "DELETE FROM `urls` WHERE `banlist`='{$banlist}' AND `id`={$id}";
     $response = $this->sql->query($query);
   
@@ -474,6 +486,11 @@ class rejik_worker extends worker {
   
     //3. Запись в лог
     Logger::add (22, "Из банлиста [{$banlist}] удален адрес #{$id}", $banlist);
+
+    //Если включена синхронизация, то добавляем URL в пул задач
+    if ($this->sync_provider !== null) {
+      $this->sync_provider->add_url_to_queue(2, $banlist, $url, $id);
+    }
     return True;
   }
   

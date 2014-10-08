@@ -27,7 +27,10 @@ try {
   		break;
 
     case 'banlist.addURL':
-      $r = $api->banlist_addurl($validated_data['banlist'],$validated_data['url']);
+      $url = $validated_data['url'];
+      if (strlen($url)==0) throw new api_exception("URL не может быть пустым",-1);
+
+      $r = $api->banlist_addurl($validated_data['banlist'], $url);
       echo $r;
       break;
 
