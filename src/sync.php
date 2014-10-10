@@ -126,6 +126,43 @@ switch ($action) {
     break;
 }
 
+function curl_send($address, $post_data) {
+  //Инициализируем cURL и отправляем данные
+  $curl_link = curl_init($address);
+
+  $curl_options = array(
+    /*
+    CURLOPT_PROXY          => 'localhost',
+    CURLOPT_PROXYPORT      => '8080', 
+    */
+    CURLOPT_HEADER         => false,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => $post_data,
+    CURLOPT_RETURNTRANSFER => true,     // возвращает веб-страницу
+    CURLOPT_CONNECTTIMEOUT => 120,      // таймаут соединения
+    CURLOPT_TIMEOUT        => 120,      // таймаут ответа
+    CURLOPT_HTTPHEADER     => array('Content-type: application/json')
+  );
+  curl_setopt_array  ($curl_link, $curl_options);
+
+  $response = curl_exec($curl_link);    // выполняем запрос curl
+  $header   = curl_getinfo( $curl_link ); //Получаем расширенную инфу о выполненном запросе
+
+  //Если вылезла сетевая ошибка
+  if (!$response) { 
+    throw new Exception ("[curl_network] ".curl_error($curl_link),curl_errno($curl_link));
+  }
+
+  //Если вылезла логическая ошибка (например 404)
+  if ($header['http_code']<>200) {
+    throw new Exception ("[curl_http] Удаленный сервер вернул ошибку",$header['http_code']);  
+  }
+  
+  curl_close($curl_link);
+
+  return $response;
+}
+
 function syncronization_start() {
   //Пользователь запустил процесс синхронизации
 
@@ -151,38 +188,18 @@ function syncronization_start() {
         //Формируем JSON-объект
         $json_obj = array ('last_sync_time'=>$last_sync_time, 'from_uuid'=>$config['server_UUID'], 'to_uuid'=>$server['guid'], 'urls'=>[]);
         $json_obj['urls'] = $elem_list;
-//echo "<pre>\n"; print_r($json_obj); echo "</pre>\n";
         $json_str = json_encode($json_obj, JSON_NUMERIC_CHECK | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 //echo "<pre>\n"; echo $json_str; echo "</pre>\n";
 
-        //Инициализируем cURL и отправляем данные
-        $curl_link = curl_init($server['address']);
-        
-        $curl_options = array(
-          CURLOPT_HEADER         => false,
-          CURLOPT_POST           => true,
-          CURLOPT_POSTFIELDS     => $json_str,
-          CURLOPT_RETURNTRANSFER => true,     // возвращает веб-страницу
-          CURLOPT_CONNECTTIMEOUT => 120,      // таймаут соединения
-          CURLOPT_TIMEOUT        => 120       // таймаут ответа
-        );
-        curl_setopt_array  ($curl_link, $curl_options);
-        
-        $response = curl_exec($curl_link);    // выполняем запрос curl
-        $err     = curl_errno( $curl_link );
-        $errmsg  = curl_error( $curl_link );
-        $header  = curl_getinfo( $curl_link );
+        $response = curl_send ($server['address'], $json_str);
 
-//echo "<pre>\n"; print_r($err); echo "</pre>\n";
-//echo "<pre>\n"; print_r($errmsg); echo "</pre>\n";
-//echo "<pre>\n"; print_r($header); echo "</pre>\n";
-echo "<pre>\n"; print_r($response); echo "</pre>\n";        
+        echo "<pre>\n"; print_r($response); echo "</pre>\n";        
 
-        curl_close($curl_link);
+        
     }
 
   } catch (Exception $e) {
-    echo "<div class='alert alert-danger'><b>Ошибка</b>Вылетело исключение.<br/>{$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
+    echo "<div class='alert alert-danger'><b>Ошибка</b>Вылетело исключение.<br/>[{$e->getCode()}] : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
   }
 }
 

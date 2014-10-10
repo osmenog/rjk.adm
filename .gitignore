@@ -55,3 +55,4 @@ Icon
 /nbproject/private/
 src/config.php
 src/cron/lastcheck.log
+src/cron/lastcheck.log
