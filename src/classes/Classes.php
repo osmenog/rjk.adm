@@ -1,8 +1,8 @@
 <?php
 include_once "config.php";
-include_once "exceptions.php";
+include_once "classes/Exceptions.php";
 include_once "log.php";
-include_once "sync.php";
+include_once "classes/SyncProvider.php";
 
 class worker {
 	public $sql;
@@ -119,9 +119,12 @@ class rejik_worker extends worker {
     parent::__construct($db_config);
     $this->sql->set_charset("utf8"); //Устанавливаем кодировку соединения с БД Режика
 
+    //Скрипты могут выполняться долгое время. Увеличиваем таймаут.
+    set_time_limit (120);
+
     global $config;
     if ($config ['admin_log']==True) logger::init(); //Инициализируем логер
-    Logger::tmp_init();
+    //Logger::tmp_init();
     //Logger::stop();
     
     //Включаем модуль синхронизации
@@ -130,6 +133,7 @@ class rejik_worker extends worker {
         $this->sync_provider = new SyncProvider();  
       } catch (exception $e) {}  
     }
+
   }
 
   // ==========================================================================================================================

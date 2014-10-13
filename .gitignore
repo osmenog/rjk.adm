@@ -1,14 +1,18 @@
 #My
 *.sublime-project
 *.sublime-workspace
-import.csv
+.idea
 .htaccess
 nbproject/
-sql/
-/sql/config.php
+
+doc/
+
 /src/banlists/
 /src/users/
-.idea
+/src/import.csv
+*.log
+
+
 
 # Eclipse IDE
 .settings

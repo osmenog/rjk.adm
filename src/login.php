@@ -1,6 +1,6 @@
 <?php
   include_once "config.php";
-  require_once "classes.php";
+  require_once "classes/Classes.php";
 
   //echo "<h6>{$_SERVER['HTTP_REFERER']}</h6>\n";
   process_requests();
