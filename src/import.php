@@ -43,13 +43,13 @@ private function dir_contents ($full_path){
 	if (is_dir($full_path) && $dh = opendir($full_path)) {
 	        $entry = array();
 	        while (($file = readdir($dh)) !== false) {
-	            if ($file != "." && $file != "..") {
-	            	//&& filetype($full_path . $file) != "file"
-					$fp = $full_path.$file;
-					//echo "<p>$fp</p>\n";
-					$entry[$file] = filetype($fp);
-					//print_r ($entry);
-    			}
+						if ($file != "." && $file != "..") {
+							//&& filetype($full_path . $file) != "file"
+							$fp = $full_path.$file;
+							//echo "<p>$fp</p>\n";
+							$entry[$file] = filetype($fp);
+							//print_r ($entry);
+						}
 	        }
 	        if (count($entry) == 0) return NULL;
 
@@ -80,16 +80,25 @@ private function import_urls($file_path, $bl) {
 	$this::$csv_import_count += count ($res);
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	ТУТ НАДО ДОБАВИТЬ ПРОВЕРКУ НА НАЛИЧИЕ В УРЛ СИМВОЛА-РАЗДЕЛИТЕЛЯ, А ТО В БАЗУ ВСЯКОЕ ГОВНО ПИШЕТСЯ
-	
+// Получаем URL
+// все, что идет после ? обрезаем.
+// кодируем URL
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+	$csv_create_time_start = microtime(true); // Замеряем время
 	//Добавляем все УРЛы в CSV файл
+	$buffer="";
 	foreach ($res as $k=>$v) {
 		// Выполняем преобразование УРЛ. и сохраняем его в БД.
-		fwrite($hdl, "$v;$bl\n");
+		if (strpos ($v, ';') !== false) {
+			echo "$v;$bl\n";
+			continue;
+		}
+		$buffer.="$v;$bl\n";
 	}
+	fwrite($hdl, $buffer);
 
+	$csv_create_time_start = microtime(true) - $csv_create_time_start;
+	echo "<h4>Банлист - {$bl}; Затраченное время: ".round($csv_create_time_start,3)."</h4>\n";
 	fclose($hdl);
 }
 
@@ -111,8 +120,6 @@ public function start(){
 		};
 	}
 	//echo "<h1>{$this->csv_file_path}</h1>\n";
-
-
 
 	$dir_path = $this->rejik_path.'banlists\\';
 	$root_dir_content = $this->dir_contents($dir_path);

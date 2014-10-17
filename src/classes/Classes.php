@@ -644,11 +644,11 @@ class rejik_worker extends worker {
   // ==========================================================================================================================
   public function import_db($csv_file_path) {
     $query_txt = "LOAD DATA INFILE '{$csv_file_path}' REPLACE INTO TABLE `urls` FIELDS TERMINATED BY ';' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n' (`url`, `banlist`)" ;
-    echo "<h1>$query_txt</h1>\n";
+    //echo "<h1>$query_txt</h1>\n";
     $response = $this->sql->query($query_txt);
     if (!$response) {
-    echo "import_db. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
-    return;
+      echo "import_db. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
+      return;
     }
   
     echo "<p>В БД импортировано: ".$this->sql->affected_rows. " записей</p>\n";

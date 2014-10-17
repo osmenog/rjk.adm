@@ -46,7 +46,7 @@
 		    </a>
 		  	<ul class="dropdown-menu" role='menu'>
 		  	  <li><a href="?action=showbanlists"><span class="glyphicon glyphicon-list-alt"></span> Показать список</a></li>
-		  	  <!--<li><a href="?action=newbanlist"><span class="glyphicon glyphicon-plus-sign"></span> Создать банлист</a></li>-->
+		  	  <li><a href="?action=newbanlist"><span class="glyphicon glyphicon-plus-sign"></span> Создать банлист</a></li>
 
 		  	  <!--
 		  	  <li><a href="#">Something else here</a></li>
@@ -138,7 +138,6 @@ function print_layout () {
 			break;
 
 		case 'newbanlist': //Создаем новый банлист
-			break;// Данный функционал отключен
 
 			//Проверяем входные данные
 			if (!isset($_POST['bl_name']) || !isset($_POST['bl_shortdesc']) || !isset($_POST['bl_fulldesc'])) {
@@ -166,11 +165,11 @@ function print_layout () {
 			layout_showbanlists();
 			break;
 
-		/*
+		
 		case 'newbanlist':
 			layout_newbanlist();
 			break;
-		*/
+		
 			
 		case 'getuser': //Применение банлистов к пользователю
 			$user = isset($_GET['user']) ? htmlspecialchars($_GET['user'], ENT_QUOTES) : '';

@@ -5,6 +5,8 @@ include_once "classes/SyncProvider.php";
 
 
 try {
+  //Инициализируем провайдер синхронизации
+
   @$action = $_GET['action']; //На время тестов
 
   switch ($action) {
@@ -41,7 +43,7 @@ try {
   echo $e->get_json();
 } catch (Exception $e){
   echo exception_get_json($e->getCode(), $e->getMessage());
-}
+} 
 
 
 function curl_send($address, $post_data) {

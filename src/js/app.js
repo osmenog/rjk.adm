@@ -392,7 +392,7 @@ var Rejik = {
       next: '>',
       onPageClick: function (event, page) {
         event.preventDefault;
-        Rejik.banlist_get_page(page);
+        Rejik.events_get_page(page);
       }
     });
   },
@@ -452,7 +452,7 @@ var Rejik = {
     var offset = (page-1) * Rejik.events_per_page;
 
     var data = {
-        action: 'banlist.getURLlist',
+        action: 'logger.get',
         limit: Rejik.events_per_page,
         offset: offset};
 
