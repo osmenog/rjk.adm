@@ -1,9 +1,9 @@
-<?php
+﻿<?php
   //Параметры БД САМС
-  //$config ['sams_db']	 = array ('proxy.bankom.omsk.su', 'sams', 'qwerty', 'squidctrl', 'utf8');
-  $config ['sams_db']	 = array ('localhost', 'root', 'osme', 'squidctrl', 'utf8'); //Домашний
-  $config ['rejik_db'] = array ('localhost', 'root', 'osme', 'rejik', 'utf8');
-  $config ['log_db']   = array ('localhost', 'root', 'osme', 'rejik', 'utf8');
+  $config ['sams_db']	 = array ('proxy.bankom.omsk.su', 'sams', 'qwerty', 'squidctrl', 'utf8');
+  //$config ['sams_db']	 = array ('localhost', 'root', '', 'squidctrl', 'utf8'); //Домашний
+  $config ['rejik_db'] = array ('localhost', 'root', '', 'rejik', 'utf8');
+  $config ['log_db']   = array ('localhost', 'root', '', 'rejik', 'utf8');
 
   //Если этот параметр существует, то при выыводи информации из БД САМС будет выполнятся преобразование кодировки
   //$config ['conv'] = array ('cp1252','utf-8');
@@ -37,7 +37,7 @@
 
   $config ['servers'] = array (
     //Имя хоста                         //Пользователь   //Пароль        //MySQL ID
-    'osme-n'    => array ($repl_username, $repl_password, 1),
+    'oib01'    => array ($repl_username, $repl_password, 1),
     'FreeBSD_1' => array ($repl_username, $repl_password, 2),
     'FreeBSD_2' => array ($repl_username, $repl_password, 3)
   );

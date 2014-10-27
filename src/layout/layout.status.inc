@@ -40,9 +40,9 @@ try {
   echo "<table class='table table-condensed'>\n";
   echo "<thead>\n";
   echo "<tr>\n
-        <th width='40%'>Имя сервера</th>\n
-        <th>Доступность</th>\n
-        <th>Статус</th>\n
+        <th width='30%'>Имя сервера</th>\n
+        <th width='20%'>Доступность</th>\n
+        <th width='40%'>Статус</th>\n
         <th width='10%'> </th>\n
         </tr>\n";
   echo "</thead>\n";
@@ -63,17 +63,18 @@ try {
        } else {
          echo "<td class='text-danger'>\n";
          echo "<a href='#srv{$srv_id}'
-         data-toggle='collapse'
-         data-target='#srv{$srv_id}'
-         >\n";
+          data-toggle='collapse'
+          data-target='#srv{$srv_id}'
+          >\n";
          echo "<span class='glyphicon glyphicon-remove'></span> ОШИБКА\n";
          echo "</a>\n";
          echo "</td>\n";
          
        }
      } else {
+
        echo "<td class='text-danger'>НЕ ДОСТУПЕН</td>\n";  
-       echo "<td> </td>\n";
+       echo "<td><span style='font-size: 8pt;'>{$value->sql_error_code}: ".iconv("CP1251", "UTF-8",$value->sql_error_message)."</span></td>\n";
      }
      
      if ($value->get_work_mode()==WORK_MODE_SLAVE) {

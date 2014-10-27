@@ -10,6 +10,7 @@ class RejikServer {
   private $password;
   private $sql_obj;
   public $sql_error_message='';
+  public $sql_error_code=0;
   private $is_connected = False;
   private $mode = -1; //Режим работы сервера.
 
@@ -41,6 +42,7 @@ class RejikServer {
     //Если произошла ошибка подключения к БД
     if ($sql->connect_errno) {
       $this->sql_error_message = $sql->connect_error;
+      $this->sql_error_code = $sql->connect_errno;
       $this->is_connected = False;
       return False;
     } else {

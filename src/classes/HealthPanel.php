@@ -63,7 +63,7 @@ class HealthPanel {
           }
 
       } else {
-        echo "<h3>Ошибка!!! Не могу подключится к серверу {$srv}</h3>";
+        echo "<h3>Ошибка!!! Не могу подключится к серверу {$srv}</br>{$srv->sql_error_message}</h3>";
       }
       //echo "<pre>\n"; print_r($srv); echo "</pre>\n";
     }
