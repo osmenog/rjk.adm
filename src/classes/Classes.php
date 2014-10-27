@@ -152,7 +152,7 @@ class rejik_worker extends worker {
     //Если вышла ошибка
     if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
   
-    if ($response->num_rows == 0) return 0;
+    if ($response->num_rows == 0) return array();
   
     $res = array ();
     if ($raw_mode) {
@@ -261,6 +261,10 @@ class rejik_worker extends worker {
     //                        - Возвращает исключение mysql_exception
     // -------------------------------------------------------------------------
   
+    $name       = $this->sql->real_escape_string ($name      );
+    $short_desc = $this->sql->real_escape_string ($short_desc);
+    $full_desc  = $this->sql->real_escape_string ($full_desc );
+
     // 1. Проверяем, есть ли банлист с таким именем. Если есть - то исключение.
     if (array_search($name, $this->banlists_get())!==False) throw new rejik_exception("Banlist already exists",1);	
   

@@ -7,6 +7,11 @@ $(document).ready (function() {
     selector: '[rel="tooltip"]'
   });
 
+  //И поповеры :)
+  $('body').popover({
+    selector: '[rel="popover"]'
+  });
+
   /*var r = new RegExp ("");
   var action = r.exec (window.location.href);
   console.log (action);*/

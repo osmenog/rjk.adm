@@ -112,12 +112,13 @@ function print_layout () {
 	//Так как обработчик сообщений аякс писать было впадлу, будет использована классическая отправка с формы.
 	//Вначале обрабатываем данные в POST запросе, выполняем его p_action
 	//Выполнение этого запроса предусматривает вывод окошечка с результатом выполнения.
+try {	
 	$p_action = (isset($_POST['p_action']) ? $_POST['p_action'] : '');
 	switch ($p_action) {
 		case 'set_user_acl': //Устанавливаем права пользователя на бан-листы
 			//Проверяем корректность запроса. Актуальность данных будет проверяться где-то "внутри" (=
 			//Под "корректностью" понимаем наличие всех входных параметров и заполненность данными (неважно какими).
-			$user=isset($_POST['user']) ? mysql_real_escape_string($_POST['user']) : '';
+			$user=isset($_POST['user']) ? $_POST['user'] : '';
 			if (empty($user)) {
 				echo "<div class='alert alert-danger'><b>Ошибка!</b> Не указан один из параметров</div>\n";
 				break;
@@ -146,9 +147,9 @@ function print_layout () {
 			}
 			
 			//Фильтруем значения переменных
-			$bl_name = mysql_real_escape_string($_POST['bl_name']);
-			$bl_shortdesc = mysql_real_escape_string($_POST['bl_shortdesc']);
-			$bl_fulldesc = mysql_real_escape_string($_POST['bl_fulldesc']);
+			$bl_name = $_POST['bl_name'];
+			$bl_shortdesc = $_POST['bl_shortdesc'];
+			$bl_fulldesc = $_POST['bl_fulldesc'];
 
 			//Вызываем API-функцию
 			create_banlist ($bl_name, $bl_shortdesc, $bl_fulldesc);
@@ -208,10 +209,21 @@ function print_layout () {
       layout_showjournal();
       break;
 
+    case 'status':
+    	include "layout/layout.status.inc";
+    	break;
+
 		default:
-			echo "<h1>action=$action</h1>\n";
+			if (empty($action)) {
+				header("Location: /{$config ['proj_name']}/index.php?action=status");
+			}else{
+				echo "<h1>action=$action</h1>\n";	
+			}
 			break;
 	}
+} catch (Exception $e) {
+	echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
+}
 }
 
 //Функции с префиксом layout_ отвечают за вывод содержимого для указанного действия (action)

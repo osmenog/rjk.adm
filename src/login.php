@@ -65,7 +65,10 @@ function login ($login, $pass) {
   global $config;
   global $alert_message;
   
-  logger::init(); //Инициализируем логер
+  //Инициализируем логер
+  if (!logger::init()) {
+    $alert_message .= "<div class='alert alert-warning'><b>Logger error</b> ".Logger::get_last_error()."</div>\n";
+  }
   
   //1. Извлекаем из БД SAMS логин и хэш-пароль
   @$sql = new mysqli($config['sams_db'][0], $config['sams_db'][1], $config['sams_db'][2], $config['sams_db'][3]);
@@ -101,7 +104,7 @@ function login ($login, $pass) {
   
   // -!!!- ВНИМАНИЕ ---------------------------------------------------
   // - Эта строчка нужна только на момент отладки.
-  //$usr_hash = $db_hash;
+  $usr_hash = $db_hash;
   // -!!!--------------------------------------------------------------
 
   //2. Сравниваем с введенными значениями
@@ -114,9 +117,10 @@ function login ($login, $pass) {
     $_SESSION['auth'] = 1;
     $_SESSION['login'] = $login;
     $_SESSION['ip'] = $ip;
+    $_SESSION['server_verification'] = FALSE;
 
     logger::add(1, "Успешная аутентификация пользователя [{$login}]", $login);
-    header("Location: /{$config ['proj_name']}/index.php?action=showusers");
+    header("Location: /{$config ['proj_name']}/index.php?action=status");
   } else {
     $alert_message .= "<div class='alert alert-danger'>Логин или пароль введены не правильно. Попробуйте еще раз.</div>\n";
     logger::add(2, "При аутентификации пользователя [{$login}] был указан неверный пароль", $login);

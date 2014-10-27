@@ -112,3 +112,25 @@
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
+
+.table th {
+  background: none repeat scroll 0 0 #f0f0f0;
+}
+
+.hiddenRow {
+    padding: 0 !important;
+}
+
+.hiddenRow td {
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+/*.hiddenRow td .in{
+    border-top: 1px solid #ddd;
+}*/
+
+.hiddenAlert {
+  margin: 5px;
+  padding: 3px;
+}

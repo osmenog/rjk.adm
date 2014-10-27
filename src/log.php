@@ -11,6 +11,8 @@ class logger {
 	private static $worker;
 	private static $events_count=0;
 	private static $is_cached=False;
+	private static $last_error_msg='';
+
 	//--
 	private static $tmp_hdl;
 	private static $is_tmp_created=False;
@@ -31,6 +33,10 @@ class logger {
 		self::$is_tmp_created = True;
 	}
 
+	public static function get_last_error() {
+		return self::$last_error_msg;
+	}
+
 	public static function init () {
 		global $config;
 
@@ -43,7 +49,7 @@ class logger {
 		//Инициализируем подключение к БД
 		@$sql_con = new mysqli($db_host, $db_login, $db_passwd, $db_name);
 		if ($sql_con->connect_errno) {
-    	echo "Не удалось подключиться к MySQL: (" . $sql_con->connect_errno . ") " . $sql_con->connect_error;
+    	self::$last_error_msg = "Не удалось подключиться к MySQL: (" . $sql_con->connect_errno . ") " . $sql_con->connect_error;
     	return false;
 		}
 		$sql_con->set_charset("utf8"); //Устанавливаем кодировку соединения с БД Режика
@@ -55,6 +61,8 @@ class logger {
 		
 		//Проверяем, авторизован ли рользователь
 		self::$login = isset($_SESSION['login']) ? $_SESSION['login'] : "";
+
+		return true;
 	}
 
 	public static function init_checker() {
@@ -70,7 +78,12 @@ class logger {
 	}
 
 	public function add ($event_code, $event_msg, $event_attrib="", $datentime=-1) {
-		if (self::$is_init == False) return False;
+		// Если компонент еще не инициализироан, то прерываем работу и создаем сообщение об ошибке
+		if (self::$is_init == False) {
+			self::$last_error_msg = "Компонент logger не инициализирован!";
+			return False;
+		}
+
 		$sql_obj = self::$sql;
 
 		//Подготавливаем данные
@@ -89,21 +102,33 @@ class logger {
 												 '{$crc}');";
 		
 		$response = $sql_obj->query($query_str);
- 		if (!$response) {
- 			//Выброс исключения опасен
- 			//throw new mysql_exception($sql_obj->error, $sql_obj->errno);
+
+ 		//Если во время выполнения запроса произошла ошибка, то прерываем работу и создаем сообщение об ошибке
+    if (!$response) {
+ 			self::$last_error_msg = "Во время выполнения запроса произошла ошибка: ({$sql_obj->errno}) {sql_obj->error}";
+      return False;
  		}
 
 		//self::$last_id .= 1;
+    return True;
 	}
 
 	private static function count_log_events() {
-		if (self::$is_init == False) return False;
-		$sql_obj = self::$sql;
+    if (self::$is_init == False) {
+      self::$last_error_msg = "Компонент logger не инициализирован!";
+      return False;
+    }
+
+    $sql_obj = self::$sql;
 
 		//Выполняем запрос, считающий количество записей
 		$sql_res = $sql_obj->query ("SELECT Count(*) FROM log;", MYSQLI_USE_RESULT);
-		if (!$sql_res) throw new mysql_exception($sql_obj->error, $sql_obj->errno);
+		
+    if (!$sql_res) {
+      self::$last_error_msg = "Во время выполнения запроса произошла ошибка: ({$sql_obj->errno}) {sql_obj->error}";
+      return False;
+    }
+
 		$row = $sql_res->fetch_row();
 		
 		self::$events_count = $row[0];
@@ -115,10 +140,13 @@ class logger {
 	}
 
 	public function get ($start=0, $len=250) {
-		if (self::$is_init == False) return False;
-		$sql_obj = self::$sql;
+    if (self::$is_init == False) {
+      self::$last_error_msg = "Компонент logger не инициализирован!";
+      return False;
+    }
+    $sql_obj = self::$sql;
 
-		self::count_log_events();
+    self::count_log_events();
 
 		//Подготавливаем запрос
 		$query_str = "SELECT `id`,`datentime`,`code`,`message`,`attribute`,`user_login`,`user_ip`,`crc` FROM log ORDER BY id ASC LIMIT {$start}, {$len}";
