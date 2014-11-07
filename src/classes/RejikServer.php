@@ -1,18 +1,19 @@
 <?php
+//Режимы работы серверов
 const WORK_MODE_SLAVE     =  0;
 const WORK_MODE_MASTER    =  1;
 const WORK_MODE_UNDEFINED = -1;
 
 class RejikServer {
-  private $server_id;
-  private $hostname;
-  private $username;
-  private $password;
-  private $sql_obj;
-  public $sql_error_message='';
-  public $sql_error_code=0;
-  private $is_connected = False;
-  private $mode = -1; //Режим работы сервера.
+  private $server_id;                 //Уникальный ID сервера (задается в конфиге mysql)
+  private $hostname;                  //Имя хоста, на котором работает mysql
+  private $username;                  //Имя пользователя
+  private $password;                  //Пароль пользователя
+  private $sql_obj;                   //Обьект, взаимодействующий с mysql
+  private $sql_connected  = False;    //Равен true, если установлено соединение с mysql
+  private $aviable        = False;    //Равен true, если хост сервера доступен (включен и пингуется)
+  public $sql_error      = False;    //Равен False, если ошибок нет. Иначе содержит ошибки, связанные с mysql (не репликация)
+  private $work_mode = WORK_MODE_UNDEFINED;    //Режим работы сервера (Мастер, Слейв или Не определено)
 
   public function  __construct($host, $user='', $passwd='', $id=0) {
     $this->server_id = $id;
@@ -26,28 +27,55 @@ class RejikServer {
   }
   
   public function __toString() {
-    return $this->hostname;
+    return isset($this->hostname) ? $this->hostname : '';
   }
+
+  /**
+   * Задаем поля, которые будут сохранены при сериализации
+   * @return array [description]
+   */
+  public function __sleep() {
+    //echo "<p>Вызван метод sleep из RejikServer [{$this}]</p>";
+    return array ('server_id', 'sql_connected', 'work_mode', 'hostname', 'username', 'password', 'sql_error');
+  }
+
+  public function __wakeup() {
+    //echo "<p>Вызван метод wakeup из RejikServer [{$this}]</p>";
+
+    //Если сохраненный ранее обьект был подключен к базе, то восстанавливаем связь.
+    if ($this->sql_connected) {
+      $this->connect();
+    }
+  }  
   
+  private function set_error_var($error, $errno = 0) {
+    $this->sql_error = array ('error' => $error, 'errno' => $errno);
+  }
+
+  public function get_error() {
+    return $this->sql_error;
+  }
   public function connect() {
     //Создаем обьект mysql
-    $sql = mysqli_init();
-    
+    $this->sql_obj = mysqli_init();
+
     //Настраиваем таймаут
-    $sql->options(MYSQLI_OPT_CONNECT_TIMEOUT, 7);
+    $this->sql_obj->options(MYSQLI_OPT_CONNECT_TIMEOUT, 3);
     
     //Устанавливаем соединение
-    @$sql->real_connect($this->hostname, $this->username, $this->password);
+    @$this->sql_obj->real_connect($this->hostname, $this->username, $this->password);
 
     //Если произошла ошибка подключения к БД
-    if ($sql->connect_errno) {
-      $this->sql_error_message = $sql->connect_error;
-      $this->sql_error_code = $sql->connect_errno;
-      $this->is_connected = False;
+    if ($this->sql_obj->connect_errno) {
+      //После данного присваивания, данные полученные из sql_obj->connect_error будут считаться не актуальными
+      //так как в манах (http://ru2.php.net/manual/ru/mysqli.connect-error.php) написано:
+      //Возвращает последнее сообщение об ошибке после вызова mysqli_connect()
+
+      $this->set_error_var ($this->sql_obj->connect_error, $this->sql_obj->connect_errno);
+      $this->sql_connected = False;
       return False;
     } else {
-      $this->sql_obj = $sql;
-      $this->is_connected = True;
+      $this->sql_connected = True;
       return True;
     }
   }
@@ -63,7 +91,7 @@ class RejikServer {
   }
   
   public function is_connected() {
-    return $this->is_connected;
+    return $this->sql_connected;
   }
   
   public function get_status($master_mode = False) {
@@ -80,7 +108,7 @@ class RejikServer {
     
     //Если ошибка, то прерываем выполнение и возвращаем False.
     if (!$res) {
-      $this->sql_error_message = $this->sql->errno." ".$this->sql->error;
+      $this->sql_error = $this->set_error_var ($this->sql->errno." ".$this->sql->error);
       return False;
     }
     
@@ -107,7 +135,7 @@ class RejikServer {
     $res = $this->sql_obj->query("SHOW SLAVE HOSTS;");
     //Если ошибка, то прерываем выполнение и возвращаем False.
     if (!$res) {
-      $this->sql_error_message = $this->sql->errno." ".$this->sql->error;
+      $this->sql_error = $this->set_error_var ($this->sql->errno." ".$this->sql->error);
       return False;
     }
     
@@ -127,49 +155,135 @@ class RejikServer {
   public function get_work_mode() {
     //Функция возвращает режим работы
     //0-SLAVE    1-MASTER      -1 - Еще не определен.
-    return $this->mode;
+    return $this->work_mode;
   }
 
   public function set_work_mode($work_mode) {
     //Функция устанавливает режим работы
-    $this->mode = $work_mode;
+    $this->work_mode = $work_mode;
   }
 
   public function change_master($master_host, $master_user, $master_password) {
   //Функция переключает режим репликации на другой сервер
   echo "<h1>master_change on ".$this."</h1>\n";
   //Подготавливаем запросы
-  $query  = "SHOW SLAVE STATUS; ";
-  $query .= "STOP SLAVE; ";
+  $query  = "STOP SLAVE; ";
   $query .= "RESET SLAVE; ";
   $query .= "CHANGE MASTER TO MASTER_HOST = '192.168.10.251', MASTER_USER = 'repl_user', MASTER_PASSWORD = 'repl', MASTER_AUTO_POSITION=1;";
 
   $mysqli = $this->sql_obj;
-  //echo "<pre>\n"; print_r($this); echo "</pre>\n";
+  
   //Экранируем против всякой залупы
   $query =  $mysqli->real_escape_string($query);
   
-  echo "<pre>\n"; print_r($mysqli->connect_error); echo "</pre>\n";
+  //Выполняем мультизапрос
   if ($mysqli->multi_query($query)) {
+
     // Получаем все результаты мульти-запроса
     do {
-      echo "<pre>\n"; print_r($mysqli); echo "</pre>\n";
+      //Получаем ответ от n-ого запроса
       if ($result = $mysqli->store_result()) {
+        echo "<pre>\n"; print_r ($result); echo "</pre>\n";
         while ($row = $result->fetch_row()) {
-          echo "<pre>{$row[0]}</pre>\n";
+          echo "<pre>"; print_r ($row); echo "</pre>\n";
         }
-        $result->free();
+        //$result->free();
       } else {
-        var_dump($mysqli->error);
+        if ($mysqli->errno) {
+          echo "<pre><b>При вызове store_result произошла ошибка:</b></br>\n[".$mysqli->errno."] ".$mysqli->error."</pre>";
+        }
       }
+      
     } while ($mysqli->next_result());
+    var_dump($mysqli->error);
   } else {
-    echo "<pre>\n"; print_r($mysqli->error); echo "</pre>\n";
+    //Если вылезла ошибка, выводим на экран
+    echo "<pre>\n"; echo ("<b>master_query вернул FALSE</b>\n"); print_r ($this->dbg_get_error()); echo "</pre>\n";
   }
-  
-  
-  echo "{$query}";
-  
   }
+  public function change_master_ex($master_host, $master_user, $master_password) {
+    //Функция переключает режим репликации на другой сервер
+    echo "<h1>master_change on ".$this."</h1>\n";
+    //Подготавливаем запросы
+    $query  = "SHOW SLAVE STATUS; ";
+    $query .= "STOP SLAVE; ";
+    $query .= "RESET SLAVE; ";
+    $query .= "CHANGE MASTER TO MASTER_HOST = '192.168.10.251', MASTER_USER = 'repl_user', MASTER_PASSWORD = 'repl', MASTER_AUTO_POSITION=1;";
+  
+    $mysqli = $this->sql_obj;
+    
+    //Экранируем против всякой залупы
+    $query =  $mysqli->real_escape_string($query);
+    
+    if ($mysqli->multi_query($query)) {
+      $result = $mysqli->store_result();
+      echo "<pre>\n"; echo "<b>Первый вызов store result:</b></br>"; print_r ($result); echo "\n<b>errors:</b></br>"; print_r ($this->dbg_get_error()); echo "</pre>\n";
+      
+      if ($mysqli->more_results()) {
+        printf("-----------------\n");
+      }
+
+      if ($mysqli->next_result()) {
+        echo "<pre><b>next_result вернул TRUE</b></pre>";
+      }else{
+        echo "<pre><b>next_result вернул FALSE</b></br>";
+        echo "\n"; echo ("<b>errors:</b></br>"); print_r ($this->dbg_get_error()); echo "</pre>\n";
+      }
+
+$result = $mysqli->store_result();
+      echo "<pre>\n"; echo "<b>Первый вызов store result:</b></br>"; print_r ($result); echo "\n<b>errors:</b></br>"; print_r ($this->dbg_get_error()); echo "</pre>\n";
+      
+      if ($mysqli->more_results()) {
+        printf("-----------------\n");
+      }
+
+      if ($mysqli->next_result()) {
+        echo "<pre><b>next_result вернул TRUE</b></pre>";
+      }else{
+        echo "<pre><b>next_result вернул FALSE</b></br>";
+        echo "\n"; echo ("<b>errors:</b></br>"); print_r ($this->dbg_get_error()); echo "</pre>\n";
+      }
+
+      exit;
+      // Получаем все результаты мульти-запроса
+      do {
+        //Получаем ответ от n-ого запроса
+        if ($result = $mysqli->store_result()) {
+          echo "<pre>\n"; print_r ($result); echo "</pre>\n";
+          while ($row = $result->fetch_row()) {
+            echo "<pre>"; print_r ($row); echo "</pre>\n";
+          }
+          //$result->free();
+        } else {
+          var_dump($mysqli->error);
+        }
+        var_dump($mysqli->error);
+        var_dump($mysqli->next_result());
+      } while ($mysqli->next_result());
+    } else {
+      echo "<pre>\n"; echo ("<b>master_query вернул FALSE</b>"); print_r ($this->dbg_get_error()); echo "</pre>\n";
+    }
+    //echo "{$query}";
+    
+  }
+
+    public function getHostname()
+    {
+        return $this->hostname;
+    }
+
+    public function dbg_get_error() {
+      if (isset($this->sql_obj)) {
+             $err = array (
+                    isset($this->sql_obj->connect_errno) ? $this->sql_obj->connect_errno : '-',
+                    isset($this->sql_obj->connect_error) ? $this->sql_obj->connect_error : '-',
+                    isset($this->sql_obj->errno) ? $this->sql_obj->errno : '-',
+                    isset($this->sql_obj->error) ? $this->sql_obj->error : '-'
+                    );
+             return $err;
+      } else {
+        return "Sql_obj not set";
+      }
+    }
 }
 ?>

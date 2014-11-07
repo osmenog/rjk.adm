@@ -1,62 +1,12 @@
 #My
 *.sublime-project
 *.sublime-workspace
-.idea
-.htaccess
-nbproject/
 
+*.htaccess
 doc/
-
-/src/banlists/
-/src/users/
-/src/import.csv
-*.log
-
-
-
-# Eclipse IDE
-.settings
-.project
-.buildpath
-
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
-
-# Folder config file
-Desktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Windows Installer files
-*.cab
-*.msi
-*.msm
-*.msp
-
-# =========================
-# Operating System Files
-# =========================
-
-# OSX
-# =========================
-
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Icon must ends with two \r.
-Icon
-
-
-# Thumbnails
-._*
-
-# Files that might appear on external disk
-.Spotlight-V100
-.Trashes
-/nbproject/private/
-src/config.php
-src/cron/lastcheck.log
-src/cron/lastcheck.log
+lastcheck.log
+src/users/
+src/banlists/
+.idea/
+import.csv
+config.php

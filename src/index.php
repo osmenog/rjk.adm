@@ -5,8 +5,23 @@
 	global $config;
 
 	//Проверяем, залогинен ли пользователь
-	CheckSession();
-	
+	if (CheckSession() === False) {
+		header("Location: /{$config ['proj_name']}/login.php");
+		exit;
+	}
+
+	if (CheckServersState() === False) {
+		if (isset($_GET['servers_check'])) {
+			print_waiting_message();
+		} else {
+			header("Location: /{$config ['proj_name']}/index.php?servers_check");	
+		}
+		exit;
+	};
+
+	function print_waiting_message() {
+    include "layout/layout.waiting.inc";
+	}
 ?>
 
 <!DOCTYPE html>
@@ -92,6 +107,7 @@
 			echo "<div class='debug'>\n";
 			echo "<pre>"; print_r($_POST); echo "</pre>";
 			echo "<pre>"; print_r($_GET); echo "</pre>";
+      echo "<pre>"; print_r($_SESSION); echo "</pre>";
 			echo "</div>\n";	
 		}
 		print_layout();
@@ -213,9 +229,15 @@ try {
     	include "layout/layout.status.inc";
     	break;
 
+    case 'logout':
+      CloseSession();
+
+      header("Location: /{$config ['proj_name']}/login.php");
+      break;
+
 		default:
 			if (empty($action)) {
-				header("Location: /{$config ['proj_name']}/index.php?action=status");
+				//header("Location: /{$config ['proj_name']}/index.php");
 			}else{
 				echo "<h1>action=$action</h1>\n";	
 			}

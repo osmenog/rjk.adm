@@ -5,6 +5,7 @@ class ServersList implements Iterator {
   private $servers_id = array();    //Массив, хранящий ID серверов
 
   public function __construct($servers_config) {
+    //Получаем данные из конфига и инициализируем обьекты для каждого сервера
     if (is_array($servers_config)) {
       foreach ($servers_config as $key => $value) {
         $this->servers[] = new RejikServer ($key, $value[0], $value[1], $value[2]);
@@ -12,6 +13,15 @@ class ServersList implements Iterator {
       }
     }
   }
+
+  public function __sleep() {
+    //echo "<p>Вызван метод sleep из ServersList</p>";
+    return array ("servers", "servers_id");
+  }
+
+  public function __wakeup() {
+    //echo "<p>Вызван метод wakeup из ServersList</p>";
+  }  
  
   public function current() {
     return $this->servers[$this->position];
@@ -43,6 +53,14 @@ class ServersList implements Iterator {
     }
     return False;
   }
+
+  // public function dbg_get_servers_state() {
+  //   $err2 = array ();
+  //   for ($i=0; $i <= count($this->servers)-1 ; $i++) { 
+  //     $err2[] = $this->servers[$i]->dbg_get_error();
+  //   }
+  //   return $err2;
+  // }
 }
 
 ?>
