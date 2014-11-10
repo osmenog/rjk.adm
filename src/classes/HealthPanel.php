@@ -58,35 +58,21 @@ class HealthPanel {
     return isset($this->local_server_name) ? $this->local_server_name : '';
   }
 
-  //Функция проверяет доступность всех серверов
+  //Функция проверяет доступность всех серверов, и определяет режим их работы
   public function check_availability () {
-    //var_dump($this->servers);
     
     //Увеличиваем таймаут
     set_time_limit (120);
-    //echo "<pre>\n"; print_r($this->servers_list); echo "</pre>\n";
+    
     //Перебеираем список серверов...
     foreach ($this->servers_list as $srv) {
 
       //.. и на каждом пытаемся установить соединение.
-      //echo "<h1>Проверяем {$srv}</h1>\n";
-      
       if ($srv->connect()) {
-      //echo "<pre>\n"; print_r($srv); echo "</pre>\n";
         //Если сервер доступен, то определяем режим его работы
-        // сначала проверяем, является ли он мастером:
-        $r = $srv->get_slave_hosts();
-        //echo "<pre>\n"; print_r($r); echo "</pre>\n";
-          //Проверяем на наличие ошибок
-          if ($r===False) echo "<div class='alert alert-danger'><b>Ошибка:</b> ".$srv->sql_error_message."</div>\n";
-          
-          //Если SHOW SLAVE HOSTS что то вернул, значит к данному серверу кто-то подключен, и он является мастером.
-          if ($r!==0) {
-            $srv->set_work_mode(WORK_MODE_MASTER);
-          }else{
-            $srv->set_work_mode(WORK_MODE_SLAVE);
-          }
-
+        $srv_mode = $srv->get_work_mode();
+        //echo "<pre>\n"; print_r($srv_mode); echo "</pre>\n";
+        
       } else {
         //echo "<h3>Ошибка!!! Не могу подключится к серверу {$srv}</br>{$srv->sql_error_message}</h3>";
       }
@@ -102,14 +88,14 @@ class HealthPanel {
     return $this->servers_list;
   }
 
-  public function check_for_errors(RejikServer $srv) {
+  public function get_repl_errors(RejikServer $srv) {
     //Функция проверяет статус сервера на ошибки
 
     //Определяем режим работы
     if ($srv->get_work_mode()==WORK_MODE_SLAVE) {
       
       //Если режим SLAVE, то выполняем SHOW SLAVE STATUS
-      $stat = $srv->get_status(False);
+      $stat = $srv->get_repl_status(False);
       
       //Заполняем массив интересующими нас ключами
       $error_fields = array (
@@ -153,8 +139,7 @@ class HealthPanel {
 
   //Функция вызывает ряд команд, и производит смену мастера.
   public function switch_master($id) {
-  
-
+    
     try {
       //Проверяем, существует ли такой ID
       $srv = $this->servers_list->get_server_by_id($id);
@@ -163,27 +148,39 @@ class HealthPanel {
         throw new OutOfBoundsException("В 'switch_master' указан не существующий ID", 1);
       }
 
+      echo "<h1>Переключаем {$srv} в режим \"Мастер\"</h1>\n";
+      
       //Проверяем доступность серверов
-
       $this->check_availability();
        
       if (!$srv->is_connected()) throw new LogicException("Сервер {$srv} не доступен!",1);
 
       //Определяем режим сервера, и если он не слейв, то прекращаем работу
-      if ($srv->get_work_mode() != WORK_MODE_SLAVE) throw new LogicException("Сервер {$srv} уже работает в режиме MASTER",1);
+      if ($srv->get_work_mode() == WORK_MODE_MASTER) throw new LogicException("Сервер {$srv} уже работает в режиме MASTER",1);
+
+      echo "<h1>Отправляем запросы серверам:<h1>\n";
 
       //Определяем оставшиеся сервера, и отправляем сапрос по смене мастера
       foreach ($this->servers_list as $s) {
         //Если сервер Доступен И не является выбранным сервером
-        if ($s->is_connected() &&
-            // $s->get_work_mode() == WORK_MODE_SLAVE &&
-            $s->get_id() != $id
-        ){
-          $s->change_master("host","user","pass");
-        } else {
-          echo "<h1>Сервер {$s} пропущен</h1>";
-          //echo $s->is_connected()." - ".$s->get_work_mode()." - ".$s->get_id();
+        if( !$s->is_connected() ) {
+          echo "<h2>Сервер {$s} не доступен</h2>";
+          continue;
         }
+
+        if ( $s->get_id() != $id ) {
+          echo "<h2>Серверу {$s} отправлен запрос на смену мастера</h2>";
+          $s->change_master_to($srv);
+        } else {
+          
+          if ( $s->reset_slave() ) {
+            echo "<h2>На сервере {$s} отключен Слейв-режим</h2>";
+          } else {
+            throw new LogicException("На сервере {$s} произошла ошибка при отключении SLAVE режима: {$s->get_error()}",1);
+          }
+        }
+
+        //echo $s->is_connected()." - ".$s->get_work_mode()." - ".$s->get_id();
       }
     } catch (Exception $e) {
       throw $e;

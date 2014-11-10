@@ -47,7 +47,7 @@
 	<div class="container">
 
 	<div class="navbar-header">
-		<a class="navbar-brand text-center" href="/<?php echo $config ['proj_name'];?>">REJIK<br/><small>web admin</small></a>
+		<a class="navbar-brand text-center" href="/<?php echo $config ['proj_name'];?>/index.php?action=status">REJIK<br/><small>web admin</small></a>
 	</div>
 
 	<div class="navbar-collapse collapse">

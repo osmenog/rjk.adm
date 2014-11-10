@@ -33,14 +33,14 @@ try {
   echo "</ul>\n";
   
   echo "<h3>Статус репликации:</h3>\n";
-  
+  //echo "<button class='btn btn-success btn-lg' onClick='location.href=\"?servers_check\"'>Выполнить проверку</button>  \n";
   
   
   //Стартуем проверку доступности серверов
-  //$hp->check_availability();
+  $hp->check_availability();
   
   //Загружаем состояние обьектов
-  $hp->restore_session();
+  //$hp->restore_session();
   
   //Сохраняем результаты проверки в открытой сессии
   //$hp->save_session();
@@ -63,13 +63,17 @@ try {
     echo "<tr>\n";
     echo "<td><span>{$value}</span>\n";
     $srv_id = $value->get_id();
-    if ($value->get_work_mode() == WORK_MODE_MASTER) echo " <span class='label label-danger'>МАСТЕР</span>";
+    if ($value->mode() == WORK_MODE_MASTER) {
+      echo " <span class='label label-danger'>МАСТЕР</span>";
+    } elseif ($value->mode() == WORK_MODE_SLAVE) {
+      echo " <span class='label label-warning'>ПОДЧИНЕННЫЙ</span>";
+    }
     echo "</td>\n";
 
     if ($avaiable = $value->is_connected()) {
       echo "<td class='text-success'>ДОСТУПЕН</td>";
       
-      $err = $hp->check_for_errors($value);
+      $err = $hp->get_repl_errors($value);
       if (empty($err)) {
         echo "<td class='text-success'>OK</td>";
       } else {
@@ -87,7 +91,8 @@ try {
       echo "<td><span style='font-size: 8pt;'>{$err['errno']}: " . iconv("CP1251", "UTF-8", $err['error']) . "</span></td>\n";
     }
     
-    if ($value->get_work_mode() == WORK_MODE_SLAVE) {
+    $wm = $value->mode();
+    if (($wm == WORK_MODE_SLAVE || $wm == WORK_MODE_UNDEFINED) && $avaiable) {
       echo "<td><button type='button' onClick='location.href=\"?action=status&switch_master_to=" . $value->get_id() . "\"' class='btn btn-primary btn-xs'> Сделать мастером</button></td>\n";
     } else {
       echo "<td> </td>\n";
