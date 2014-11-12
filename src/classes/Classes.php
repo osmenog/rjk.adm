@@ -971,6 +971,74 @@ class Checker {
 }
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 
+function set_user_acl($user, $banlists) {
+  //Функция выполняет назначение прав полюзователю
+  global $config;
+  $prx = new proxy_worker ($config['sams_db']);
+  $rejik = new rejik_worker ($config['rejik_db']);
+
+  //echo "<pre>"; print_r($banlists); echo "</pre>";
+
+  //1. Проверяем, существует ли пользователь.
+  if (!($prx->is_user($user))) {
+    echo "<div class='alert alert-danger'><b>Ошибка!</b> Пользователь $user не найден в базе SAMS</div>\n";
+    return -1;
+  }
+
+  //2. Получаем список бан-листов пользователя
+  $user_banlists = $rejik->user_acl_get($user);
+
+  //3. Удаляем дубликаты из входящего списка банлистов
+  // В данном случае попадание сюда дубликатов невозможно,
+  // т.к. данные передаются через форму, используя метод POST.
+  // Если в запросе вдруг окажется две записи, то обработана будет только последняя.
+
+  $result_log=''; //Сюда будут писаться результаты выполнения команд
+  //Выполняем назначение прав
+  foreach ($banlists as $key => $value) {
+    switch ($value) {
+      case 0:
+        //Бан листы на удаление
+        if (array_search($key, $user_banlists)!==FALSE) {
+          $rejik->user_acl_remove($user, $key);
+          $result_log.= "Банлист <i>$key</i> будет применяться к пользователю <i>$user</i><br/>\n";
+        }
+        break;
+      
+      case 1:
+        if (array_search($key, $user_banlists)===FALSE) {
+          $rejik->user_acl_add($user, $key); 
+          $result_log.= "Банлист <i>$key</i> не будет применяться к пользователю <i>$user</i><br/>\n";
+        }
+        break;
+      
+      default:
+        echo "<div class='alert alert-danger'><b>Ошибка!</b> Получен неверный параметр: [$key]=[$value]</div>\n";
+        return -1;
+    }
+  }
+
+  if ($result_log!='') echo "<div class='alert alert-success'>\n{$result_log}\n</div>\n";
+}
+function create_banlist ($name, $short_desc, $full_desc) {
+  global $config;
+  $rejik = new rejik_worker ($config['rejik_db']);
+  try {
+    if ($rejik->banlist_create($name, $short_desc, $full_desc)) {
+      echo "<div class='alert alert-success'>Создание бан-листа <i>{$name}</i> успешно выполнено!</div>\n";
+    }
+  } catch (rejik_exception $e) {
+    if ($e->getCode() == 0) {
+      echo "<div class='alert alert-danger'><b>Ошибка!</b> Банлист <i>{$name}</i> уже существует</div>\n";  
+    } else {
+      echo "<div class='alert alert-danger'><b>Ошибка</b><br/>{$e->getCode()} : {$e->getMessage()}</div>\n";  
+    }
+  } catch (exception $e) {
+    echo "<div class='alert alert-danger'><b>Ошибка</b>Вылетело исключение.<br/>{$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
+  }
+
+  return;
+}
 
 // case "reconfigure":
 // echo('<div id="right_frame_align">');

@@ -37,10 +37,10 @@ try {
   
   
   //Стартуем проверку доступности серверов
-  $hp->check_availability();
+  //$hp->check_availability();
   
   //Загружаем состояние обьектов
-  //$hp->restore_session();
+  $hp->restore_session();
   
   //Сохраняем результаты проверки в открытой сессии
   //$hp->save_session();
