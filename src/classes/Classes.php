@@ -1,7 +1,7 @@
 <?php
 include_once "config.php";
 include_once "classes/Exceptions.php";
-include_once "log.php";
+include_once "classes/Logger.php";
 include_once "classes/SyncProvider.php";
 
 class worker {
@@ -842,7 +842,7 @@ class Checker {
    * @return type В случае ошибки возвращаем False. Если все ОК - то True
    */
   private function checker_db_insert ($sql, $filename, $dt, $message) {
-    $filename = mysql_real_escape_string ($filename);
+    $filename = $sql->real_escape_string ($filename);
     $query = "INSERT INTO `checker`(`file`, `lastcheck`, `msg`) VALUES ('$filename','$dt','$message');";
     $res = $sql->query($query);
     if (!$res) {

@@ -2,7 +2,7 @@
 include_once "config.php";
 include_once "classes/Classes.php";
 
-class logger
+class Logger
 {
   private static $sql;
   private static $last_crc;
@@ -156,7 +156,7 @@ class logger
     
     //Подготавливаем запрос
     $query_str = "SELECT `id`,`datentime`,`code`,`message`,`attribute`,`user_login`,`user_ip`,`crc` FROM log ORDER BY id ASC LIMIT {$start}, {$len}";
-    echo "<pre>" . $query_str . "</pre>";
+    //echo "<pre>" . $query_str . "</pre>";
     
     $sql_res = $sql_obj->query($query_str, MYSQLI_USE_RESULT);
     if (!$sql_res) throw new mysql_exception($sql_obj->error, $sql_obj->errno);

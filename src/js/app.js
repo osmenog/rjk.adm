@@ -385,21 +385,21 @@ var Rejik = {
   },
 
   journal_viewer_init: function() {
-    var pagenator = $('#pagination-journal');
-    var pages_count = pagenator.data("pages-count");
+    // var pagenator = $('#pagination-journal');
+    // var pages_count = pagenator.data("pages-count");
 
-    pagenator.twbsPagination({
-      totalPages: pages_count,
-      visiblePages: 10,
-      first: '',
-      last: '',
-      prev: '<',
-      next: '>',
-      onPageClick: function (event, page) {
-        event.preventDefault;
-        Rejik.events_get_page(page);
-      }
-    });
+    // pagenator.twbsPagination({
+    //   totalPages: pages_count,
+    //   visiblePages: 10,
+    //   first: '',
+    //   last: '',
+    //   prev: '<',
+    //   next: '>',
+    //   onPageClick: function (event, page) {
+    //     event.preventDefault;
+    //     Rejik.events_get_page(page);
+    //   }
+    // });
   },
 
   banlist_get_page: function(page) {
