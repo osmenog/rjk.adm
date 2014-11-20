@@ -1,5 +1,4 @@
 <?php
-// TEST DEPLOY 1231r
   require_once "classes/Classes.php";
   include_once "config.php";
   global $config;
@@ -135,7 +134,7 @@
     <?php
   }
 
-  function process_post_actions() {
+function process_post_actions() {
     global $config;
 
     $p_action = (isset($_POST['p_action']) ? $_POST['p_action'] : '');
@@ -145,14 +144,14 @@
         //Под "корректностью" понимаем наличие всех входных параметров и заполненность данными (неважно какими).
         $user=isset($_POST['user']) ? $_POST['user'] : '';
         if (empty($user)) {
-        echo "<div class='alert alert-danger'><b>Ошибка!</b> Не указан один из параметров</div>\n";
-        break;
+          echo "<div class='alert alert-danger'><b>Ошибка!</b> Не указан один из параметров</div>\n";
+          break;
         }
     
         //Извлекаем список банлистов из тела запроса
         $banlists=array();
         foreach ($_POST as $key => $value) {
-        if (strpos($key, 'bl_') !== false) {$banlists[substr($key, 3)] = $value;}
+          if (strpos($key, 'bl_') !== false) {$banlists[substr($key, 3)] = $value;}
         }
     
         if (count($banlists)==0) {
@@ -231,7 +230,7 @@
 
     //Стериализуем входные данные против XSS
     $action = trim(strip_tags(addslashes($action)));
-    $action = htmlspecialchars($action); 
+    $action = htmlspecialchars($action);
     
   	switch ($action) {
   		case 'showusers':
@@ -320,7 +319,7 @@
     include "layout/layout.newbanlist.inc";
   }
 
-  function layout_getuser ($nick) {
+  function layout_getuser ($user) {
     include "layout/layout.getuser.inc";
   }
 

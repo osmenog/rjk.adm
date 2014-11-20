@@ -4,14 +4,14 @@
 
   //Проверяем, зарегистрирован пользователь в системе
   $prx = new proxy_worker ($config['sams_db']);
-  if (!($prx->is_user($nick))) {
-    echo "<h1>Пользователь $nick не найден в базе SAMS</h1>\n";
+  if ( ($prx->is_user($user)) == 0 ) {
+    echo "<h1>Пользователь $user не найден в базе SAMS</h1>\n";
     return;
   }
 
   //Получаем список бан-листов, которые не применяются к пользователю.
   $rejik = new rejik_worker ($config['rejik_db']);
-  $user_banlists = $rejik->user_acl_get($nick);
+  $user_banlists = $rejik->user_acl_get($user);
   //echo "<pre>"; print_r($user_banlists); echo "</pre>";
 
   //Получаем список банлистов
@@ -23,12 +23,12 @@
   }
 
   //Выводим красивую табличку
-  echo "<h4>К каким категориям будет иметь доступ пользователь <b>{$nick}</b>:</h2>\n";
+  echo "<h4>К каким категориям будет иметь доступ пользователь <b>{$user}</b>:</h2>\n";
   echo "<div class='panel panel-default'>\n";
 
-  echo "<form id='acl' action='?action=getuser&user=$nick' method='POST'>\n";
+  echo "<form id='acl' action='?action=getuser&user=$user' method='POST'>\n";
   echo "<input class='hidden' name='p_action' value='set_user_acl' />\n";
-  echo "<input class='hidden' name='user' value='$nick' />\n";
+  echo "<input class='hidden' name='user' value='$user' />\n";
   echo "<table class='table table-striped'>\n";
   echo "  <tr><th>Выбор</th><th>Бан-лист</th><th>Описание</th></tr>\n";
 

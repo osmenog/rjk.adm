@@ -48,6 +48,7 @@
             $u_path=$_SERVER['DOCUMENT_ROOT']."/{$config['proj_name']}/users/";
             $b_path=$_SERVER['DOCUMENT_ROOT']."/{$config ['proj_name']}/banlists/";
             $banlists = $rejik->banlists_get();
+
             foreach ($banlists as $value) {
               echo "<tr>\n";
               echo "<td>{$value}</td>\n";
@@ -85,7 +86,7 @@
             $time_end = microtime(true);
             $time = $time_end - $time_start;
 
-            if ($err_flag==true) {
+            if (isset($err_flag) && $err_flag == true) {
               Logger::add (46, "Реконфигурация выполнена с ошибкой");  
             } else {
               Logger::add (45, "Реконфигурация выполнена успешно");

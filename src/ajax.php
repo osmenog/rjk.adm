@@ -88,8 +88,7 @@ try {
       throw new api_exception("Invalid action", 1);
       break;
     }
-}
-catch(exception $e) {
+} catch(exception $e) {
   echo $e->get_json();
 }
 

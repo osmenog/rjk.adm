@@ -128,16 +128,16 @@ class HealthPanel {
     
   }
 
-  private function dbg_print_servers_state() {
-    //Функция выводит на экран состояние серверов.
-    $srvs = $this->servers_list->servers; //Получаем указатель на массив серверов.
-
-    for ($i=0; $i <=2 ; $i++) { 
-      echo "<div>".$srvs[$i]->sql_obj->connect_errno." ".$srvs[$i]->sql_obj->connect_error;
-      echo "</div>";  
-    }
-    
-  }
+//  private function dbg_print_servers_state() {
+//    //Функция выводит на экран состояние серверов.
+//    $srvs = $this->servers_list->servers; //Получаем указатель на массив серверов.
+//
+//    for ($i=0; $i <=2 ; $i++) {
+//      echo "<div>".$srvs[$i]->sql_obj->connect_errno." ".$srvs[$i]->sql_obj->connect_error;
+//      echo "</div>";
+//    }
+//
+//  }
 
   //Функция вызывает ряд команд, и производит смену мастера.
   public function switch_master($id) {
@@ -237,8 +237,9 @@ class HealthPanel {
       return False;
     }
     
-    //var_dump($m_srv);
-    
+    //Сохраняем id  мастерсервера в сессию
+    $_SESSION['master_server_id'] = $m_srv_id;
+
     return $m_srv;
   }
 }

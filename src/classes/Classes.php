@@ -15,7 +15,7 @@ class worker {
 
 	//protected $charset_conv	= FALSE;
 
-	public function __construct($db_config) {
+  public function __construct($db_config) {
 		global $config;
 		//db: [0 - хост, 1 - логин, 2- пасс, 3 - имя бд, 4 - кодировка]
 
@@ -27,27 +27,27 @@ class worker {
 
 		@$mysqli = new mysqli($this->db_host, $this->db_login, $this->db_passwd, $this->db_name);
 		if ($mysqli->connect_errno) {
-    		echo "Не удалось подключиться к MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
+      throw new mysql_exception($mysqli->connect_error, $mysqli->connect_errno);
 		}
 
 		$this->sql = $mysqli;
-		//print_r ($this->conf['hostaddr']);
 	}
 
   public function closedb(){
-    $this->sql->close();
+    if ($this->sql !== Null) {
+      $this->sql->close();
+    }
   }
 } //end of worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class proxy_worker extends worker {
 
-
 	public function get_userscount () {
 		$query_str = "SELECT Count(*) FROM squidusers\n";
 		$res = $this->sql->query($query_str);
     	if (!$res) {
-    		echo "[get_userscount] Не удалось выполнить запрос \"{$query_str}\"<br/>Код: ".$this->sql->errno." ".$this->sql->error;
-    		return;
+    		//echo "[get_userscount] Не удалось выполнить запрос \"{$query_str}\"<br/>Код: ".$this->sql->errno." ".$this->sql->error;
+    		return FALSE;
     	}
   
     	$row = $res->fetch_row();
@@ -62,7 +62,7 @@ class proxy_worker extends worker {
     	$query_str = "SELECT * FROM squidusers WHERE `nick`='$nick';";
     	$res = $this->sql->query($query_str);
     	if (!$res) {
-    		echo "[get_userinfo] Не удалось выполнить запрос \"{$query_str}\"<br/>Код: ".$this->sql->errno." ".$this->sql->error;
+    		//echo "[get_userinfo] Не удалось выполнить запрос \"{$query_str}\"<br/>Код: ".$this->sql->errno." ".$this->sql->error;
     		return FALSE;
     	}
     	
@@ -77,34 +77,42 @@ class proxy_worker extends worker {
     	$this->sql->set_charset($this->db_codepage);
 
     	$response = $this->sql->query("SELECT * FROM squidusers");
-    	if (!$response) echo "get_userslist. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
+    	if (!$response) {
+        //echo "get_userslist. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
+        return FALSE;
+      }
     	
     	if ($response->num_rows == 0) return 0;
 
-    	$res = array ();
-		while ($row = $response->fetch_assoc()) {
-    		if (isset($config['conv'])) {
-    			$row['family'] = empty($row["family"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['family']);
-    			$row['name'] = empty($row["name"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['name']);
-    			$row['soname'] = empty($row["soname"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['soname']);
-			}
-    		$res[] = $row;
-		}
+    	$res = array();
+		  while ($row = $response->fetch_assoc()) {
+      	if (isset($config['conv'])) {
+      		$row['family'] = empty($row["family"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['family']);
+      		$row['name'] = empty($row["name"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['name']);
+      		$row['soname'] = empty($row["soname"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['soname']);
+		  	}
+      	$res[] = $row;
+		  }
 
     	$response->close();
     	return $res;
     }
 
-    public function is_user ($nick) {
-    	//Функция возвращает TRUE, если пользователь существует в базе, или FALSE - если его там нет.
+  /**
+   * Функция проверяет, есть ли пользователь $nick в базе.
+   * Возвращаяет True если пользователь есть, 0 - если польз. отсутствует и FALSE - если произошла ошибка
+   * @param $nick
+   * @return bool|0
+   */
+  public function is_user ($nick) {
     	$response = $this->sql->query("SELECT * FROM squidusers WHERE nick='$nick';");
     	if (!$response) {
-    		echo "is_user. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
+    		//echo "is_user. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
     		return FALSE;
     	}
     	
     	if ($response->num_rows == 0) {
-    		return FALSE;
+    		return 0;
     	} else {
     		return TRUE;
     	}
@@ -127,12 +135,12 @@ class rejik_worker extends worker {
     //Logger::tmp_init();
     //Logger::stop();
     
-    //Включаем модуль синхронизации
-    if ($config['sync_enabled']) {
-      try {
-        $this->sync_provider = new SyncProvider();  
-      } catch (exception $e) {}  
-    }
+//Включаем модуль синхронизации
+//    if ($config['sync_enabled']) {
+//      try {
+//        $this->sync_provider = new SyncProvider();
+//      } catch (exception $e) {}
+//    }
 
   }
 
@@ -612,8 +620,7 @@ class rejik_worker extends worker {
   }
 	
   public function users_acl_export ($banlist, $root_path){
-    //Функция сохраняет всех пользователей бан-листа в файле
-    //Таким образом данные передаются в режик
+    //Функция сохраняет всех пользователей бан-листа $banlist в файл, который затем используется режиком
     
     //Проверяем, существует ли банлист
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4); 
@@ -623,7 +630,7 @@ class rejik_worker extends worker {
 
     //Определяем путь до папки с файлами, содержащими списки пользователей         
     if(!($hdl=fopen("{$root_path}/{$banlist}", "w"))) {
-      throw new rejik_exception("Не могу записать в файл {$p}/urls",112);
+      throw new rejik_exception("Не могу записать в файл {$root_path}/{$banlist}/urls",112);
     }else{
       $counter=0;
       //Построчно записываем в файл список пользователей.
@@ -980,7 +987,7 @@ function set_user_acl($user, $banlists) {
   //echo "<pre>"; print_r($banlists); echo "</pre>";
 
   //1. Проверяем, существует ли пользователь.
-  if (!($prx->is_user($user))) {
+  if ( ($prx->is_user($user)) == 0 ) {
     echo "<div class='alert alert-danger'><b>Ошибка!</b> Пользователь $user не найден в базе SAMS</div>\n";
     return -1;
   }

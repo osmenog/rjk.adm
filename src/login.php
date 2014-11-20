@@ -59,8 +59,6 @@ function process_requests() {
   }
 }
 
-  
-
 function login ($login, $pass) {
   global $config;
   global $alert_message;
