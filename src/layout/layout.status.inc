@@ -20,6 +20,9 @@ try {
     exit;
   }
   
+  //Загружаем состояние обьектов
+  $hp->restore_session();
+  
   echo "<div class='page-header'>\n";
   echo "<h1>\nЗдоровье сервера</br>\n";
   
@@ -28,8 +31,9 @@ try {
   
   echo "<h3>Статус работы текущего сервера:</h3>\n";
   echo "<ul>\n";
-  echo "<li><b>SQUID:</b> Работает</li>\n";
-  echo "<li><b>SAMS:</b> Работает</li>\n";
+  echo "<li><b>Служба SQUID:</b> Работает</li>\n";
+  echo "<li><b>Служба SAMS:</b> Работает</li>\n";
+  echo "<li><b>Сервер БД для записи:</b> ".$hp->get_master_server()."</li>\n";
   echo "</ul>\n";
   
   echo "<h3>Статус репликации:</h3>\n";
@@ -39,8 +43,7 @@ try {
   //Стартуем проверку доступности серверов
   //$hp->check_availability();
   
-  //Загружаем состояние обьектов
-  $hp->restore_session();
+
   
   //Сохраняем результаты проверки в открытой сессии
   //$hp->save_session();

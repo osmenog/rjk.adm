@@ -2,11 +2,12 @@
   include_once "classes/ServersList.php";
   include_once "classes/RejikServer.php";
 
+//Класс осуществляет процесс управления репликацией и смены отказавшего сервера
 class HealthPanel {
   private $local_server_name;       //Имя текущего сервера
   private $local_server_id;         //Ид текущего сервера
   private $servers_list;            //Список серверов (содержит обьекты типа RejikServer)
-  private $master_server_id;        //Ид мастер-сервера
+  private $master_servers_ids = array();        //Ид мастер-сервера
   
   //public $servers_status = array();
 
@@ -19,7 +20,7 @@ class HealthPanel {
 
     $local_id = isset ($config['server_id']) ? $config ['server_id'] : 0;
 
-    //Получаем массив серверов и з конфига
+    //Получаем массив серверов из конфига
     $servers_cfg = $config ['servers'];
 
     //Создаем обьект-итератор, содержащий список серверов
@@ -36,11 +37,11 @@ class HealthPanel {
 
   public function __sleep() {
     //echo "<p>Вызван метод sleep из HP</p>";
-    return array ("servers_list");
+    return array ("servers_list", "master_servers_ids");
   }
 
   public function __wakeup() {
-    echo "<p>Вызван метод wakeup из HP</p>";
+    //echo "<p>Вызван метод wakeup из HP</p>";
   }
 
   private function init_session() {
@@ -71,6 +72,7 @@ class HealthPanel {
       if ($srv->connect()) {
         //Если сервер доступен, то определяем режим его работы
         $srv_mode = $srv->get_work_mode();
+        if ($srv_mode == WORK_MODE_MASTER) $this->master_servers_ids[]=$srv->get_id();
         //echo "<pre>\n"; print_r($srv_mode); echo "</pre>\n";
         
       } else {
@@ -220,5 +222,24 @@ class HealthPanel {
     return true;
 
   }  
+  public function get_master_server() {
+    //Если нам известно более чем 1 мастер, то выводим сообщение об ошибке
+    //
+
+    $m_srv_id = $this->master_servers_ids;
+  
+    //Если мастер сервер не был определен ранее, то считаем, что данный сервер является мастером.
+    if (count($m_srv_id) == 0) {
+      $m_srv = $this->servers_list->get_server_by_id($this->local_server_id);
+    } elseif (count($m_srv_id) == 1) {
+      $m_srv = $this->servers_list->get_server_by_id($m_srv_id);
+    }else {
+      return False;
+    }
+    
+    //var_dump($m_srv);
+    
+    return $m_srv;
+  }
 }
 ?>

@@ -528,7 +528,7 @@ class rejik_worker extends worker {
 
     if ($response->num_rows == 0) return 0; //Если дубликатов нет, то выходим
 
-    $res=[];
+    $res= array();
     while ($row = $response->fetch_row()) {
       $res[$row[0]] = $row[1];
       // * Пытаемся распарсить ссылку на:
@@ -689,7 +689,7 @@ class rejik_worker extends worker {
 
     if ($response->num_rows == 0) return 0; //Если дубликатов нет, то выходим
 
-    $res=[];
+    $res=array();
     while ($row = $response->fetch_assoc()) {
       $res[] = $row;
       // * Пытаемся распарсить ссылку на:
@@ -716,7 +716,7 @@ class rejik_worker extends worker {
 
     if ($response->num_rows == 0) return 0; //Если дубликатов нет, то выходим
 
-    $res=[];
+    $res=array();
     while ($row = $response->fetch_assoc()) {
       $res[] = $row;
     }

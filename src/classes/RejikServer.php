@@ -385,9 +385,6 @@ class RejikServer
       return False;
     }
     
-    //Очищаем полученные данные
-    $res->close();
-    
     return True;
   }
 }

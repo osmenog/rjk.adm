@@ -53,7 +53,7 @@
     echo "      <p>Всего <b>{$count}</b> элементов.<br/>Отображать по ".LOG_EVENTS_ON_PAGE." элементов на странице</p>\n";
     echo "  </div>\n";
     echo "  <div class='col-sm-4'>\n";
-    echo "      <button class='btn btn-default btn-sm' style='width: 100%'>Обновить</button>\n";
+    echo "      <button class='btn btn-default btn-sm' style='width: 100%' onclick='document.location.reload()'>Обновить</button>\n";
     echo "  </div>\n";
     echo "</div>\n";
     echo "<div class='row'>\n";
