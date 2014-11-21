@@ -18,7 +18,6 @@
     header("Location: /{$config ['proj_name']}/index.php?action=servers_check");
     exit;
   }  
-  
 
   //Выводим основную страницу
   print_main();

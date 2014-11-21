@@ -18,10 +18,15 @@ class HealthPanel {
     //Инициализируем сессию
     $this->init_session();
 
+    //Определяем параметры текущего сервера, на котором запущен этот скрипт
     $local_id = isset ($config['server_id']) ? $config ['server_id'] : 0;
+    $local_hostname = gethostname();
+
+    //Добавляем в список серверов текущий сервер.
+    $servers_cfg[$local_hostname]=array($config['rejik_db'][1], $config['rejik_db'][2], $local_id);
 
     //Получаем массив серверов из конфига
-    $servers_cfg = $config ['servers'];
+    $servers_cfg = array_merge ($servers_cfg, $config ['servers']);
 
     //Создаем обьект-итератор, содержащий список серверов
     $this->servers_list = new ServersList($servers_cfg);
