@@ -37,7 +37,7 @@ try {
   echo "</ul>\n";
   
   echo "<h3>Статус репликации:</h3>\n";
-  //echo "<button class='btn btn-success btn-lg' onClick='location.href=\"?servers_check\"'>Выполнить проверку</button>  \n";
+  echo "<button class='btn btn-success btn-lg' onClick='location.href=\"?action=servers_check\"'>Выполнить проверку</button>  \n";
   
   
   //Стартуем проверку доступности серверов
@@ -52,8 +52,8 @@ try {
   echo "<table class='table table-condensed'>\n";
   echo "<thead>\n";
   echo "<tr>\n
-        <th width='30%'>Имя сервера</th>\n
-        <th width='20%'>Доступность</th>\n
+        <th width='40%'>Имя сервера</th>\n
+        <th width='10%'>Доступность</th>\n
         <th width='40%'>Статус</th>\n
         <th width='10%'> </th>\n
         </tr>\n";

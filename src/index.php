@@ -71,7 +71,7 @@
               <ul class="dropdown-menu" role='menu'>
                 <li><a href="?action=showbanlists"><span class="glyphicon glyphicon-list-alt"></span> Показать список</a></li>
                 <li><a href="?action=newbanlist"><span class="glyphicon glyphicon-plus-sign"></span> Создать банлист</a></li>
-              
+                <li><a href="?action=import"><span class=""></span> Импортировать с сервера</a></li>
                 <!--
                 <li><a href="#">Something else here</a></li>
                 <li class="divider"></li>
@@ -270,7 +270,11 @@ function process_post_actions() {
       case 'selftest':
         layout_selftest();
         break;
-      
+
+      case 'import':
+        include_once "layout/layout.import.inc";
+        break;
+
       // case 'check':
       //   $checker = Checker::getInstance();
       //   $checker->start();
@@ -318,7 +322,7 @@ function process_post_actions() {
     include "layout/layout.newbanlist.inc";
   }
 
-  function layout_getuser ($user) {
+  function layout_getuser($user) {
     include "layout/layout.getuser.inc";
   }
 
