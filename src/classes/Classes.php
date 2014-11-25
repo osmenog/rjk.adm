@@ -275,7 +275,7 @@ class rejik_worker extends worker {
     $full_desc  = $this->sql->real_escape_string ($full_desc );
 
     // 1. Проверяем, есть ли банлист с таким именем. Если есть - то исключение.
-    if (array_search($name, $this->banlists_get())!==False) throw new rejik_exception("Banlist already exists",1);	
+    if (array_search($name, $this->banlists_get())!==False) throw new rejik_exception("Banlist '{$name}' already exists",1);
   
     // 2. Фильтруем XSS уязвимости
     $name = htmlspecialchars ($name);
@@ -654,16 +654,28 @@ class rejik_worker extends worker {
   // ==========================================================================================================================
   // Функции импорта
   // ==========================================================================================================================
-  public function import_db($csv_file_path) {
-    $query_txt = "LOAD DATA INFILE '{$csv_file_path}' REPLACE INTO TABLE `urls` FIELDS TERMINATED BY ';' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n' (`url`, `banlist`)" ;
-    //echo "<h1>$query_txt</h1>\n";
+  public function import_from_csv($csv_file_path, $table, $fields) {
+    $response = $this->sql->query("TRUNCATE TABLE {$table}");
+    if (!$response) {
+      throw new Exception ("Ошибка при очистке таблицы {$table}: (".$this->sql->errno.") ".$this->sql->error, $this->sql->errno);
+    }
+
+    $query_txt = "LOAD DATA INFILE '{$csv_file_path}' REPLACE INTO TABLE `{$table}` FIELDS TERMINATED BY ';' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n'" ;
+    //"(`url`, `banlist`)";
+
+    $t="("; $max_fields = count($fields);
+    for ($i = 0; $i <= $max_fields-1; $i++) {
+      $t .= "`{$fields[$i]}`";
+      if ($i != $max_fields-1) $t.=", ";
+    }
+    $t.=")";
+    $query_txt.= " ".$t;
+
     $response = $this->sql->query($query_txt);
     if (!$response) {
-      echo "import_db. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
-      return;
+      throw new Exception ("Ошибка при импорте CSV в БД: (".$this->sql->errno.") ".$this->sql->error, $this->sql->errno);
     }
-  
-    echo "<p>В БД импортировано: ".$this->sql->affected_rows. " записей</p>\n";
+    return $this->sql->affected_rows;
     //if ($response->num_rows == 0) return 0;
   }
 

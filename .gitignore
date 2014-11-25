@@ -7,6 +7,8 @@ doc/
 lastcheck.log
 src/users/
 src/banlists/
+src/import/
 .idea/
-import.csv
+import_bl.csv
+import_usr.csv
 config.php

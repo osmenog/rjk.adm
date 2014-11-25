@@ -5,12 +5,15 @@ $is_confirm = (isset($_GET['confirm']) ? $_GET['confirm'] : '');
 
 //Если флаг = 1 то выполняем процедуру импорта, инача выводим форму настроек.
 if ($is_confirm == 1) {
+
+  set_time_limit(120);
+
   $importer = import::getInstance();
 
   //Инициализируем переменные
   if (isset($_POST['bl_path']) && isset($_POST['usr_path'])) {
-    $importer-> rejik_bl_path = $_POST['bl_path'];
-    $importer->rejik_usr_path = $_POST['usr_path'];
+    $importer-> source_bl_dir = $_POST['bl_path'];
+    $importer->source_usr_dir = $_POST['usr_path'];
 
     try {
       $importer->start();
@@ -29,6 +32,7 @@ if ($is_confirm == 1) {
 
 function print_form() {
   ?>
+  <div class='alert alert-danger'><b>Внимание!!!</b> Все данные в таблицах БД Режик будут очищены с помощью 'TRUNCATE TABLE'</div>
   <form role="form" action="?action=import&confirm=1" method="POST">
     <div class="form-group">
       <label for="bl_path">Путь до папки с бан-листами:</label>
@@ -67,55 +71,142 @@ class import {
   }
   //---------------------------------------------------------
 
-  public $rejik_bl_path = '';
-  public $rejik_usr_path = '';
+  //Пути до папок, из которых будем извлекать данные для БД Режика
+  public $source_bl_dir     = '';
+  public $source_usr_dir    = '';
 
-  private $csv_file_path;
-  private static $csv_import_count = 0;
+  //Пути до промежуточных CSV файлов, содержащие импортируемые данные
+  private $csv_bl_path      = '';  //Путь + имя CSV файла для импорта Урлов
+  private $csv_usr_path     = ''; //Путь + имя CSV файла для импорта прав польз.
 
+  private $bl_folders       = array(); //Список банлистов найденных в папке исторчика (Список папок в $source_bl_dir)
+
+  //Статистические данные
+  private static $csv_bl_imported_count  = 0;  //Количество УРЛОВ, имп. в CSV файл.
+  private static $csv_usr_imported_count = 0; //Количество прав польз. имп. в CSV файл.
+
+  //Функция - старт. Управляет процессом импорта
   public function start() {
     global $config;
 
+    try {
+      echo "<h2>Обработка банлистов</h2>";
+      $this->import_urls();
+      echo "<h3>В файл import_bl.csv импортировано {$this::$csv_bl_imported_count} записей</h3>\n";
+
+      echo "<h2>Обработка пользовательских прав</h2>";
+      $this->import_users();
+      echo "<h3>В файл import_usr.csv импортировано {$this::$csv_usr_imported_count} записей</h3>\n";
+
+      echo "<h2>Импорт банлистов в БД</h2>";
+      $this->import_banlists_to_db();
+
+      echo "<h2>Импорт запрещенных URL адресов в БД</h2>";
+      // Инициируем соединение с режикомю
+      $rejik = new rejik_worker($config['rejik_db']);
+      $res = $rejik->import_from_csv($this->csv_bl_path, 'urls', array('url','banlist'));
+      echo "<p>В БД импортировано: {$res} записей</p>\n";
+
+      echo "<h2>Импорт пользовательских привилегий в БД</h2>";
+      // Инициируем соединение с режикомю
+      $rejik = new rejik_worker($config['rejik_db']);
+      $res = $rejik->import_from_csv($this->csv_usr_path, 'users_acl', array('nick','banlist'));
+      echo "<p>В БД импортировано: {$res} записей</p>\n";
+
+    } catch (Exception $e) {
+
+    }
+  }
+
+  private function import_banlists_to_db() {
+    global $config;
+
+    //Если список банлистов каким-то образом не заполнился, то выводим ошибку
+    if (count($this->bl_folders)==0) throw new Exception ("Список банлистов не получен!");
+
+    //Подключаемся к БД режика
+    $rejik = new rejik_worker($config['rejik_db']);
+
+
+    //$rejik->sql->query("");
+
+    //По очереди перебираем список банлистов, и создаем их в базе
+    foreach ($this->bl_folders as $v) {
+      try {
+        $rejik->banlist_create($v, $v, 'imported');
+      } catch (Exception $e) {
+        echo "<p>".$e->getMessage()."</p>";
+      }
+    }
+  }
+
+  private function import_urls () {
+    global $config;
+
     //Проверяем, существует ли csv файл с прошлого импорта
-    $this->csv_file_path = $_SERVER['DOCUMENT_ROOT'] . "/".$config['proj_name']."/" . "import.csv";
-    if (file_exists($this->csv_file_path)) {
-      if (!unlink($this->csv_file_path)) {
-        throw new Exception("Не могу удалить файл: ".$this->csv_file_path);
+    $this->csv_bl_path = $_SERVER['DOCUMENT_ROOT'] . "/".$config['proj_name']."/" . "import_bl.csv";
+    if (file_exists($this->csv_bl_path)) {
+      if (!unlink($this->csv_bl_path)) {
+        throw new Exception("Не могу удалить файл: ".$this->csv_bl_path);
       }
     }
 
-    //Получаем содержимое родительского каталога $bl_list
-    $root_dir = $this->dir_contents($this->rejik_bl_path);
+    //Получаем содержимое родительского каталога $bl_list в виде массива: "имя обьекта" => "file|dir"
+    $root_dir = $this->dir_contents($this->source_bl_dir);
     if (!$root_dir) {
-      throw new Exception("Немогу открыть каталог: ".$this->rejik_bl_path);
+      throw new Exception("Немогу открыть каталог: ".$this->source_bl_dir);
     }
 
     //Последовательно обходим каждый элемент, наход. в папке
     foreach ($root_dir as $k => $v) {
       //..обходим только директории
       if ($v == 'dir') {
+        //Добавляем в название банлиста в массив
+        $this->bl_folders[]= $k;
+
         //Получаем содержимого дочернего каталога
-        $child_dir = $this->rejik_bl_path.'/'.$k.'/';
+        $child_dir = $this->source_bl_dir.'/'.$k.'/';
         $tmp_dir_content = $this->dir_contents($child_dir);
 
-        //Проверяем наличие файла urls
+        //Проверяем наличие файла urls ...
         if (!is_null($tmp_dir_content) && (array_key_exists('urls', $tmp_dir_content))) { // || array_key_exists('pcre', $tmp_dir_content)
-          //и выполняем обработку файлов
+          // ... и выполняем обработку 'urls' файлов
           $this->import_urls_from_file($child_dir.'urls', $k);
         } else {
           throw new Exception ("Файл urls отсутствует в папке ".$child_dir);
-          //continue;
         }
       }
     }
-
-    echo "<h1>Импортировано в CSV файл: {$this::$csv_import_count} записей</h1>\n";
-
-    //Импорт в SQL
-    $this->import_db();
     return;
   }
 
+  private function import_users () {
+    global $config;
+
+    //Проверяем, существует ли csv файл с прошлого импорта
+    $this->csv_usr_path = $_SERVER['DOCUMENT_ROOT'] . "/".$config['proj_name']."/" . "import_usr.csv";
+    if (file_exists($this->csv_usr_path)) {
+      if (!unlink($this->csv_usr_path)) {
+        throw new Exception("Не могу удалить файл: ".$this->csv_usr_path);
+      }
+    }
+
+    //Получаем содержимое родительского каталога $usr_list
+    $root_dir = $this->dir_contents($this->source_usr_dir);
+    if (!$root_dir) {
+      throw new Exception("Немогу открыть каталог: ".$this->source_usr_dir);
+    }
+
+
+    //Последовательно обходим каждый элемент, наход. в папке
+    foreach ($root_dir as $k => $v) {
+      //..обходим только файлы!
+      if ($v == 'file' && $k != '.htaccess') {
+        $c = $this->import_users_from_file ("{$this->source_usr_dir}/{$k}", $k);
+        echo "<p>Банлист {$k} содержит {$c} пользователей</p>";
+      }
+    }
+  }
   /**
    * Возвращает содержимое каталога в виде массива
    * @param $full_path полный путь до каталога
@@ -150,14 +241,14 @@ class import {
     }
 
     //Открываем csv файл
-    $hdl = fopen($this->csv_file_path, "a");
+    $hdl = fopen($this->csv_bl_path, "a");
     if (!$hdl) {
-      echo "Не могу открыть файл {$this->csv_file_path}\n";
+      echo "Не могу открыть файл {$this->csv_bl_path}\n";
       return FALSE;
     }
 
     //Колисество УРЛов в файле
-    $this::$csv_import_count += count($res);
+    $this::$csv_bl_imported_count += count($res);
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // Получаем URL
@@ -171,11 +262,17 @@ class import {
     foreach ($res as $k => $v) {
 
       // Выполняем преобразование УРЛ. и сохраняем его в БД.
-      if (strpos($v, ';') !== false) {
-        echo "$v;$bl\n";
+      $clean_url = filter_var($v, FILTER_SANITIZE_URL);
+      if ($clean_url === FALSE) {
+        echo "<p>$v;$bl</p>";
+      }
+
+      if (strpos($clean_url, ';') !== false) {
+        echo "<p>$clean_url;$bl</p>";
         continue;
       }
-      $buffer .= "$v;$bl\n";
+
+      $buffer .= "$clean_url;$bl\n";
     }
     fwrite($hdl, $buffer);
 
@@ -184,12 +281,36 @@ class import {
     fclose($hdl);
   }
 
-  private function import_db() {
+  private function import_users_from_file($file_path, $bl) {
+    $res = file($file_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($res === false) throw new Exception("Не могу открыть файл {$file_path}");
 
-    // Инициируем соединение с режикомю
+    //Считаем количество пользователей в списке
+    $this::$csv_usr_imported_count += count($res);
+
+    //Создаем csv файл
+    $hdl = fopen($this->csv_usr_path, "a");
+    if (!$hdl) throw new Exception ("Не могу создать файл {$this->csv_usr_path}");
+
+    foreach ($res as $k=>$v) {
+      fwrite($hdl, "{$v};{$bl}\n");
+    }
+
+    fclose($hdl);
+    return count($res);
+  }
+
+  private function import_to_db() {
     global $config;
-    $rejik = new rejik_worker($config['rejik_db']);
-    $rejik->import_db($this->csv_file_path);
+
+    try {
+      // Инициируем соединение с режикомю
+      $rejik = new rejik_worker($config['rejik_db']);
+      $res = $rejik->import_from_csv($this->csv_file_path, 'urls', array('url','banlist'));
+    } catch (Exception $e) {
+      throw $e;
+    }
+    echo "<p>В БД импортировано: {$res} записей</p>\n";
   }
 }
 
