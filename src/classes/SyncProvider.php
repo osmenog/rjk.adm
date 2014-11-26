@@ -10,7 +10,7 @@ class SyncProvider
   function __construct() {
     global $config;
     $db_config = $config['rejik_db'];
-    
+
     date_default_timezone_set('Asia/Omsk');
      //За относительное устанавливаем Омское время
     

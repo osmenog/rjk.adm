@@ -129,7 +129,10 @@ class rejik_worker extends worker {
     $this->sql->set_charset("utf8"); //Устанавливаем кодировку соединения с БД Режика
 
     //Скрипты могут выполняться долгое время. Увеличиваем таймаут.
-    set_time_limit (120);
+    if (PHP_VERSION_ID > 50500) {
+      set_time_limit (120);
+    }
+
 
     global $config;
     if ($config ['admin_log']==True) logger::init(); //Инициализируем логер

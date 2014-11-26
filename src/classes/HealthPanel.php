@@ -51,8 +51,8 @@ class HealthPanel {
 
   private function init_session() {
     global $config;
-    //Стартуем сессию 
-    if (session_status() != PHP_SESSION_ACTIVE) {
+    //Стартуем сессию
+    if (!isset($_SESSION)) {
       session_name("sid");
       session_set_cookie_params (3600,"/{$config['proj_name']}/");
       session_start();
@@ -68,7 +68,7 @@ class HealthPanel {
   public function check_availability () {
     
     //Увеличиваем таймаут
-    set_time_limit (120);
+    //set_time_limit (120);
     
     //Перебеираем список серверов...
     foreach ($this->servers_list as $srv) {

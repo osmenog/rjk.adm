@@ -1,6 +1,6 @@
 <?php
 include_once "config.php";
-include_once "log.php";
+include_once "classes/Logger.php";
 include_once "classes/HealthPanel.php";
 include_once "classes/Classes.php";
 include_once "classes/Exceptions.php";
@@ -8,14 +8,15 @@ include_once "classes/API_worker.php";
 
 global $config;
 
-//register_shutdown_function("dbg_last_error");
+register_shutdown_function("dbg_last_error");
+date_default_timezone_set('Asia/Omsk');
 
 function dbg_last_error() {
   $e = error_get_last();
   if ($e !== NULL) {
     if ($e['type'] == E_ERROR) {
       ob_clean();
-      echo exception_get_json ($errno, $e['message'], 'E_ERROR'/*$e['type']*/, "Line: ".$e['line']);
+      echo exception_get_json (0, $e['message'], 'E_ERROR'/*$e['type']*/, "Line: ".$e['line']);
     }
     ob_end_flush();
   }

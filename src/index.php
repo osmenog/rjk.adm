@@ -2,7 +2,9 @@
   require_once "classes/Classes.php";
   include_once "config.php";
   global $config;
-  
+
+  date_default_timezone_set('Asia/Omsk');
+
   //Выполняем инииализацию сессий и первоначальные проверки
   //Проверяем, залогинен ли пользователь
   if (CheckSession() === False) {

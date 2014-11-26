@@ -128,7 +128,7 @@ class Checker
       ($error_flag == true) ? "ERROR" : "OK"
     );
 
-    if (!$logfile_result) echo "Save Logfile error!!!\n";
+    if (!$logfile_result) echo "<h1>Save Logfile error!!!</h1>\n";
 
     $rejik->closedb();
   }
@@ -162,7 +162,7 @@ class Checker
    */
   private function create_logfile($full_path, $dt, $message)
   {
-    if (!($hdl = fopen($full_path, "w"))) return false;
+    if (!($hdl = @fopen($full_path, "w"))) return false;
     fwrite($hdl, $dt . " " . $message);
     fclose($hdl);
     return true;

@@ -117,7 +117,7 @@ class api_worker {
                          'limit'=>$limit,
                          'offset'=>$offset,
                          'total'=>0,
-                         'urls'=>[]);
+                         'urls'=>array());
   
       $urls_counter = 0; //Инициализируем счетчик для ссылок
       $urls_arr = array(); //Инициализируем массив для ссылок с ключами
@@ -150,7 +150,7 @@ class api_worker {
 
       $founded_urls = $rjk->banlist_search($banlist, $query);
 
-      $json_obj = array ('total'=>0, 'urls'=>[]);
+      $json_obj = array ('total'=>0, 'urls'=>array());
   
       $urls_counter = 0; //Инициализируем счетчик для ссылок
       $urls_arr = array(); //Инициализируем массив для ссылок с ключами
@@ -183,7 +183,7 @@ class api_worker {
       $json_obj = array (  'limit' => $len,
                           'offset' => $start,
                            'total' => 0,
-                          'events' => []);
+                          'events' => array());
       $events_counter = 0;
       $events_arr = array();
 
