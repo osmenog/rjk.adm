@@ -123,14 +123,22 @@ class Checker
       Logger::add(35, "Checker завершил работу с ошибкой", "", $dt);
     }
 
-    $logfile_result = $this->create_logfile(
-      $l_full_path, $dt,
-      ($error_flag == true) ? "ERROR" : "OK"
-    );
-
-    if (!$logfile_result) echo "<h1>Save Logfile error!!!</h1>\n";
-
     $rejik->closedb();
+
+    $err_msg = ($error_flag == true) ? "ERROR" : "OK";
+    $logfile_result = $this->create_logfile($l_full_path, $dt, $err_msg);
+
+    //Если по какой то причине не можем создать файл проверки
+    if (!$logfile_result) {
+      echo "<h1>Во время проверки произошла ошибка:</h1>\n";
+      $err = error_get_last();
+      echo "<p>".$err['message']."</p>\n";
+
+      echo "<h2><a href='/{$config ['proj_name']}/index.php?action=selftest'><<< Назад</a></h2>";
+      return False;
+    }
+
+    return True;
   }
 
   /**
@@ -162,7 +170,9 @@ class Checker
    */
   private function create_logfile($full_path, $dt, $message)
   {
-    if (!($hdl = @fopen($full_path, "w"))) return false;
+    $hdl = @fopen($full_path, "w");
+    if (!$hdl) return false;
+
     fwrite($hdl, $dt . " " . $message);
     fclose($hdl);
     return true;

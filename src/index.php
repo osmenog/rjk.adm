@@ -192,8 +192,9 @@ function process_post_actions() {
     switch ($action) {
       case 'check':
         $checker = Checker::getInstance();
-        $checker->start();
-        header("Location: /{$config ['proj_name']}/index.php?action=selftest&result=successful");
+        $r = $checker->start();
+        //Если ошибок нет, то делаем редирект
+        if ($r) header("Location: /{$config ['proj_name']}/index.php?action=selftest&result=successful");
         exit;
       break;
   
