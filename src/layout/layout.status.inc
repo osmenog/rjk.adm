@@ -1,12 +1,19 @@
 <?php
+//Фильтруем входные данные
+$id = filter_input(INPUT_GET, 'switch_master_to', FILTER_VALIDATE_INT);
+if ($id === False) throw new InvalidArgumentException("Неверно задан входящий параметр 'switch_master_to'", 1);
+
+$sync_with_sams = filter_input(INPUT_GET, 'sync_with_sams', FILTER_VALIDATE_INT);
+if ($sync_with_sams === 1) {
+  include_once 'classes/UserSync.php';
+  do_sync();
+}
+
 include_once "config.php";
 include_once "classes/ServersList.php";
 include_once "classes/RejikServer.php";
 include_once "classes/HealthPanel.php";
 
-//Фильтруем входные данные
-$id = filter_input(INPUT_GET, 'switch_master_to', FILTER_VALIDATE_INT);
-if ($id === False) throw new InvalidArgumentException("Неверно задан входящий параметр 'switch_master_to'", 1);
 
 try {
   
@@ -25,29 +32,48 @@ try {
   
   echo "<div class='page-header'>\n";
   echo "<h1>\nЗдоровье сервера</br>\n";
-  
   echo "<small>" . $hp->get_local_server_name() . "</small>\n</h1>\n";
   echo "</div>\n";
-  
-  echo "<h3>Статус работы текущего сервера:</h3>\n";
+
+  //---------------------------------------------------------------------------------
+  // СОСТОЯНИЕ РАБОТЫ СЛУЖБ ТЕКУЩЕГО СЕРВЕРА
+  //---------------------------------------------------------------------------------
+  echo "<h3>Состояние работы служб текущего сервера:</h3>\n";
   echo "<ul>\n";
-  echo "<li><b>Служба SQUID:</b> Работает</li>\n";
-  echo "<li><b>Служба SAMS:</b> Работает</li>\n";
+  echo "<li><b>Служба SQUID:</b> --ЗАГЛУШКА--</li>\n";
+  echo "<li><b>Служба SAMS:</b> --ЗАГЛУШКА--</li>\n";
   echo "<li><b>Сервер БД для записи:</b> ".$hp->get_master_server()."</li>\n";
   echo "</ul>\n";
-  
-  echo "<h3>Статус репликации:</h3>\n";
-  echo "<button class='btn btn-success btn-lg' onClick='location.href=\"?action=servers_check\"'>Выполнить проверку</button>  \n";
-  
-  
+
+  //---------------------------------------------------------------------------------
+  // СОСТОЯНИЕ СИНХРОНИЗАЦИИ ПОЛЬЗОВАТЕЛЕЙ
+  //---------------------------------------------------------------------------------
+  echo "<h3>Пользователи:</h3>\n";
+  echo "<p>Всего пользователей в REJIK DB: "."--0--"."<br/>\n";
+  echo "<ul>\n<li>proxy2: "."--80--"."</li>\n";
+  echo "<li>proxy.msk: "."--80--"."</li>\n";
+  echo "</ul>\n";
+  echo "</p>\n";
+  echo "<p>Последняя синхронизация REJIK DB с локальным SAMS: 10.10.10 Успешно</p>";
+  echo "<button class='btn btn-success btn-xs' onClick='location.href=\"?action=status&sync_with_sams=1\"'>Синхронизировать пользователей</button>\n";
+
+  echo "<p>Всего пользователей текущего сервера: 80";
+  echo "<ul>";
+  echo "<li>--80-- внутренних пользователей</li>";
+  echo "<li><a href='#'>подключить</a> пользователей proxy.msk</li>";
+  echo "</ul>\n";
+
+  //---------------------------------------------------------------------------------
+  // СОСТОЯНИЕ РЕПЛИЦАЦИИ БАЗЫ ДАННЫХ
+  //---------------------------------------------------------------------------------
+  echo "<h3>Состояние репликации:</h3>\n";
+  //fixme Нужно красиво спозиционировать кнопку (Справа, относительно надписи "сост. репликации")
+  echo "</br><button class='btn btn-success btn-sm' onClick='location.href=\"?action=servers_check\"'>Выполнить проверку</button>  \n";
+
   //Стартуем проверку доступности серверов
   //$hp->check_availability();
-  
-
-  
   //Сохраняем результаты проверки в открытой сессии
   //$hp->save_session();
-  
   echo "<div class='panel panel-default'>\n";
   echo "<table class='table table-condensed'>\n";
   echo "<thead>\n";
@@ -58,9 +84,7 @@ try {
         <th width='10%'> </th>\n
         </tr>\n";
   echo "</thead>\n";
-  
   //echo "<pre>\n"; foreach ($hp->servers_list as $s) { echo "{$s}\n"; var_dump($s->sql_error); }; echo "</pre>\n";
-
   foreach ($hp->get_servers() as $value) {
     
     echo "<tr>\n";
@@ -118,12 +142,8 @@ try {
     //echo "<tr><td colspan=4>"; foreach ($err as $k => $v) echo "{$k} = {$v}</br>"; echo "</td></tr>\n";
     
   }
-  
   echo "</table>\n";
-  echo "</div>\n";
-   // of panel
-  
-  
+  echo "</div>\n"; // of panel
 }
 catch(Exception $e) {
   echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode() } : {$e->getMessage() }<br/></div>\n";

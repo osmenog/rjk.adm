@@ -14,6 +14,16 @@
   echo "        <button class='btn btn-default' type='button'>Искать</button>\n";
   echo "      </span>\n";
   echo "    </div><!-- /input-group -->\n";
+?>
+</br>
+<ul class="nav nav-tabs nav-justified">
+  <li role="presentation" class="active"><a href="#">Home</a></li>
+  <li role="presentation"><a href="#">Profile</a></li>
+  <li role="presentation"><a href="#">Messages</a></li>
+</ul>
+
+<?php
+
   echo "  <div class='userlist panel panel-default'>\n";
   echo "    <table class='table table-striped table-condensed'>\n";
   echo "      <tr><th>Выбор</th><th>Логин</th><th>ФИО</th></tr>\n\n";

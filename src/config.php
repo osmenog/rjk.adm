@@ -4,13 +4,13 @@
 // -------------------------------------------------------------
 
   //Параметры БД САМС
-  $config ['sams_db']  = array ('proxy.bankom.omsk.su', 'sams', 'qwerty', 'squidctrl', 'utf8');
-  //$config['sams_db'] = array('localhost', 'root', 'osme', 'squidctrl', 'utf8');
+  //$config ['sams_db']  = array ('195.162.33.117', 'sams', 'qwerty', 'squidctrl', 'utf8');
+  $config['sams_db'] = array('localhost', 'sams', 'sams', 'squidctrl', 'utf8');
 
   //Параметры БД Режика
-  $config['rejik_db'] = array('localhost', 'root', '', 'rejik', 'utf8');
+  $config['rejik_db'] = array('localhost', 'root', 'osme', 'rejik', 'utf8');
   //Параметры БД логов
-  $config['log_db'] = array('localhost', 'root', '', 'rejik', 'utf8');
+  $config['log_db'] = array('localhost', 'root', 'osme', 'rejik', 'utf8');
 
 // -------------------------------------------------------------
 //Вспомогательные опции

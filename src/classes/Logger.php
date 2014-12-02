@@ -47,7 +47,7 @@ class Logger
     if (isset($config['log_db'][4])) $db_codepage = $config['log_db'][4];
     
     //Инициализируем подключение к БД
-    @$sql_con = new mysqli($db_host, $db_login, $db_passwd, $db_name);
+    $sql_con = new mysqli($db_host, $db_login, $db_passwd, $db_name);
     if ($sql_con->connect_errno) {
       self::$last_error_msg = "Не удалось подключиться к MySQL: (" . $sql_con->connect_errno . ") " . $sql_con->connect_error;
       return false;

@@ -1,8 +1,22 @@
 <?php
   include_once "config.php";
   require_once "classes/Classes.php";
+  require_once "classes/Logger.php";
 
-  //echo "<h6>{$_SERVER['HTTP_REFERER']}</h6>\n";
+  error_reporting(E_ALL);
+  ini_set('display_errors', 1);
+  
+  function err_handler() {
+    $e = error_get_last();
+    if ($e !== NULL) {
+      echo "<p>Произошла ошибка: ";
+      echo FriendlyErrorType($e['type'])."</p>";
+      echo "<pre>\n";  var_dump ($e); echo "</pre>\n";
+    }
+  }
+  
+  register_shutdown_function ('err_handler');
+
   process_requests();
   print_login_box();
   $alert_message = ""; //Сюда будет выводиться код об ошибке
@@ -13,6 +27,7 @@ function print_login_box() {
 	echo "<html>\n";
 	echo "<head>\n";
 	echo "  <title>Rejik 2.0</title>\n";
+
 	echo "  <meta charset='UTF-8'>\n";
 	echo "  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n";
 	echo "  <link href='css/bootstrap.min.css' rel='stylesheet'>\n";
@@ -33,24 +48,23 @@ function print_login_box() {
 	echo "  </div> <!-- container -->\n";
 	echo "  \n";
 	echo "  <!-- Мазафака бустрап -->\n";
-	echo "  <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js'></script>\n";
+	echo "  <script src='js/jquery.min.js'></script>\n";
 	echo "  <script src='js/bootstrap.min.js'></script>\n";
 	echo "</body>\n";
 	echo "</html>	\n";
 }
 
 function process_requests() {
-	global $alert_message;
+  global $alert_message;
   $action = (isset($_POST['action']) ? $_POST['action'] : '');
   switch ($action) {
     case 'logon':
       if (!isset($_POST['login']) || !isset($_POST['password'])) {
-        $alert_message .= "<div class='alert alert-danger'>Ошибка: Не указан один из параметров!</div>\n";
-        $alert_message .= "<!-- Хуй тебе! -->\n";
+        $alert_message .= "<div class='alert alert-danger'>Ошибка: Не указан один из параметров!</div>\n<!-- Хуй тебе! -->\n";
         return;
       }
+      
       $r = login ($_POST['login'], $_POST['password']);
-
       break;
 
     default:
@@ -64,12 +78,13 @@ function login ($login, $pass) {
   global $alert_message;
   
   //Инициализируем логер
-  if (!logger::init()) {
-    $alert_message .= "<div class='alert alert-warning'><b>Logger error</b> ".Logger::get_last_error()."</div>\n";
-  }
+  //if (!logger::init()) {
+  //$alert_message .= "<div class='alert alert-warning'><b>Logger error</b> ".Logger::get_last_error()."</div>\n";
+  //}
   
+
   //1. Извлекаем из БД SAMS логин и хэш-пароль
-  @$sql = new mysqli($config['sams_db'][0], $config['sams_db'][1], $config['sams_db'][2], $config['sams_db'][3]);
+  $sql = new mysqli($config['sams_db'][0], $config['sams_db'][1], $config['sams_db'][2], $config['sams_db'][3]);
   
   //Если произошла ошибка подключения к SAMS
   if ($sql->connect_errno) {
@@ -90,6 +105,7 @@ function login ($login, $pass) {
     logger::add(3, "При идентификации был указан неверный логин [{$login}]", $login);
     return;	//Логина нет в базе. Но чтобы обмануть доверчивого юзера, говорим ему что-то про пароль.
   }
+  
   
   $ip = GetClientIP ();
   

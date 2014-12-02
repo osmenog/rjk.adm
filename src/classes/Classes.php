@@ -1,4 +1,5 @@
 <?php
+
 include_once "config.php";
 include_once "classes/Exceptions.php";
 include_once "classes/Logger.php";
@@ -548,6 +549,7 @@ class rejik_worker extends worker {
     //print_r ($res);
     return $res;
   }
+
   // ==========================================================================================================================
   // Работа с Пользователями
   // ==========================================================================================================================
@@ -654,6 +656,26 @@ class rejik_worker extends worker {
     Logger::add (42, "Список пользователей [{$banlist}] экспортирован в файл. h=[{$file_hash}]", $banlist);
     return $counter;  
   }
+
+  public function users_get() {
+    //Функция возвращает список пользователей, находящихся в REJIK DB
+
+    //Выполняем запрос
+    $query = "SELECT * FROM `users`;";
+    $response = $this->sql->query($query);
+
+    //Если запрос не выполнен, то вызываем исключение
+    if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
+
+    $res=array();
+
+    while ($row = $response->fetch_row()) {
+      $res[] = $row[1];
+    }
+
+    return $res;
+  }
+
   // ==========================================================================================================================
   // Функции импорта
   // ==========================================================================================================================
