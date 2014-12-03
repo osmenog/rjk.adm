@@ -27,7 +27,7 @@
   echo "  <div class='userlist panel panel-default'>\n";
   echo "    <table class='table table-striped table-condensed'>\n";
   echo "      <tr><th>Выбор</th><th>Логин</th><th>ФИО</th></tr>\n\n";
-  foreach ($list as $row) {
+  foreach ($list as $k => $row) {
     echo "<tr>\n  <td></td>\n";
     echo "  <td><a href='?action=getuser&user={$row['nick']}'>".$row['nick']."</a></td>\n";
     echo "  <td>{$row['family']} {$row['name']} {$row['soname']}</td>\n</tr>\n";

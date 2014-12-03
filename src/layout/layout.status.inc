@@ -15,13 +15,14 @@ include_once "classes/RejikServer.php";
 include_once "classes/HealthPanel.php";
 
 
+
 try {
-  
+  global $config;
+
   //Инициализируем главный обьект
   $hp = new HealthPanel();
   
   //Если пришла команда смены мастера
-  
   if ($id !== NULL) {
     $hp->switch_master($id);
     exit;
@@ -33,6 +34,7 @@ try {
   echo "<div class='page-header'>\n";
   echo "<h1>\nЗдоровье сервера</br>\n";
   echo "<small>" . $hp->get_local_server_name() . "</small>\n</h1>\n";
+  echo "<small>Внутренний идентификатор: ".$config['server_id']."</small>\n";
   echo "</div>\n";
 
   //---------------------------------------------------------------------------------
@@ -138,9 +140,7 @@ try {
         </div>
       </td></tr>\n";
     }
-    
     //echo "<tr><td colspan=4>"; foreach ($err as $k => $v) echo "{$k} = {$v}</br>"; echo "</td></tr>\n";
-    
   }
   echo "</table>\n";
   echo "</div>\n"; // of panel

@@ -93,7 +93,7 @@ class proxy_worker extends worker {
       		$row['name'] = empty($row["name"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['name']);
       		$row['soname'] = empty($row["soname"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['soname']);
 		  	}
-      	$res[] = $row;
+      	$res[$row['nick']] = $row;
 		  }
 
     	$response->close();
@@ -657,11 +657,16 @@ class rejik_worker extends worker {
     return $counter;  
   }
 
-  public function users_get() {
+  public function users_get($raw_mode=0) {
     //Функция возвращает список пользователей, находящихся в REJIK DB
 
     //Выполняем запрос
-    $query = "SELECT * FROM `users`;";
+    if ($raw_mode==0) {
+      $query = "SELECT `id`,`login`,`proxy_id`,`name` FROM `users`;";
+    } else {
+      $query = "SELECT * FROM `users`;";
+    }
+
     $response = $this->sql->query($query);
 
     //Если запрос не выполнен, то вызываем исключение
@@ -669,13 +674,17 @@ class rejik_worker extends worker {
 
     $res=array();
 
-    while ($row = $response->fetch_row()) {
-      $res[] = $row[1];
+    while ($row = $response->fetch_assoc()) {
+      $res[] = $row;
     }
 
     return $res;
   }
 
+  public function user_add ($login, $proxy_id, $password) {
+
+    return;
+  }
   // ==========================================================================================================================
   // Функции импорта
   // ==========================================================================================================================
