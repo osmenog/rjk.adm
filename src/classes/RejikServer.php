@@ -106,7 +106,7 @@ class RejikServer
   
   public function get_hostname() {
     
-    //Функция аозвращает имя данного сервера
+    //Функция возвращает имя данного сервера
     return $this->hostname;
   }
   

@@ -61,4 +61,10 @@ register_shutdown_function ('err_handler');
     echo (function_exists('filter_input') == TRUE) ? 'ok' : 'error';
   echo "</p>\n";
 
+  //Значения глобальных переменных
+  echo "<p>display_errors: "; var_dump (ini_get('display_errors')); echo "</p>\n";
+
+  echo "<p>error_reporting: ".ini_get('error_reporting')."</p>\n";
+
+  echo "<p>max_execution_time: ".ini_get('max_execution_time')."</p>\n";
 ?>

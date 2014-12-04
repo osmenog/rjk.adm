@@ -30,13 +30,8 @@ class HealthPanel {
 
     //Создаем обьект-итератор, содержащий список серверов
     $this->servers_list = new ServersList($servers_cfg);
-    
-    //Получаем имя локального сервера по его ID
-    $local_name = $this->servers_list->get_server_by_id($local_id);
-    //Если нельзя получить имя сервера, значит возвращаем исключение
-    if ($local_name===False) throw new OutOfBoundsException("В конфиге указан не существующий ID", 1);
 
-    $this->local_server_name = $local_name;
+    $this->local_server_name = $local_hostname;
     $this->local_server_id   = $local_id;
   }
 
@@ -68,7 +63,9 @@ class HealthPanel {
   public function check_availability () {
     
     //Увеличиваем таймаут
-    //set_time_limit (120);
+    if (PHP_VERSION_ID > 50500) {
+      set_time_limit (120);
+    }
     
     //Перебеираем список серверов...
     foreach ($this->servers_list as $srv) {

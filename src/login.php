@@ -4,15 +4,26 @@
   require_once "classes/Logger.php";
 
   error_reporting(E_ALL);
-  ini_set('display_errors', 1);
+  //ini_set('display_errors', 0);
   
   function err_handler() {
+    echo "<!DOCTYPE html>\n";
+    echo "<html>\n";
+    echo "<body>\n";
+
     $e = error_get_last();
+
+    if ($e['type'] == E_NOTICE || $e['type'] == E_WARNING) return;
+
     if ($e !== NULL) {
-      echo "<p>Произошла ошибка: ";
-      echo FriendlyErrorType($e['type'])."</p>";
+      echo "<p>Произошла фатальная ошибка: ";
+      //echo FriendlyErrorType($e['type'])."</p>";
       echo "<pre>\n";  var_dump ($e); echo "</pre>\n";
     }
+
+    echo "</body>\n";
+    echo "</html>\n";
+    exit;
   }
   
   register_shutdown_function ('err_handler');
@@ -85,7 +96,7 @@ function login ($login, $pass) {
 
   //1. Извлекаем из БД SAMS логин и хэш-пароль
   $sql = new mysqli($config['sams_db'][0], $config['sams_db'][1], $config['sams_db'][2], $config['sams_db'][3]);
-  
+
   //Если произошла ошибка подключения к SAMS
   if ($sql->connect_errno) {
     $alert_message .= "<div class='alert alert-danger'>Не могу подключиться к базе SAMS:<br/>{$sql->connect_error}</div>\n";
@@ -105,8 +116,7 @@ function login ($login, $pass) {
     logger::add(3, "При идентификации был указан неверный логин [{$login}]", $login);
     return;	//Логина нет в базе. Но чтобы обмануть доверчивого юзера, говорим ему что-то про пароль.
   }
-  
-  
+
   $ip = GetClientIP ();
   
   //Сравниваем хэши паролей
@@ -118,7 +128,7 @@ function login ($login, $pass) {
   
   // -!!!- ВНИМАНИЕ ---------------------------------------------------
   // - Эта строчка нужна только на момент отладки.
-  $usr_hash = $db_hash;
+  //$usr_hash = $db_hash;
   // -!!!--------------------------------------------------------------
 
   //2. Сравниваем с введенными значениями

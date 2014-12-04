@@ -239,11 +239,17 @@ class rejik_worker extends worker {
     //Создаем каталог для банлиста
     $p = $root_path."{$banlist}/";
     if (!file_exists($p)) {
-      if (!mkdir($p, 0, true)) throw new rejik_exception("Не могу создать каталог {$p}",111);
+      if (!@mkdir($p, 0, true)) {
+        $e=error_get_last();
+        throw new rejik_exception("Не могу создать каталог: {$e['message']}",111);
+      }
     }
 
-    $hdl = fopen("{$p}/urls", "w");
-    if(!$hdl) throw new rejik_exception("Не могу записать в файл {$p}/urls",112);  
+    $hdl = @fopen("{$p}/urls", "w");
+    if(!$hdl) {
+      $e=error_get_last();
+      throw new rejik_exception("Не могу записать в файл: {$e['message']}",112);
+    }
     
     $counter=0;
     //Если в бан-листе нету УРЛов, то пропускаем его.
@@ -635,8 +641,9 @@ class rejik_worker extends worker {
     $users = $this->banlist_get_users($banlist);            
 
     //Определяем путь до папки с файлами, содержащими списки пользователей         
-    if(!($hdl=fopen("{$root_path}/{$banlist}", "w"))) {
-      throw new rejik_exception("Не могу записать в файл {$root_path}/{$banlist}/urls",112);
+    if(!($hdl=@fopen("{$root_path}/{$banlist}", "w"))) {
+      $e=error_get_last();
+      throw new rejik_exception("Не могу записать в файл: {$e['message']}",112);
     }else{
       $counter=0;
       //Построчно записываем в файл список пользователей.
@@ -694,7 +701,7 @@ class rejik_worker extends worker {
       throw new Exception ("Ошибка при очистке таблицы {$table}: (".$this->sql->errno.") ".$this->sql->error, $this->sql->errno);
     }
 
-    $query_txt = "LOAD DATA INFILE '{$csv_file_path}' REPLACE INTO TABLE `{$table}` FIELDS TERMINATED BY ';' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n'" ;
+    $query_txt = "LOAD DATA LOCAL INFILE '{$csv_file_path}' REPLACE INTO TABLE `{$table}` FIELDS TERMINATED BY ';' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n'" ;
     //"(`url`, `banlist`)";
 
     $t="("; $max_fields = count($fields);

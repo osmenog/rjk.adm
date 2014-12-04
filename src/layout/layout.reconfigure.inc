@@ -60,7 +60,7 @@
                 $users_count = $rejik->users_acl_export ($value, $u_path);
                 $users_time = microtime(true) - $users_time_start;
               } catch (exception $e) {
-                echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
+                echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}</div>\n";
                 $err_flag = true;
               }
 
@@ -69,7 +69,7 @@
                 $urls_count = $rejik->banlist_export ($value, $b_path);
                 $urls_time = microtime(true) - $urls_time_start; 
               } catch (exception $e) {
-                echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
+                echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}</div>\n";
                 $err_flag = true;
               }
 

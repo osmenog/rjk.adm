@@ -33,7 +33,7 @@ try {
   
   echo "<div class='page-header'>\n";
   echo "<h1>\nЗдоровье сервера</br>\n";
-  echo "<small>" . $hp->get_local_server_name() . "</small>\n</h1>\n";
+  echo "<small>".$hp->get_local_server_name()."</small>\n</h1>\n";
   echo "<small>Внутренний идентификатор: ".$config['server_id']."</small>\n";
   echo "</div>\n";
 
