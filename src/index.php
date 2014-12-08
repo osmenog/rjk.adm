@@ -3,6 +3,9 @@
   include_once "config.php";
   global $config;
 
+  //todo Добавить проверку прав пользователя SQL
+  //todo Добавить проверку прав доступа к каталогам
+
   date_default_timezone_set('Asia/Omsk');
 
   //Выполняем инииализацию сессий и первоначальные проверки
@@ -16,10 +19,10 @@
   process_backend_actions();
   
   //Проверяем, была ли выполнена проверка состояния серверов
-  if (CheckServersState() === False) {
-    header("Location: /{$config ['proj_name']}/index.php?action=servers_check");
-    exit;
-  }  
+  //if (CheckServersState() === False) {
+  //  header("Location: /{$config ['proj_name']}/index.php?action=servers_check");
+  //  exit;
+  //}  
 
   //Выводим основную страницу
   print_main();

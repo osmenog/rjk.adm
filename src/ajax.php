@@ -8,6 +8,7 @@ include_once "classes/API_worker.php";
 
 global $config;
 
+
 register_shutdown_function("dbg_last_error");
 date_default_timezone_set('Asia/Omsk');
 
@@ -22,8 +23,9 @@ function dbg_last_error() {
   }
 }
 
-//error_reporting(0);
 //Сюда нужно добавить, чтобы в случае ошибки, ее текст не выводился.
+error_reporting(E_ALL);
+//ini_set('display_errors', 0);
 
 //Вклчаем буфферизацию вывода. Скрипт ничего не отправит, пока не будет вызвано ob_end_flush()
 ob_start ();
@@ -92,8 +94,6 @@ try {
 } catch(exception $e) {
   echo $e->get_json();
 }
-
-
 
 ob_end_flush();
 ?>

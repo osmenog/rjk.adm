@@ -14,16 +14,14 @@ class HealthPanel {
   //Конструктор создает массив servers_list, содержащий обьекты RejikServer, также включает в себя локальный сервер
   public function __construct () {
     global $config;
-    
-    //Инициализируем сессию
-    $this->init_session();
 
     //Определяем параметры текущего сервера, на котором запущен этот скрипт
     $local_id = isset ($config['server_id']) ? $config ['server_id'] : 0;
     $local_hostname = gethostname();
 
     //Добавляем в список серверов текущий сервер.
-    $servers_cfg[$local_hostname]=array($config['rejik_db'][1], $config['rejik_db'][2], $local_id);
+    //$servers_cfg[$local_hostname]=array($config['rejik_db'][1], $config['rejik_db'][2], $local_id);
+    $servers_cfg[$config['rejik_db'][0]]=array($config['rejik_db'][1], $config['rejik_db'][2], $local_id);
 
     //Получаем массив серверов из конфига
     $servers_cfg = array_merge ($servers_cfg, $config ['servers']);
@@ -61,10 +59,7 @@ class HealthPanel {
 
   //Функция проверяет доступность всех серверов, и определяет режим их работы
   public function check_availability () {
-    
-    //Увеличиваем таймаут
-    //set_time_limit (120);
-    
+
     //Перебеираем список серверов...
     foreach ($this->servers_list as $srv) {
 
@@ -73,10 +68,8 @@ class HealthPanel {
         //Если сервер доступен, то определяем режим его работы
         $srv_mode = $srv->get_work_mode();
         if ($srv_mode == WORK_MODE_MASTER) $this->master_servers_ids[]=$srv->get_id();
-        //echo "<pre>\n"; print_r($srv_mode); echo "</pre>\n";
-        
       } else {
-        //echo "<h3>Ошибка!!! Не могу подключится к серверу {$srv}</br>{$srv->sql_error_message}</h3>";
+        echo "<h3>Ошибка!!! Не могу подключится к серверу {$srv}</br>{$srv->sql_error_message}</h3>";
       }
       //print_r ($this->servers_list->dbg_get_servers_state());
       //echo "<pre>\n"; print_r($srv); echo "</pre>\n";

@@ -168,5 +168,4 @@ function login ($login, $pass) {
   $sql->close(); 
 }
 
-
 ?>

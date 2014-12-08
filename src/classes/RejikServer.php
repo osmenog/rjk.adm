@@ -17,7 +17,8 @@ class RejikServer
   public $sql_last_error = FALSE;    //Равен False, если ошибок нет. Иначе содержит ошибки, связанные с mysql (не репликация)
   public $sql_last_errno = 0;
   private $work_mode = WORK_MODE_UNDEFINED;    //Режим работы сервера (Мастер, Слейв или Не определено)
-  
+  //private $is_local = NULL;
+
   public function __construct($host, $user = '', $passwd = '', $id = 0) {
     $this->server_id = $id;
     $this->hostname = $host;
@@ -32,11 +33,7 @@ class RejikServer
   public function __toString() {
     return isset($this->hostname) ? $this->hostname : '';
   }
-  
-  /**
-   * Задаем поля, которые будут сохранены при сериализации
-   * @return array [description]
-   */
+
   public function __sleep() {
     
     //echo "<p>Вызван метод sleep из RejikServer [{$this}]</p>";
@@ -56,7 +53,15 @@ class RejikServer
   private function set_error_var($error, $errno = 0) {
     $this->sql_error = array('error' => $error, 'errno' => $errno);
   }
-  
+
+  //private function is_local() {
+  //  if ($this->is_local) {
+  //    return TRUE;
+  //  } else {
+  //    return FALSE;
+  //  }
+  //}
+
   public function get_error() {
     return array($this->sql_last_error, $this->sql_last_errno);
   }
@@ -78,7 +83,7 @@ class RejikServer
     $this->sql_obj->options(MYSQLI_OPT_CONNECT_TIMEOUT, 3);
     
     //Устанавливаем соединение
-    $this->sql_obj->real_connect($this->hostname, $this->username, $this->password);
+    @$this->sql_obj->real_connect($this->hostname, $this->username, $this->password);
     
     //Если произошла ошибка подключения к БД
     if ($this->sql_obj->connect_errno) {
@@ -98,7 +103,6 @@ class RejikServer
   }
   
   public function get_hostname() {
-    
     //Функция возвращает имя данного сервера
     return $this->hostname;
   }

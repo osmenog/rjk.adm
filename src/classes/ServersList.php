@@ -54,6 +54,10 @@ class ServersList implements Iterator {
     return False;
   }
 
+  public function add_server (RejikServer $srv) {
+    $this->servers[] = $srv;
+    $this->servers_id[] = $srv->get_id();
+  }
   // public function dbg_get_servers_state() {
   //   $err2 = array ();
   //   for ($i=0; $i <= count($this->servers)-1 ; $i++) { 

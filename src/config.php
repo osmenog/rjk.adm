@@ -4,7 +4,7 @@
 // -------------------------------------------------------------
 
   //Параметры БД САМС
-  $config  ['sams_db'] = array('localhost', 'sams', 'osme', 'squidctrl', 'utf8');
+  $config  ['sams_db'] = array('localhost', 'sams', 'qwerty', 'squidctrl', 'utf8');
   //Параметры БД Режика
   $config ['rejik_db'] = array('localhost', 'rejik_adm', 'admin3741', 'rejik', 'utf8');
 

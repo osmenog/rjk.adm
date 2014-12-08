@@ -217,6 +217,8 @@ class api_worker {
    */
   public function check_servers_availability () {
     try {
+      CheckSession();
+
       //Инициализируем главный обьект
       $hp = new HealthPanel();
 
