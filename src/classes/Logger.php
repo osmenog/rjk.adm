@@ -40,11 +40,11 @@ class Logger
   public static function init() {
     global $config;
     
-    if (isset($config['log_db'][0])) $db_host = $config['log_db'][0];
-    if (isset($config['log_db'][1])) $db_login = $config['log_db'][1];
-    if (isset($config['log_db'][2])) $db_passwd = $config['log_db'][2];
-    if (isset($config['log_db'][3])) $db_name = $config['log_db'][3];
-    if (isset($config['log_db'][4])) $db_codepage = $config['log_db'][4];
+    if (isset($config['rejik_db'][0])) $db_host = $config['rejik_db'][0];
+    if (isset($config['rejik_db'][1])) $db_login = $config['rejik_db'][1];
+    if (isset($config['rejik_db'][2])) $db_passwd = $config['rejik_db'][2];
+    if (isset($config['rejik_db'][3])) $db_name = $config['rejik_db'][3];
+    if (isset($config['rejik_db'][4])) $db_codepage = $config['rejik_db'][4];
     
     //Инициализируем подключение к БД
     $sql_con = new mysqli($db_host, $db_login, $db_passwd, $db_name);

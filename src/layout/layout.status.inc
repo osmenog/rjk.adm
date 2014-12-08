@@ -19,6 +19,10 @@ include_once "classes/HealthPanel.php";
 try {
   global $config;
 
+  //Выполняем проверку прав
+
+
+
   //Инициализируем главный обьект
   $hp = new HealthPanel();
   
@@ -32,7 +36,7 @@ try {
   $hp->restore_session();
   
   echo "<div class='page-header'>\n";
-  echo "<h1>\nЗдоровье сервера</br>\n";
+  echo "<h1>\nПанель управления</br>\n";
   echo "<small>".$hp->get_local_server_name()."</small>\n</h1>\n";
   echo "<small>Внутренний идентификатор: ".$config['server_id']."</small>\n";
   echo "</div>\n";
@@ -40,12 +44,12 @@ try {
   //---------------------------------------------------------------------------------
   // СОСТОЯНИЕ РАБОТЫ СЛУЖБ ТЕКУЩЕГО СЕРВЕРА
   //---------------------------------------------------------------------------------
-  echo "<h3>Состояние работы служб текущего сервера:</h3>\n";
-  echo "<ul>\n";
-  echo "<li><b>Служба SQUID:</b> --ЗАГЛУШКА--</li>\n";
-  echo "<li><b>Служба SAMS:</b> --ЗАГЛУШКА--</li>\n";
-  echo "<li><b>Сервер БД для записи:</b> ".$hp->get_master_server()."</li>\n";
-  echo "</ul>\n";
+  //echo "<h3>Состояние работы служб текущего сервера:</h3>\n";
+  //echo "<ul>\n";
+  //echo "<li><b>Служба SQUID:</b> --ЗАГЛУШКА--</li>\n";
+  //echo "<li><b>Служба SAMS:</b> --ЗАГЛУШКА--</li>\n";
+  //echo "<li><b>Сервер БД для записи:</b> ".$hp->get_master_server()."</li>\n";
+  //echo "</ul>\n";
 
   //---------------------------------------------------------------------------------
   // СОСТОЯНИЕ СИНХРОНИЗАЦИИ ПОЛЬЗОВАТЕЛЕЙ
@@ -68,14 +72,21 @@ try {
   //---------------------------------------------------------------------------------
   // СОСТОЯНИЕ РЕПЛИЦАЦИИ БАЗЫ ДАННЫХ
   //---------------------------------------------------------------------------------
+  echo "<div class='row'>\n";
+  echo "<div class='col-md-8'>";
   echo "<h3>Состояние репликации:</h3>\n";
-  //fixme Нужно красиво спозиционировать кнопку (Справа, относительно надписи "сост. репликации")
-  echo "</br><button class='btn btn-success btn-sm' onClick='location.href=\"?action=servers_check\"'>Выполнить проверку</button>  \n";
+  echo "</div>";
+  echo "<div class='col-md-4'>";
+  echo "<button class='btn btn-success btn-sm' id='servers_check_btn' onClick='location.href=\"?action=servers_check\"'>Выполнить проверку</button>  \n";
+  echo "</div>";
+  echo "</div>\n";
+
 
   //Стартуем проверку доступности серверов
   //$hp->check_availability();
   //Сохраняем результаты проверки в открытой сессии
   //$hp->save_session();
+
   echo "<div class='panel panel-default'>\n";
   echo "<table class='table table-condensed'>\n";
   echo "<thead>\n";

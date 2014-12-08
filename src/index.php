@@ -116,9 +116,9 @@
           <?php
             if ($config['debug_mode']) {
               echo "<div class='debug'>\n";
-              echo "<pre>"; print_r($_POST); echo "</pre>";
-              echo "<pre>"; print_r($_GET); echo "</pre>";
-              echo "<pre>"; print_r($_SESSION); echo "</pre>";
+              //echo "<pre>"; print_r($_POST); echo "</pre>";
+              //echo "<pre>"; print_r($_GET); echo "</pre>";
+              //echo "<pre>"; print_r($_SESSION); echo "</pre>";
               echo "</div>\n";  
             }
             print_layout();

@@ -29,7 +29,7 @@ class worker {
 
 		@$mysqli = new mysqli($this->db_host, $this->db_login, $this->db_passwd, $this->db_name);
 		if ($mysqli->connect_errno) {
-      throw new mysql_exception($mysqli->connect_error, $mysqli->connect_errno);
+            throw new mysql_exception($mysqli->connect_error, $mysqli->connect_errno);
 		}
 
 		$this->sql = $mysqli;

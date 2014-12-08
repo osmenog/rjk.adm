@@ -4,13 +4,10 @@
 // -------------------------------------------------------------
 
   //Параметры БД САМС
-  //$config ['sams_db']  = array ('195.162.33.117', 'sams', 'qwerty', 'squidctrl', 'utf8');
-  $config['sams_db'] = array('localhost', 'sams', 'sams', 'squidctrl', 'utf8');
-
+  $config  ['sams_db'] = array('localhost', 'sams', 'osme', 'squidctrl', 'utf8');
   //Параметры БД Режика
-  $config['rejik_db'] = array('localhost', 'root', 'osme', 'rejik', 'utf8');
-  //Параметры БД логов
-  $config['log_db'] = array('localhost', 'root', 'osme', 'rejik', 'utf8');
+  $config ['rejik_db'] = array('localhost', 'rejik_adm', 'admin3741', 'rejik', 'utf8');
+
 
 // -------------------------------------------------------------
 //Вспомогательные опции
@@ -20,7 +17,7 @@
   $config['admin_log'] = True;
 
   //Режим отладки
-  $config['debug_mode'] = False;
+  $config['debug_mode'] = True;
 
   //Название корневой папки проекта. Используется при указании абсолютного адреса.
   $config['proj_name'] = 'rjk';
@@ -35,7 +32,7 @@
   $config['server_id'] = 21;
 
   $config['servers'] = array(
-    '192.168.139.249' => array ('root', 'osme', 22),
+    //'192.168.139.249' => array ('root', 'osme', 22),
     //'FreeBSD_2' => array ($repl_username, $repl_password, 3)
   );
 

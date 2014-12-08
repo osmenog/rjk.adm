@@ -6,12 +6,12 @@
 class HealthPanel {
   private $local_server_name;       //Имя текущего сервера
   private $local_server_id;         //Ид текущего сервера
-  private $servers_list;            //Список серверов (содержит обьекты типа RejikServer)
+  public $servers_list;            //Список серверов (содержит обьекты типа RejikServer)
   private $master_servers_ids = array();        //Ид мастер-сервера
   
   //public $servers_status = array();
 
-  //Конструктор
+  //Конструктор создает массив servers_list, содержащий обьекты RejikServer, также включает в себя локальный сервер
   public function __construct () {
     global $config;
     
@@ -63,9 +63,7 @@ class HealthPanel {
   public function check_availability () {
     
     //Увеличиваем таймаут
-    if (PHP_VERSION_ID > 50500) {
-      set_time_limit (120);
-    }
+    //set_time_limit (120);
     
     //Перебеираем список серверов...
     foreach ($this->servers_list as $srv) {
@@ -100,7 +98,8 @@ class HealthPanel {
       
       //Если режим SLAVE, то выполняем SHOW SLAVE STATUS
       $stat = $srv->get_repl_status(False);
-      
+      if (!$stat) {return array($srv->sql_last_errno => $srv->sql_last_error);}
+
       //Заполняем массив интересующими нас ключами
       $error_fields = array (
                               'Last_Errno',
