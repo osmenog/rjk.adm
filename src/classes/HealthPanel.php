@@ -6,12 +6,12 @@
 class HealthPanel {
   private $local_server_name;       //Имя текущего сервера
   private $local_server_id;         //Ид текущего сервера
-  private $servers_list;            //Список серверов (содержит обьекты типа RejikServer)
+  public $servers_list;            //Список серверов (содержит обьекты типа RejikServer)
   private $master_servers_ids = array();        //Ид мастер-сервера
   
   //public $servers_status = array();
 
-  //Конструктор
+  //Конструктор создает массив servers_list, содержащий обьекты RejikServer, также включает в себя локальный сервер
   public function __construct () {
     global $config;
     
@@ -30,13 +30,8 @@ class HealthPanel {
 
     //Создаем обьект-итератор, содержащий список серверов
     $this->servers_list = new ServersList($servers_cfg);
-    
-    //Получаем имя локального сервера по его ID
-    $local_name = $this->servers_list->get_server_by_id($local_id);
-    //Если нельзя получить имя сервера, значит возвращаем исключение
-    if ($local_name===False) throw new OutOfBoundsException("В конфиге указан не существующий ID", 1);
 
-    $this->local_server_name = $local_name;
+    $this->local_server_name = $local_hostname;
     $this->local_server_id   = $local_id;
   }
 
@@ -66,9 +61,6 @@ class HealthPanel {
 
   //Функция проверяет доступность всех серверов, и определяет режим их работы
   public function check_availability () {
-    
-    //Увеличиваем таймаут
-    //set_time_limit (120);
     
     //Перебеираем список серверов...
     foreach ($this->servers_list as $srv) {
@@ -103,7 +95,8 @@ class HealthPanel {
       
       //Если режим SLAVE, то выполняем SHOW SLAVE STATUS
       $stat = $srv->get_repl_status(False);
-      
+      if (!$stat) {return array($srv->sql_last_errno => $srv->sql_last_error);}
+
       //Заполняем массив интересующими нас ключами
       $error_fields = array (
                               'Last_Errno',

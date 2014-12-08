@@ -4,15 +4,26 @@
   require_once "classes/Logger.php";
 
   error_reporting(E_ALL);
-  ini_set('display_errors', 1);
+  ini_set('display_errors', 0);
   
   function err_handler() {
+    echo "<!DOCTYPE html>\n";
+    echo "<html>\n";
+    echo "<body>\n";
+
     $e = error_get_last();
+
+    if ($e['type'] == E_NOTICE || $e['type'] == E_WARNING) return;
+
     if ($e !== NULL) {
-      echo "<p>Произошла ошибка: ";
-      echo FriendlyErrorType($e['type'])."</p>";
+      echo "<p>Произошла фатальная ошибка: ";
+      //echo FriendlyErrorType($e['type'])."</p>";
       echo "<pre>\n";  var_dump ($e); echo "</pre>\n";
     }
+
+    echo "</body>\n";
+    echo "</html>\n";
+    exit;
   }
   
   register_shutdown_function ('err_handler');
@@ -78,17 +89,29 @@ function login ($login, $pass) {
   global $alert_message;
   
   //Инициализируем логер
-  //if (!logger::init()) {
-  //$alert_message .= "<div class='alert alert-warning'><b>Logger error</b> ".Logger::get_last_error()."</div>\n";
-  //}
-  
+  if (!logger::init()) {
+    if ($config['debug_mode']) {
+        $alert_message .= "<div class='alert alert-warning'><b>Logger error</b> ".Logger::get_last_error()."</div>\n";
+    }
+  }
+
+  //Устанавливаем соединение с REJIK DB для теста
+  try {
+    $rjk = new rejik_worker($config['rejik_db']);
+  } catch (Exception $e) {
+    $alert_message .= "<div class='alert alert-danger'>Не могу подключиться к REJIK DB";
+    $alert_message .= ($config['debug_mode']) ? ":<br>{$e->getCode()} {$e->getMessage()}</div>\n" : ".<br> Для подробных сведений об ошибке, - включите режим отладки.</div>\n";
+    return -1;
+  }
+
 
   //1. Извлекаем из БД SAMS логин и хэш-пароль
   $sql = new mysqli($config['sams_db'][0], $config['sams_db'][1], $config['sams_db'][2], $config['sams_db'][3]);
-  
+
   //Если произошла ошибка подключения к SAMS
   if ($sql->connect_errno) {
-    $alert_message .= "<div class='alert alert-danger'>Не могу подключиться к базе SAMS:<br/>{$sql->connect_error}</div>\n";
+    $alert_message .= "<div class='alert alert-danger'>Не могу подключиться к базе SAMS";
+    $alert_message .= ($config['debug_mode']) ? ":<br>{$sql->connect_error}</div>\n" : ".<br> Для подробных сведений об ошибке, - включите режим отладки.</div>\n";
     return -1;
   }
   
@@ -96,7 +119,8 @@ function login ($login, $pass) {
   $login = $sql->real_escape_string ($login);
   $response = $sql->query("SELECT `user`,`pass`,`access` FROM `passwd` WHERE `user`='{$login}'");
   if (!$response) {
-    $alert_message .= "<div class='alert alert-danger'>Не могу подключиться к базе SAMS:<br/>{$sql->errno} {$sql->error}</div>\n";
+    $alert_message .= "<div class='alert alert-danger'>Не могу подключиться к базе SAMS";
+    $alert_message .= ($config['debug_mode']) ? ":<br>{$sql->errno} {$sql->error}</div>\n" : ".<br> Для подробных сведений об ошибке, - включите режим отладки.</div>\n";
     return;
   }
   
@@ -105,8 +129,7 @@ function login ($login, $pass) {
     logger::add(3, "При идентификации был указан неверный логин [{$login}]", $login);
     return;	//Логина нет в базе. Но чтобы обмануть доверчивого юзера, говорим ему что-то про пароль.
   }
-  
-  
+
   $ip = GetClientIP ();
   
   //Сравниваем хэши паролей

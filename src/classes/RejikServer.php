@@ -7,24 +7,16 @@ const WORK_MODE_UNDEFINED = - 1;
 
 class RejikServer
 {
-  private $server_id;
-   //Уникальный ID сервера (задается в конфиге mysql)
-  private $hostname;
-   //Имя хоста, на котором работает mysql
-  private $username;
-   //Имя пользователя
-  private $password;
-   //Пароль пользователя
-  private $sql_obj;
-   //Обьект, взаимодействующий с mysql
-  private $sql_connected = False;
-   //Равен true, если установлено соединение с mysql
-  private $aviable = False;
-   //Равен true, если хост сервера доступен (включен и пингуется)
-  private $sql_error = False;
-   //Равен False, если ошибок нет. Иначе содержит ошибки, связанные с mysql (не репликация)
-  private $work_mode = WORK_MODE_UNDEFINED;
-   //Режим работы сервера (Мастер, Слейв или Не определено)
+  private $server_id;   //Уникальный ID сервера (задается в конфиге mysql)
+  private $hostname;    //Имя хоста, на котором работает mysql
+  private $username;    //Имя пользователя
+  private $password;    //Пароль пользователя
+  private $sql_obj;     //Обьект, взаимодействующий с mysql
+  private $sql_connected = False;    //Равен true, если установлено соединение с mysql
+  private $aviable = False;          //Равен true, если хост сервера доступен (включен и пингуется)
+  public $sql_last_error = FALSE;    //Равен False, если ошибок нет. Иначе содержит ошибки, связанные с mysql (не репликация)
+  public $sql_last_errno = 0;
+  private $work_mode = WORK_MODE_UNDEFINED;    //Режим работы сервера (Мастер, Слейв или Не определено)
   
   public function __construct($host, $user = '', $passwd = '', $id = 0) {
     $this->server_id = $id;
@@ -48,7 +40,7 @@ class RejikServer
   public function __sleep() {
     
     //echo "<p>Вызван метод sleep из RejikServer [{$this}]</p>";
-    return array('server_id', 'sql_connected', 'work_mode', 'hostname', 'username', 'password', 'sql_error');
+    return array('server_id', 'sql_connected', 'work_mode', 'hostname', 'username', 'password', 'sql_last_error','sql_last_errno');
   }
   
   public function __wakeup() {
@@ -66,7 +58,7 @@ class RejikServer
   }
   
   public function get_error() {
-    return $this->sql_error;
+    return array($this->sql_last_error, $this->sql_last_errno);
   }
 
   public function get_error_str() {
@@ -86,7 +78,7 @@ class RejikServer
     $this->sql_obj->options(MYSQLI_OPT_CONNECT_TIMEOUT, 3);
     
     //Устанавливаем соединение
-    @$this->sql_obj->real_connect($this->hostname, $this->username, $this->password);
+    $this->sql_obj->real_connect($this->hostname, $this->username, $this->password);
     
     //Если произошла ошибка подключения к БД
     if ($this->sql_obj->connect_errno) {
@@ -94,8 +86,9 @@ class RejikServer
       //После данного присваивания, данные полученные из sql_obj->connect_error будут считаться не актуальными
       //так как в манах (http://ru2.php.net/manual/ru/mysqli.connect-error.php) написано:
       //Возвращает последнее сообщение об ошибке после вызова mysqli_connect()
-      
-      $this->set_error_var($this->sql_obj->connect_error, $this->sql_obj->connect_errno);
+
+      $this->sql_last_errno = $this->sql_obj->connect_errno;
+      $this->sql_last_error = $this->sql_obj->connect_error;
       $this->sql_connected = False;
       return False;
     } else {
@@ -106,7 +99,7 @@ class RejikServer
   
   public function get_hostname() {
     
-    //Функция аозвращает имя данного сервера
+    //Функция возвращает имя данного сервера
     return $this->hostname;
   }
   
@@ -132,10 +125,11 @@ class RejikServer
     } else {
       $res = $this->sql_obj->query("SHOW SLAVE STATUS;");
     }
-    
+
     //Если ошибка, то прерываем выполнение и возвращаем False.
     if (!$res) {
-      $this->sql_error = $this->set_error_var($this->sql_obj->errno, $this->sql_obj->error);
+      $this->sql_last_errno = $this->sql_obj->errno;
+      $this->sql_last_error = $this->sql_obj->error;
       return False;
     }
     
@@ -160,10 +154,11 @@ class RejikServer
     
     //Выполняем запрос
     $res = $this->sql_obj->query("SHOW SLAVE HOSTS;");
-    
+
     //Если ошибка, то прерываем выполнение и возвращаем False.
     if (!$res) {
-      $this->sql_error = $this->set_error_var($this->sql_obj->errno, $this->sql_obj->error);
+      $this->sql_last_errno = $this->sql_obj->errno;
+      $this->sql_last_error = $this->sql_obj->error;
       return False;
     }
     
@@ -381,7 +376,8 @@ class RejikServer
     
     //Если ошибка, то прерываем выполнение и возвращаем False.
     if (!$res) {
-      $this->sql_error = $this->set_error_var($this->sql_obj->errno, $this->sql_obj->error);
+      $this->sql_last_errno = $this->sql_obj->errno;
+      $this->sql_last_error = $this->sql_obj->error;
       return False;
     }
     

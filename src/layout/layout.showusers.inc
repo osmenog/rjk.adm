@@ -8,21 +8,21 @@
   echo "  <div class='page-header'>\n";
   echo "    <h2>Список пользователей</h2>\n";
   echo "  </div>\n";
-  echo "    <div class='search-box input-group'>\n";
-  echo "      <input type='text' class='form-control' placeholder='Введите имя, фамилию или логин пользователя' disabled>\n";
-  echo "      <span class='input-group-btn'>\n";
-  echo "        <button class='btn btn-default' type='button'>Искать</button>\n";
-  echo "      </span>\n";
-  echo "    </div><!-- /input-group -->\n";
-?>
-</br>
-<ul class="nav nav-tabs nav-justified">
-  <li role="presentation" class="active"><a href="#">Home</a></li>
-  <li role="presentation"><a href="#">Profile</a></li>
-  <li role="presentation"><a href="#">Messages</a></li>
-</ul>
+//fixme Раскомментировать, когда поиск будет работать нормально
+//  echo "    <div class='search-box input-group'>\n";
+//  echo "      <input type='text' class='form-control' placeholder='Введите имя, фамилию или логин пользователя' disabled>\n";
+//  echo "      <span class='input-group-btn'>\n";
+//  echo "        <button class='btn btn-default' type='button'>Искать</button>\n";
+//  echo "      </span>\n";
+//  echo "    </div><!-- /input-group -->\n";
 
-<?php
+//fixme Раскомментировать, когда синхронизация пользователей будет работать нормально
+//</br>
+//<ul class="nav nav-tabs nav-justified">
+//  <li role="presentation" class="active"><a href="#">Home</a></li>
+//  <li role="presentation"><a href="#">Profile</a></li>
+//  <li role="presentation"><a href="#">Messages</a></li>
+//</ul>
 
   echo "  <div class='userlist panel panel-default'>\n";
   echo "    <table class='table table-striped table-condensed'>\n";
