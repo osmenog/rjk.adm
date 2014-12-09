@@ -1,4 +1,6 @@
 <?php
+
+
   //Фильтруем входные данные
   $id = filter_input(INPUT_GET, 'switch_master_to', FILTER_VALIDATE_INT);
   if ($id === False) throw new InvalidArgumentException("Неверно задан входящий параметр 'switch_master_to'", 1);
@@ -44,12 +46,75 @@
       echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
     }
 
+    //В этом блоке проверяем права на запись в следующие папки:
+    // {rejik_web_dir}/banlists/
+    // {rejik_web_dir}/users/
+    // {rejik_web_dir}/cron/
+
     try {
-
+      $project_dir = $_SERVER['DOCUMENT_ROOT']."/".$config['proj_name'];
+      $dirs = array ($project_dir."/banlists/",
+                     $project_dir."/users/",
+                     $project_dir."/cron/",
+        $project_dir);
+      cp($dirs);
     } catch (Exception $e) {
-
+      echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
     }
   }
+
+  function cp($objects, $type = "d") {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    //Фунцкия принимает на входе массив, содержащий пути до файлов или директорий
+    clearstatcache();
+    $res = array(); $i=0;
+    //Перебираем входной массив
+    foreach ($objects as $obj) {
+      //Проверяем, существует ли обьект ...
+      if (!file_exists($obj)) {
+        // ... если нет, то пытаемся создать
+        if (!@mkdir($obj)) {
+          //Если не получилось создать, то генерируем ошибку и переходим к след. обьекту
+          $e = error_get_last();
+          $res[$i] = array($obj, "CREATE_ERROR", $e['message'], "", "");
+          $i++;
+          continue;
+        }
+      }
+
+      $perms = substr(sprintf('%o', fileperms($obj)), -4);
+      $owners = fileowner ($obj).":".filegroup($obj);
+
+      //Если обьект существует, проверяем его на чтение
+      if (!is_readable($obj)) {
+        //Если не получилось прочитать, то генерируем ошибку и переходим к след. обьекту
+        $e = error_get_last();
+
+        $res[$i] = array($obj, "READ_ERROR", $e['message'], $perms, $owners);
+        $i++;
+        continue;
+      }
+
+      //Если обьект существует, проверяем его на запись
+      if (!is_writeable($obj)) {
+        //Если не получилось записать, то генерируем ошибку и переходим к след. обьекту
+        $e = error_get_last();
+        $res[$i] = array($obj, "WRITE_ERROR", $e['message'], $perms, $owners);
+        $i++;
+        continue;
+      }
+
+      //Если все прошло ОК
+      $res[$i] = array($obj, "OK", "-", $perms, $owners);
+      $i++;
+    }
+
+    echo "<pre>"; print_r($res); echo "</pre>";
+
+    return $res;
+  }
+
 // ----------------------------------------------------------------------------------------------
 
   try {
@@ -193,4 +258,58 @@
   } catch (Exception $e) {
     echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
   }
+
+
+class check_perms {
+  function check_perms($curpath){
+    if($curpath){
+      if($dir = @dir($curpath)){
+        while ($file = $dir-> read()){
+          if($file != "." && $file != ".."){
+
+            $perms = substr(decoct(fileperms($curpath.$file)), 2);
+
+            if(is_dir($curpath.$file)){// если есть поддиректории то продолжаем рекурсию
+              $this-> check_perms($curpath.$file."/");
+
+              if($perms>775 || $perms<775){
+                if(!@chmod($curpath.$file, 0775)){
+                  $this->perms_d775 .= $curpath.$file."\n";
+                }
+              }
+            }else{// файл
+
+              $ext = array_reverse(explode('.', $file));
+
+              if($ext['0']=='php' && ($perms>775 || $perms<775)){
+                if(!@chmod($curpath.$file, 0775)){
+                  $this->perms_f775 .= $curpath.$file."\n";
+                }
+              }else if($ext['0']!='php' && ($perms>664 || $perms<664)){
+                if(!@chmod($curpath.$file, 0664)){
+                  $this->perms_f664 .= $curpath.$file."\n";
+                }
+              }
+            }
+            // пытаемся сменить группу
+            /*if($GLOBALS['group']){
+                $group = filegroup ($curpath.$file);
+                if($group!=$GLOBALS['group'] && !@chgrp($curpath.$file, $GLOBALS['group'])){
+                    $this->group .= $curpath.$file."\n";
+                }
+            }
+            // пытаемся сменить владельца
+            if($GLOBALS['owner']){
+                $owner = fileowner ($curpath.$file);
+                if($owner!=$GLOBALS['owner'] && !@chown($curpath.$file, $GLOBALS['owner'])){
+                    $this->owner .= $curpath.$file."\n";
+                }
+            }*/
+          }
+        }
+        $dir->close();
+      }
+    }
+  }
+}
 ?>

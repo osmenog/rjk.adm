@@ -80,4 +80,9 @@ register_shutdown_function ('err_handler');
   echo "<p>error_reporting: ".ini_get('error_reporting')."</p>\n";
 
   echo "<p>max_execution_time: ".ini_get('max_execution_time')."</p>\n";
+
+  $tmp = $_SERVER['DOCUMENT_ROOT']."/rjk/";
+  echo "<p>$tmp</p>";
+  $tmp2 = fileperms($tmp);
+  var_dump ($tmp2);
 ?>
