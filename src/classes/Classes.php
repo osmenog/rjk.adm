@@ -666,6 +666,7 @@ class rejik_worker extends worker {
 
   public function users_get($raw_mode=0) {
     //Функция возвращает список пользователей, находящихся в REJIK DB
+    //Возвращает массив с данными | FALSE в случ. учпеха | 0 если нет данных
 
     //Выполняем запрос
     if ($raw_mode==0) {
@@ -676,11 +677,14 @@ class rejik_worker extends worker {
 
     $response = $this->sql->query($query);
 
+    //Если в результате запроса ничего не извлечено
+    if ($response->num_rows == 0) return 0;
+
     //Если запрос не выполнен, то вызываем исключение
     if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
 
+    //Построчно заполням конечный массив данными, полученными из БД
     $res=array();
-
     while ($row = $response->fetch_assoc()) {
       $res[] = $row;
     }

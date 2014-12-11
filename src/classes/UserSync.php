@@ -21,12 +21,19 @@ function do_sync() {
   //Получаем пользователей режика, привязанных к серверу.
   $rejik_users = $sp->get_from_rejik();
 
-  //Формируем список пользователей, которых нужно перенести слева -> направо
-  // (пользователи, которые были созданы в SAMS)
-  $users_to_copy   = array_diff ($sams_users, $rejik_users);
 
-  // (пользователи, которые были удалены в SAMS, но остиались в REJIKDB
-  $users_to_remove = array_diff ($rejik_users, $sams_users);
+  if ($rejik_users === 0) {
+    $users_to_copy = $sams_users;
+    $users_to_remove = array();
+  } else {
+    //Формируем список пользователей, которых нужно перенести слева -> направо
+    // (пользователи, которые были созданы в SAMS)
+    $users_to_copy   = array_diff ($sams_users, $rejik_users);
+    // (пользователи, которые были удалены в SAMS, но остиались в REJIKDB
+    $users_to_remove = array_diff ($rejik_users, $sams_users);
+  }
+
+
 
   //echo "<pre>"; print_r($users_to_copy); echo "</pre>";
   //echo "<pre>"; print_r($users_to_remove); echo "</pre>";
@@ -103,8 +110,9 @@ class sams_sync {
   public function get_from_rejik() {
     //Получаем ВСЕХ пользователей REJIK DB
     $rejik_full_users = $this->rejik_conn->users_get();
+    if ($rejik_full_users == 0) return 0;
     if (!$rejik_full_users) throw new Exception("Произошла ошибка при получении пользователей REJIK DB");
-    if ($rejik_full_users == 0) return FALSE;
+
 
     $res = array();
     //Перебираем список пользователей
@@ -123,6 +131,7 @@ class sams_sync {
 
     //Получаем ВСЕХ пользователей REJIK DB
     $rejik_full_users = $this->rejik_conn->users_get();
+    if ($rejik_full_users == 0) return array();
 
     $res = array();
     //Перебираем список пользователей
