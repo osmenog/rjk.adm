@@ -6,6 +6,9 @@ include_once "classes/Logger.php";
 include_once "classes/SyncProvider.php";
 include_once "classes/Checker.php";
 
+const FIELDS_FULL = 0;
+const FIELDS_ONLY_LOGINS = 1;
+
 class worker {
 	public $sql;
 	
@@ -73,32 +76,59 @@ class proxy_worker extends worker {
     	return $res->fetch_assoc();
     }
 
-    public function get_userslist() {
-    	global $config;
-    	//$this->sql->set_charset("utf8"); //Устанавливаем кодировку соединения с БД Самса
-    	$this->sql->set_charset($this->db_codepage);
 
-    	$response = $this->sql->query("SELECT * FROM squidusers");
-    	if (!$response) {
-        //echo "get_userslist. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
-        return FALSE;
-      }
-    	
-    	if ($response->num_rows == 0) return 0;
+  /**
+   * Возвращает список пользователей БД SAMS.
+   * @param int $verbose_mode Обьем извлекаемых данных. Может быть одним из:
+   * FIELDS_FULL - все поля
+   * FIELDS_ONLY_LOGINS - только логины
+   * @return array|int|boolean Массив, содержащий пользователей
+   * 0 - в случае, если в БД нет пользователей
+   * False - в случае, если скрипт завершился с ошибкой
+   */
+  public function get_userslist($verbose_mode = FIELDS_FULL) {
+    global $config;
+    //Устанавливаем кодировку соединения с БД Самса
+    $this->sql->set_charset($this->db_codepage);
 
-    	$res = array();
-		  while ($row = $response->fetch_assoc()) {
-      	if (isset($config['conv'])) {
-      		$row['family'] = empty($row["family"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['family']);
-      		$row['name'] = empty($row["name"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['name']);
-      		$row['soname'] = empty($row["soname"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['soname']);
-		  	}
-      	$res[$row['nick']] = $row;
-		  }
-
-    	$response->close();
-    	return $res;
+    //Устанавливаем, тип запроса, в зависимости от входных данных
+    if ($verbose_mode == FIELDS_ONLY_LOGINS) {
+      $query = "SELECT `nick` FROM squidusers";
+    } elseif ($verbose_mode == FIELDS_FULL)  {
+      $query = "SELECT * FROM squidusers";
+    } else {
+      return FALSE;
     }
+
+    //Выполняем запрос к БД
+    $response = $this->sql->query($query);
+
+    //В случае ошибки - бросаем исключение
+    if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+    // Если в БД нет ни одной записьи - то возвращаем 0
+   	if ($response->num_rows == 0) return 0;
+
+   	$res = array();
+	  if ($verbose_mode == FIELDS_FULL) {
+      while ($row = $response->fetch_assoc()) {
+        if (isset($config['conv'])) {
+          $row['family'] = empty($row["family"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['family']);
+          $row['name'] = empty($row["name"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['name']);
+          $row['soname'] = empty($row["soname"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['soname']);
+        }
+        $res[$row['nick']] = $row;
+      }
+    } elseif ($verbose_mode == FIELDS_ONLY_LOGINS) {
+      //$row = $response->fetch_row();
+      //var_dump ($row);
+      while ($row = $response->fetch_row()) {
+        $res[]=$row[0];
+      }
+    }
+
+    $response->close();
+    return $res;
+  }
 
   /**
    * Функция проверяет, есть ли пользователь $nick в базе.

@@ -1,7 +1,5 @@
 <?php
 
-
-
 function do_sync() {
   global $config;
   echo "<h1>SYNC!</h1>";
@@ -62,7 +60,7 @@ class sams_sync {
   private $rejik_conn;           //MySql соединение с Rejik
 
   public  $sams_users_full = array(); //Массив со всей информацией о пользователях SAMS
-  public $rejik_users = array(); //Массив с логинами пользователей REJIK DB, относящихся к данному серверу
+  public  $rejik_users = array(); //Массив с логинами пользователей REJIK DB, относящихся к данному серверу
 
   private $server_id;
 
@@ -87,18 +85,21 @@ class sams_sync {
   }
 
   public function get_from_sams(){
-    //Получаем ВСЕХ пользователей SAMS в полном виде:
+    try {
+      //С помощью класса PROXY WORKER получаем список пользователей самс в ПОЛНОМ виде
+      $sams_full_users = $this->sams_conn->get_userslist(FIELDS_ONLY_LOGINS);
+    } catch (Exception $e) {
+      throw $e;
+    }
 
-
-    $sams_full_users = $this->sams_conn->get_userslist();
-    var_dump ($sams_full_users);
-
+    //Если в БД SAMS нет ни одного пользователя, то возвращаем 0
+    if ($sams_full_users == 0) return 0;
+    //Если произошла другая ошибка, то вызываем исключение
     if (!$sams_full_users) throw new Exception("Произошла ошибка при получении пользователей SAMS");
-    if ($sams_full_users == 0) return FALSE;
 
     //$this->sams_users_full = $sams_full_users;
 
-
+    //Заполняем результырующий массив логинами пользователей SAMS
     $res = array();
     foreach ($sams_full_users as $k => $r) {
       $res[$k] = $r['nick'];
