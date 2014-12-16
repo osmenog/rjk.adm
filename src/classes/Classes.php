@@ -8,8 +8,10 @@ include_once "classes/Checker.php";
 
 const FIELDS_FULL = 0;
 const FIELDS_ONLY_LOGINS = 1;
+const FIELDS_LOGINS_AND_ID = 2;
 
 class worker {
+  //todo добавить описание класса в phpdoc
 	public $sql;
 	
 	protected $db_host		= '';
@@ -21,7 +23,8 @@ class worker {
 	//protected $charset_conv	= FALSE;
 
   public function __construct($db_config) {
-		global $config;
+    //todo добавить описание phpdoc
+    global $config;
 		//db: [0 - хост, 1 - логин, 2- пасс, 3 - имя бд, 4 - кодировка]
 
 		if (isset($db_config[0])) $this->db_host = $db_config[0];
@@ -39,6 +42,7 @@ class worker {
 	}
 
   public function closedb(){
+    //todo добавить описание phpdoc
     if ($this->sql !== Null) {
       $this->sql->close();
     }
@@ -46,9 +50,11 @@ class worker {
 } //end of worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class proxy_worker extends worker {
+//todo добавить описание класса в phpdoc
 
 	public function get_userscount () {
-		$query_str = "SELECT Count(*) FROM squidusers\n";
+    //todo добавить описание phpdoc
+    $query_str = "SELECT Count(*) FROM squidusers\n";
 		$res = $this->sql->query($query_str);
     	if (!$res) {
     		//echo "[get_userscount] Не удалось выполнить запрос \"{$query_str}\"<br/>Код: ".$this->sql->errno." ".$this->sql->error;
@@ -60,7 +66,8 @@ class proxy_worker extends worker {
     	return $row[0];
 	}
 
-    public function get_userinfo($nick) {	
+    public function get_userinfo($nick) {
+      //todo добавить описание phpdoc
     	//$this->sql->set_charset("utf8");
     	$this->sql->set_charset($this->db_codepage); //Устанавливаем кодировку соединения с БД Самса
     	
@@ -152,18 +159,14 @@ class proxy_worker extends worker {
 } //end of proxy worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class rejik_worker extends worker {
+  //todo добавить описание класса в phpdoc
   private $sync_provider;
 
   // ==========================================================================================================================
   public function __construct ($db_config) {
+    //todo добавить описание phpdoc
     parent::__construct($db_config);
     $this->sql->set_charset("utf8"); //Устанавливаем кодировку соединения с БД Режика
-
-    //Скрипты могут выполняться долгое время. Увеличиваем таймаут.
-    if (PHP_VERSION_ID > 50500) {
-      set_time_limit (120);
-    }
-
 
     global $config;
     if ($config ['admin_log']==True) logger::init(); //Инициализируем логер
@@ -190,6 +193,7 @@ class rejik_worker extends worker {
     //                        - Возвращает 0, если список банлистов пустой
     //                  Неудача - возвращает исключение mysql_exception
     // -------------------------------------------------------------------------
+    //todo добавить описание phpdoc
     $response = $this->sql->query("SELECT * FROM banlists");
   
     //Если вышла ошибка
@@ -210,6 +214,7 @@ class rejik_worker extends worker {
   }
 
   private function banlist_set_crc ($banlist, $crc) {
+    //todo добавить описание phpdoc
     //Устанавливает поле CRC для заданного банлиста
     if (count($crc) == 0) return false;
     $query = "UPDATE banlists SET `crc`=UNHEX('{$crc}') WHERE `name`='{$banlist}';";
@@ -220,6 +225,7 @@ class rejik_worker extends worker {
   }
 
   public function banlist_get_crc ($banlist) {
+    //todo добавить описание phpdoc
     if (count($banlist)==0) return false;
 
     $query = "SELECT HEX(`crc`) FROM banlists WHERE `name`='{$banlist}';";
@@ -233,6 +239,7 @@ class rejik_worker extends worker {
   }
 
   private function banlist_set_user_crc ($banlist, $user_crc) {
+    //todo добавить описание phpdoc
     //Устанавливает поле CRC для заданного банлиста
     if (count($user_crc) == 0) return false;
     $query = "UPDATE banlists SET `users_crc`=UNHEX('{$user_crc}') WHERE `name`='{$banlist}';";
@@ -244,6 +251,7 @@ class rejik_worker extends worker {
   }
 
   public function banlist_get_user_crc ($banlist) {
+    //todo добавить описание phpdoc
     if (count($banlist)==0) return false;
 
     $query = "SELECT HEX(`users_crc`) FROM banlists WHERE `name`='{$banlist}';";
@@ -257,6 +265,7 @@ class rejik_worker extends worker {
   }
 
   public function banlist_export ($banlist, $root_path){
+    //todo добавить описание phpdoc
     //Функция сохраняет все записи бан-листа в файле
     //Таким образом данные передаются в режик
     
@@ -309,7 +318,7 @@ class rejik_worker extends worker {
     //                Неудача - Возвращает False
     //                        - Возвращает исключение mysql_exception
     // -------------------------------------------------------------------------
-  
+    //todo добавить описание phpdoc
     $name       = $this->sql->real_escape_string ($name      );
     $short_desc = $this->sql->real_escape_string ($short_desc);
     $full_desc  = $this->sql->real_escape_string ($full_desc );
@@ -341,6 +350,7 @@ class rejik_worker extends worker {
     //                  	  - Возвращает 0, если список банлистов пустой
     //				  Неудача - Вызывает исключение если возникла ошибка
     // -------------------------------------------------------------------------
+    //todo добавить описание phpdoc
     try {
     // Возвращает информацю по заданному бан листу
     $bl = $this->banlists_get(true); //Получаем список всех банлистов
@@ -364,6 +374,7 @@ class rejik_worker extends worker {
     //                  	  - Возвращает FALSE если бан-лист отсутствует
     //				  Неудача - Вызывает исключение если возникла ошибка
     // -------------------------------------------------------------------------
+    //todo добавить описание phpdoc
     try {
     $banlists = $this->banlists_get();
     if ($banlists!=0 && array_search($banlist, $banlists)!==FALSE) return TRUE;
@@ -379,6 +390,7 @@ class rejik_worker extends worker {
     //                  	  - Возвращает 0, если список пользователей пустой
     //				  Неудача - Вызывает исключение если возникла ошибка
     // -------------------------------------------------------------------------
+    //todo добавить описание phpdoc
     $response = $this->sql->query("SELECT DISTINCT nick FROM users_acl WHERE `banlist`='{$banlist}'");
   
     if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
@@ -408,7 +420,7 @@ class rejik_worker extends worker {
     //                  	  - Возвращает 0, если банлист не содержит УРЛы
     //				  Неудача - Вызывает исключение если возникла ошибка
     // -------------------------------------------------------------------------
-  
+    //todo добавить описание phpdoc
     if ($offset!=0 or $length!=0) {
       //Запрос со смещением
       $query = "SELECT id, url FROM urls WHERE `banlist`='{$banlist}' ORDER BY id DESC LIMIT {$offset}, {$length}";  
@@ -443,7 +455,7 @@ class rejik_worker extends worker {
     //                  	  - Возвращает 0, если банлист не содержит УРЛы
     //				  Неудача - Вызывает исключение если возникла ошибка
     // -------------------------------------------------------------------------
-  
+    //todo добавить описание phpdoc
     $response = $this->sql->query("SELECT Count(*) FROM urls WHERE `banlist`='{$banlist}'");
     if (!$response) {
       echo "banlist_urls_count. Не удалось выполнить запрос (" . $this->sql->errno . ") " . $this->sql->error;
@@ -458,6 +470,7 @@ class rejik_worker extends worker {
   }
 
   public function banlist_add_url ($banlist, $url) {
+    //todo добавить описание phpdoc
     //Добавляет URL в банлист
     // 1. Проверяем, есть ли банлист в базе. Если нет - то исключение.
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4);	
@@ -492,6 +505,7 @@ class rejik_worker extends worker {
   }
 
   public function banlist_change_url ($banlist, $id, $new_url_name) {
+    //todo добавить описание phpdoc
     //Изменяет заданный URL в банлисте
     // 1. Проверяем, есть ли банлист в базе. Если нет - то исключение.
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4); 
@@ -518,6 +532,7 @@ class rejik_worker extends worker {
   }
 
   public function banlist_remove_url ($banlist, $id) {
+    //todo добавить описание phpdoc
     //Удаляет заданный URL из банлиста
 
     // Проверяем, есть ли банлист в базе. Если нет - то исключение.
@@ -552,6 +567,7 @@ class rejik_worker extends worker {
   }
   
   public function banlist_search ($banlist, $search) {
+    //todo добавить описание phpdoc
     /*Осуществляет поиск URL по маске в заданном банлисте*/
 
     $parsed_url = parse_url($search);
@@ -590,6 +606,7 @@ class rejik_worker extends worker {
   // Работа с Пользователями
   // ==========================================================================================================================
   public function user_acl_get ($nick) {
+    //todo добавить описание phpdoc
     //Функция возвращает массив бан-листов, доступ к которым разрешен пользоваьелю.
     // $query = "SELECT\n"
     //     . "a.name as `banlist`\n"
@@ -616,6 +633,7 @@ class rejik_worker extends worker {
   }
 
   public function user_acl_add ($user, $banlist) {
+    //todo добавить описание phpdoc
     //Функция добавляет доступ пользователю $user к банлисту $banlist
 
     //Проверяем, существует ли банлист
@@ -640,6 +658,7 @@ class rejik_worker extends worker {
   }
 
   public function user_acl_remove ($user, $banlist) {
+    //todo добавить описание phpdoc
     //Функция до
     //echo "<h3>\$banlists</h3>\n<pre>"; print_r($banlists); echo "</pre>";
   
@@ -662,6 +681,7 @@ class rejik_worker extends worker {
   }
 	
   public function users_acl_export ($banlist, $root_path){
+    //todo добавить описание phpdoc
     //Функция сохраняет всех пользователей бан-листа $banlist в файл, который затем используется режиком
     
     //Проверяем, существует ли банлист
@@ -694,15 +714,31 @@ class rejik_worker extends worker {
     return $counter;  
   }
 
-  public function users_get($raw_mode=0) {
-    //Функция возвращает список пользователей, находящихся в REJIK DB
-    //Возвращает массив с данными | FALSE в случ. учпеха | 0 если нет данных
-
+  /**
+   * Функция возвращает список пользователей, находящихся в REJIK DB
+   * @param int $verbose_mode обьем извлекаемых данных. Может быть задан константами:
+   * FIELDS_FULL - функция вернет массив, содержащий все поля
+   * FIELDS_LOGINS_AND_ID - функция вернет массив, содержащий только логины
+   * @uses FIELDS_FULL
+   * @uses FIELDS_LOGINS_AND_ID
+   * @return int|array
+   * <p>Возвращает 0 если в БД нет пользователей.</p>
+   * <p>Если был передан параметр FIELDS_FULL вернет массив:<br>
+   * ***</p>
+   * <p>Если был передан параметр FIELDS_LOGINS_AND_ID вернет массив:<br>
+   * array ( [id0] => ( [login] => aaa, [pid] => 1) , [id2] => ( [login] => bbb, [pid] => 1), ... )</p>
+   * @throws mysql_exception
+   */
+  public function users_get($verbose_mode = FIELDS_FULL) {
     //Выполняем запрос
-    if ($raw_mode==0) {
+    if ($verbose_mode === FIELDS_FULL) {
+      $query = "SELECT * FROM `users`;";
+    /*} elseif($verbose_mode === FIELDS_ONLY_LOGINS) {
+      $query = "SELECT `id`,`login` FROM `users`;";*/
+    } elseif ($verbose_mode === FIELDS_LOGINS_AND_ID) {
       $query = "SELECT `id`,`login`,`proxy_id`,`name` FROM `users`;";
     } else {
-      $query = "SELECT * FROM `users`;";
+      return FALSE;
     }
 
     $response = $this->sql->query($query);
@@ -723,13 +759,14 @@ class rejik_worker extends worker {
   }
 
   public function user_add ($login, $proxy_id, $password) {
-
+    //todo добавить описание phpdoc
     return;
   }
   // ==========================================================================================================================
   // Функции импорта
   // ==========================================================================================================================
   public function import_from_csv($csv_file_path, $table, $fields) {
+    //todo добавить описание phpdoc
     $response = $this->sql->query("TRUNCATE TABLE {$table}");
     if (!$response) {
       throw new Exception ("Ошибка при очистке таблицы {$table}: (".$this->sql->errno.") ".$this->sql->error, $this->sql->errno);
@@ -758,6 +795,7 @@ class rejik_worker extends worker {
   // Дополнительные функции
   // ==========================================================================================================================
   public function check_url ($url) {
+    //todo добавить описание phpdoc
     /*Проверяет, применяется по отношении к данной ссылки более глобальное правило*/
 
     $parsed_url = parse_url($url);
@@ -794,6 +832,7 @@ class rejik_worker extends worker {
   }
 
   public function find_duplicate($url, $banlist='') {
+    //todo добавить описание phpdoc
     $parsed_url = parse_url($url);
     if (!$parsed_url) return -1;
 
@@ -825,6 +864,7 @@ class rejik_worker extends worker {
  * Проверяет, авторизован ли пользователь в текущей сессии
  */
 function CheckSession () {
+  //todo добавить описание phpdoc
   global $config;
   
   //Стартуем сессию 
@@ -844,6 +884,7 @@ function CheckSession () {
  * Проверяет, выполнялась ли проверка состояния серверов
  */
 function CheckServersState() {
+  //todo добавить описание phpdoc
   if (!isset($_SESSION['is_servers_checked']) || $_SESSION['is_servers_checked'] == 0) {
     return False;  // ... если нет, то ридеректим на страницу проверки
   } else {
@@ -852,7 +893,8 @@ function CheckServersState() {
 }
 
 function CheckSelfTestResult () {
-	global $config;
+  //todo добавить описание phpdoc
+  global $config;
 	$l_full_path = $_SERVER['DOCUMENT_ROOT']."/{$config['proj_name']}/cron/lastcheck.log";
   if (!file_exists($l_full_path)) return False;
 
@@ -864,10 +906,12 @@ function CheckSelfTestResult () {
 }
 
 function CloseSession() {
+  //todo добавить описание phpdoc
   session_destroy();
 }
 
 function GetClientIP () {
+  //todo добавить описание phpdoc
   // Определяет IP пользователя
   if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
     $ip = $_SERVER['HTTP_CLIENT_IP'];
@@ -880,12 +924,14 @@ function GetClientIP () {
 }
 
 function num_case ($num, $v1, $v2, $v3) {
+  //todo добавить описание phpdoc
   if ($num == 1) {return $v1;}
   if (($num >= 2 && $num <5) || ($num == 0)) {return $v2;}
   if ($num >= 5) {return $v3;}
 }
 
 function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
+  //todo добавить описание phpdoc
   echo "  <ul id='{$id}' class='pagination pagination-sm' style='margin: 0 0 10px 0;' data-pages-count='{$pages_count}'>\n";
   echo "    <li><a href='#'>&laquo;</a></li>\n";
   
@@ -899,6 +945,7 @@ function print_pagenator($pages_count, $current_page=1, $id="pagination-demo") {
 }
 
 function set_user_acl($user, $banlists) {
+  //todo добавить описание phpdoc
   //Функция выполняет назначение прав полюзователю
   global $config;
   $prx = new proxy_worker ($config['sams_db']);
@@ -948,6 +995,7 @@ function set_user_acl($user, $banlists) {
   if ($result_log!='') echo "<div class='alert alert-success'>\n{$result_log}\n</div>\n";
 }
 function create_banlist ($name, $short_desc, $full_desc) {
+  //todo добавить описание phpdoc
   global $config;
   $rejik = new rejik_worker ($config['rejik_db']);
   try {
