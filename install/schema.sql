@@ -1,7 +1,7 @@
 ﻿--
 -- Скрипт сгенерирован Devart dbForge Studio for MySQL, Версия 6.2.280.0
 -- Домашняя страница продукта: http://www.devart.com/ru/dbforge/mysql/studio
--- Дата скрипта: 16.12.14 18:52:39
+-- Дата скрипта: 19.12.14 18:31:48
 -- Версия сервера: 5.6.21-log
 -- Версия клиента: 4.1
 --
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS log (
   UNIQUE INDEX id (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 458
+AUTO_INCREMENT = 464
 AVG_ROW_LENGTH = 280
 CHARACTER SET utf8
 COLLATE utf8_bin;
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS users (
   id int(11) NOT NULL AUTO_INCREMENT,
   login varchar(25) NOT NULL,
   proxy_id tinyint(4) NOT NULL,
-  name varchar(25) DEFAULT NULL,
+  name varchar(70) DEFAULT NULL,
   password varchar(25) DEFAULT NULL,
   sams_group varchar(25) DEFAULT NULL,
   sams_domain varchar(25) DEFAULT NULL,
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS users (
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 13
+AUTO_INCREMENT = 608
 AVG_ROW_LENGTH = 4096
 CHARACTER SET utf8
 COLLATE utf8_unicode_ci;

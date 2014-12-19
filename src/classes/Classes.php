@@ -12,8 +12,11 @@ const FIELDS_LOGINS_AND_ID = 2;
 
 class worker {
   //todo добавить описание класса в phpdoc
-	public $sql;
-	
+	//protected $sql;
+  //fixme Исправить видимость свойства. Для прямых запросов к БД будет использоваться do_query;
+  public $sql;
+
+
 	protected $db_host		= '';
 	protected $db_login		= '';
 	protected $db_passwd	= '';
@@ -40,6 +43,13 @@ class worker {
 
 		$this->sql = $mysqli;
 	}
+
+  public function do_query($query_str){
+    $res = $this->sql->query($query_str);
+    if (!$res) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+
+    return $res;
+  }
 
   public function closedb(){
     //todo добавить описание phpdoc

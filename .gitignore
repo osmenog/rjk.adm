@@ -3,12 +3,8 @@
 *.sublime-workspace
 
 *.htaccess
-doc/
 lastcheck.log
 src/users/
 src/banlists/
 src/import/
 .idea/
-import_bl.csv
-import_usr.csv
-config.php
