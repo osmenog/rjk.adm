@@ -138,3 +138,8 @@
 #servers_check_btn {
     margin-top: 20px;
 }
+
+#table-sync, #table-sync > tbody > tr > td {
+    line-height: 1;
+    font-size: 85%;
+}

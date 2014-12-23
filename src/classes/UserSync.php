@@ -1,5 +1,28 @@
 <?php
 function do_sync() {
+  function display_content($sp, $users_to_copy, $users_to_remove, $conflict_users) {
+    if (count($users_to_copy) == 0) {
+      echo "<h4>Нет пользователей на копирование</h4>";
+    }else {
+      $logins_with_names = $sp->get_users_shortinfo($users_to_copy, SOURCE_SAMS);
+      print_table($logins_with_names, "Пользователи на копирование", 1);
+    }
+    echo "<br>";
+    if (count($users_to_remove) == 0) {
+      echo "<h4>Нет пользователей на удаление</h4>";
+    }else {
+      $logins_with_names = $sp->get_users_shortinfo($users_to_remove, SOURCE_RDB);
+      print_table($logins_with_names, "Пользователей на удаление", 2);
+    }
+    echo "<br>";
+    if (count($conflict_users) == 0) {
+      echo "<h4>Конфликтные пользователи отсутствуют</h4>";
+    }else {
+      $logins_with_names = $sp->get_users_shortinfo($conflict_users, SOURCE_RDB);
+      print_table($logins_with_names, "Конфликтные пользователи", 3);
+    }
+  }
+
   global $config;
   echo "<h1>SYNC!</h1>";
 
@@ -8,7 +31,6 @@ function do_sync() {
 
     //Получаем список пользователей SAMS
     $sams_users = $sp->get_sams_logins();
-    //var_dump($sams_users);
 
     if (count($sams_users) == 0) {
       echo "<p>База данных SAMS пуста. Нечего копировать</p>\n";
@@ -21,16 +43,16 @@ function do_sync() {
 
     //Формируем список пользователей, которых нужно перенести слева -> направо
     // (пользователи, которые были созданы в SAMS)
-    $users_to_copy   = array_diff ($sams_users, $rejik_users);
+    //$users_to_copy   = array_diff ($sams_users, $rejik_users);
+    foreach ($sams_users as $k => $v) {
+      //fixme https://php.net/manual/ru/function.array-udiff.php
+    }
     // (пользователи, которые были удалены в SAMS, но остиались в REJIKDB
     $users_to_remove = array_diff ($rejik_users, $sams_users);
 
-    //echo "<pre>"; print_r($users_to_copy); echo "</pre>";
-    //echo "<pre>"; print_r($users_to_remove); echo "</pre>";
 
     //Проверяем, были ли пользователи $users_to_copy добавлены в REJIK DB ранее, но для других прокси.
     $conflict_users = $sp->check_users_for_other_pids($users_to_copy);
-    //echo "<pre>"; print_r($conflict_users); echo "</pre>";
 
     //Удаляем $conflict_users из списка пользователей на копирование
     foreach ($users_to_copy as $n => $u_login) {
@@ -38,43 +60,37 @@ function do_sync() {
         if ($u_login == $c_login) unset ($users_to_copy[$n]);
       }
     }
-    //echo "<pre>"; print_r($users_to_copy); echo "</pre>";
 
+    echo "<pre>"; print_r($users_to_copy); echo "</pre>";
+    echo "<pre>"; print_r($users_to_remove); echo "</pre>";
+    echo "<pre>"; print_r($conflict_users); echo "</pre>";
 
-    $logins_with_names = $sp->get_users_shortinfo($users_to_copy, SOURCE_SAMS);
-    print_table($logins_with_names, "Пользователи на копирование:",1);
-
-    $logins_with_names = $sp->get_users_shortinfo($conflict_users, SOURCE_RDB);
-    //echo "<pre>"; print_r($logins_with_names); echo "</pre>";
-    print_table($logins_with_names, "Конфликтные пользователи:",2);
-
-    echo "<p>Пользователей на копирование: ".count ($users_to_copy)."</p>";
-    echo "<p>Пользователей на удаление: ".count ($users_to_remove)."</p>";
-    echo "<p>Конфликтных1 пользователей: ".count ($conflict_users)."</p>";
+    //Выводим на экран различную информацию о ходе синхронизации.
+    //display_content($sp, $users_to_copy, $users_to_remove, $conflict_users);
 
     //Копируем подготовленных пользователей в REJIK DB
     //$sp->copy_to_rejik($users_to_copy);
+
   } catch (Exception $e) {
       echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
   }
 
-exit;
-
-
   return True;
 }
 function print_table($printable_array, $title, $id) {
-  if (empty($printable_array)) return;
+  //Функция, выводит на экран одну панельку, содержащую список пользователей $printable_array
+  if (count($printable_array) == 0) return;
 
   echo "<div class='panel panel-default'>";
 
   echo "<div class='panel-heading'>";
   echo "<h4 class='panel-title'>";
-  echo "<a data-toggle='collapse' href='#accordion{$id}'>{$title}</a></h4>";
-  echo "</div>";
+  echo "<a data-toggle='collapse' href='#accordion{$id}'>{$title} <b>(".count($printable_array).")</b>:</a></h4>";
+  echo "</div>"; // of panel-heading
 
   echo "<div id='accordion{$id}' class='panel-collapse collapse'>";
-  echo "<table class='table'>\n";
+  echo "<table id='table-sync' class='table table-condensed small'>\n";
+
   foreach ($printable_array as $k => $v) {
     echo "<tr>";
     echo "<td>{$k}</td>";
@@ -82,25 +98,9 @@ function print_table($printable_array, $title, $id) {
     echo "</tr>\n";
   }
   echo "</table>\n";
-  echo "</div>";
+  echo "</div>"; //of panel-collapse
 
-  echo "</div>";
-//    <div class="panel-heading" role="tab" id="headingOne">
-//      <h4 class="panel-title">
-//        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-//    Collapsible Group Item #1
-//  </a>
-//      </h4>
-//    </div>
-//    <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
-//      <div class="panel-body">
-//  Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
-//      </div>
-//    </div>
-//  </div>
-
-
-
+  echo "</div>"; // of panel
 }
 
 class sams_sync {
@@ -136,8 +136,13 @@ class sams_sync {
     $this->server_id = $server_id;
   }
 
+  /**
+   * Функция получает список логинов пользователей SAMS
+   * @return array Возвращает список логинов в виде миссива:
+   * Array ( [0] => test, [1] => aep )
+   * @throws Exception
+   */
   public function get_sams_logins() {
-    //получаем данные о пользователях
     $sams_data = $this->get_sams_userdata();
 
     //Если в бд нет пользователей, то возвращаем 0
@@ -146,13 +151,18 @@ class sams_sync {
     //Заполняем результырующий массив логинами пользователей SAMS
     $res = array();
     foreach ($sams_data as $r) {
-      $res[] = $r['nick'];
+      $res[] = array ("login" => $r['nick']);
     }
     return $res;
   }
 
+  /**
+   * Функция получает список логинов пользователей RDB
+   * @return array Возвращает список логинов в виде миссива:
+   * Array ( [0] => test, [1] => aep )
+   * @throws Exception
+   */
   public function get_rejik_logins() {
-    //получаем данные о пользователях
     $rejik_data = $this->get_rejik_userdata();
 
     //Если в бд нет пользователей, то возвращаем 0
@@ -163,7 +173,7 @@ class sams_sync {
     foreach ($rejik_data as $row) {
       //Если пользовательь относится к текущему серверу, добавляем его в массив. Остальных игнорируем
       if ($row['proxy_id'] == $this->server_id) {
-        $res[]=$row['login'];
+        $res[]=array ("login" => $row['login']);
       }
     }
 
@@ -182,12 +192,13 @@ class sams_sync {
 
     $this->sams_userdata = $sams_data;
     $this->sams_data_cahced = True;
-    return $this->sams_userdata;
 
+    return $this->sams_userdata;
   }
 
   private function get_rejik_userdata($forceupdate = FALSE) {
     //Если данные были получены ранее, то возвращаем их.
+
     if ($forceupdate == FALSE && $this->rejik_data_cahced == TRUE) {
       return $this->rejik_userdata;
     }
@@ -203,12 +214,15 @@ class sams_sync {
   }
 
   public function get_users_shortinfo ($users, $source = SOURCE_SAMS) {
+    //Если SOURCE_SAMS, то возвращает массив:<br>
+    //Array ( [ikrivoruchko] => Криворучко Ирина Сергеевна, [nvs] => Секисова Нина Викторовна )
+
+
     //Функция получает на входе список логинов,
     // на выходе возвращает логины и ФИО пользователей.
 
     //Если входящий массив пуст, то завершаем функцию
     if (count($users) == 0) return False;
-
 
     $res = array();
     if ($source == SOURCE_SAMS) {
@@ -223,18 +237,17 @@ class sams_sync {
     } elseif ($source == SOURCE_RDB) {
       //Получаем полную инфу о пользователях RDB
       $rejik_data = $this->get_rejik_userdata();
+      //fixme asdasdasdasd
 
       foreach ($users as $k => $v) {
         foreach ($rejik_data as $u) {
-//          echo"<pre>"; print_r($k); echo"</pre>";
-//          echo"<pre>"; print_r($u); echo"</pre>";
-          if ($k == $u['login']) {
-            $res[$k] = isset($rejik_data[$k]['name']) ? $rejik_data[$k]['name'] : "-";
+          if ($v == $u['login']) {
+            $res[$v] = isset($rejik_data[$k]['name']) ? $rejik_data[$k]['name'] : "-";
           }
         }
       }
     }
-
+    print_r ($res);
     return $res;
   }
   /**
@@ -298,13 +311,15 @@ class sams_sync {
   /**
    * Функция сравнивает списки пользователей, и возвращает пользователей,
    * которые были добавлены в БД ранее и имеют отличный от текущего P_ID
-   * @param $users_to_copy
-   * @return array Массив, содержащий список логинов пользователей и их pid: <login> => <pid>
+   * @param array $users_to_copy Массив содержащий список логинов пользователей, которые необходимо проверить:<br>
+   * Array ( [0] => test, [1] => aep, [6] => asd, [7] => xcv )
+   * @return array Массив содержащий список логинов пользователей и их pid:<br>
+   * Array ( [test] => 21, [aep] => 22 )
    * @throws Exception
    */
   public function check_users_for_other_pids ($users_to_copy) {
 
-    if (count($users_to_copy) == 0) return FALSE;
+    if (count($users_to_copy) == 0) return array();
 
     //Берем данные из кеша, или получаем данные о пользователях заного.
     if (!$this->rejik_data_cahced) {
@@ -320,7 +335,7 @@ class sams_sync {
     foreach ($users_to_copy as $v) {
       // ... и проверяем, был ли пользователь добавлен на текущий сервер ранее.
       foreach ($rejik_data as $row) {
-        if (($row['login'] == $v) && ($row['proxy_id'] != $this->server_id))  $res[$v] = $row['proxy_id'];
+        if (($row['login'] == $v) && ($row['proxy_id'] != $this->server_id))  $res[] = array("login" => $v, "proxy_id" => $row['proxy_id']);
       }
     }
 
@@ -336,25 +351,24 @@ class sams_sync {
   }
 
   public function copy_to_rejik($users) {
+    //Функция копирует
     if (count($users)==0) return FALSE;
-    var_dump(iconv_get_encoding('all'));
     foreach ($users as $v) {
-      $this->insert_user($v);
+      $user_data = $this->sams_userdata[$v];
+      $pid = $this->server_id;
+      $name = trim($user_data['family']." ".$user_data['name']." ".$user_data['soname']);
+      $login = strtolower(trim($v));
+      //$name = iconv("ISO-8859-5","CP1251", $name);
+      //$name = iconv("windows-1251","UTF-8", $name);
+
+      $query = "INSERT INTO users (login, proxy_id, name, password)
+                VALUES('{$login}', {$pid}, '{$name}', '123')";
+      //" ON DUPLICATE KEY UPDATE name=VALUES(name), age=VALUES(age)";
+      $res = $this->rejik_conn->do_query($query);
     }
+
+    return True;
   }
 
-  private function insert_user ($sams_login) {
-    //Функция создает одного пользователя в REJIK DB
-    $user_data = $this->sams_userdata[$sams_login];
-    $pid = $this->server_id;
-    $name = $user_data['family']." ".$user_data['name']." ".$user_data['soname'];
-    //$name = iconv("ISO-8859-5","CP1251", $name);
-    //$name = iconv("windows-1251","UTF-8", $name);
-
-    $query = "INSERT INTO users (login, proxy_id, name, password) VALUES('{$sams_login}', {$pid}, '{$name}', '123')";//" ON DUPLICATE KEY UPDATE name=VALUES(name), age=VALUES(age)";
-
-    $res = $this->rejik_conn->do_query($query);
-
-  }
 }
 ?>
