@@ -9,6 +9,8 @@ include_once "classes/Checker.php";
 const FIELDS_FULL = 0;
 const FIELDS_ONLY_LOGINS = 1;
 const FIELDS_LOGINS_AND_ID = 2;
+const SOURCE_SAMS = 0;
+const SOURCE_RDB = 1;
 
 class worker {
   //todo добавить описание класса в phpdoc
