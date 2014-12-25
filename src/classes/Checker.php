@@ -36,11 +36,7 @@ class Checker
 //Инициализация подключений к БД и логера
     $rejik = new rejik_worker ($config['rejik_db']);
 
-    if ($is_autochecker) {
-      logger::init_checker();
-    } else {
-      logger::init();
-    }
+    logger::init();
 
     $checker_db = $rejik->sql;
 
@@ -66,7 +62,13 @@ class Checker
 //Если файл банлиста отсутствует, то выполняем запись сообщения в БД
       if (!file_exists($b_file)) {
 //echo "[{$b_file}] not found!\n";
-        Logger::add(34, "Checker не смог найти файл", $b_file, $dt);
+        if ($is_autochecker) {
+          $login = "auto_checker";
+        } else {
+          $login = "";
+        }
+
+        Logger::add(34, "Checker не смог найти файл", $b_file, $dt, $login);
         $this->checker_db_insert($checker_db, $b_file, $dt, 'not found');
         $error_flag = true;
         continue;

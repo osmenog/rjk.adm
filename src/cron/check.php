@@ -1,8 +1,8 @@
 <?php
   
-  include_once $_SERVER['DOCUMENT_ROOT']."/rejik2"."/config.php";
-  include_once $_SERVER['DOCUMENT_ROOT']."/rejik2"."/log.php";
-  include_once $_SERVER['DOCUMENT_ROOT']."/rejik2"."/classes.php";
+  include_once $_SERVER['DOCUMENT_ROOT']."/adm"."/config.php";
+  include_once $_SERVER['DOCUMENT_ROOT']."/adm/classes"."/Logger.php";
+  include_once $_SERVER['DOCUMENT_ROOT']."/adm/classes"."/Classes.php";
   global $config;
 	
 	$checker = Checker::getInstance();

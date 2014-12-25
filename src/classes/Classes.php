@@ -1,6 +1,6 @@
 <?php
 
-include_once "config.php";
+//include_once "config.php";
 include_once "classes/Exceptions.php";
 include_once "classes/Logger.php";
 include_once "classes/SyncProvider.php";
@@ -173,7 +173,6 @@ class proxy_worker extends worker {
 class rejik_worker extends worker {
   //todo добавить описание класса в phpdoc
   private $sync_provider;
-
   // ==========================================================================================================================
   public function __construct ($db_config) {
     //todo добавить описание phpdoc
@@ -193,7 +192,6 @@ class rejik_worker extends worker {
 //    }
 
   }
-
   // ==========================================================================================================================
   // Работа с Категориями (Бан-Листами)
   // ==========================================================================================================================
@@ -768,11 +766,6 @@ class rejik_worker extends worker {
     }
 
     return $res;
-  }
-
-  public function user_add ($login, $proxy_id, $password) {
-    //todo добавить описание phpdoc
-    return;
   }
   // ==========================================================================================================================
   // Функции импорта

@@ -1,7 +1,7 @@
 ﻿--
 -- Скрипт сгенерирован Devart dbForge Studio for MySQL, Версия 6.2.280.0
 -- Домашняя страница продукта: http://www.devart.com/ru/dbforge/mysql/studio
--- Дата скрипта: 19.12.14 18:31:48
+-- Дата скрипта: 25.12.14 18:01:46
 -- Версия сервера: 5.6.21-log
 -- Версия клиента: 4.1
 --
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS checker (
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 157
+AUTO_INCREMENT = 257
 AVG_ROW_LENGTH = 2048
 CHARACTER SET utf8
 COLLATE utf8_bin;
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS log (
   UNIQUE INDEX id (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 464
+AUTO_INCREMENT = 1830
 AVG_ROW_LENGTH = 280
 CHARACTER SET utf8
 COLLATE utf8_bin;
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS users (
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 608
+AUTO_INCREMENT = 599
 AVG_ROW_LENGTH = 4096
 CHARACTER SET utf8
 COLLATE utf8_unicode_ci;
@@ -99,12 +99,11 @@ COLLATE utf8_unicode_ci;
 CREATE TABLE IF NOT EXISTS users_acl (
   id int(11) NOT NULL AUTO_INCREMENT,
   nick varchar(25) binary NOT NULL,
-  banlist_id int(11) NOT NULL,
   banlist varchar(25) binary NOT NULL,
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 2048
+AUTO_INCREMENT = 2050
 AVG_ROW_LENGTH = 546
 CHARACTER SET utf8
 COLLATE utf8_bin;
@@ -116,6 +115,19 @@ CREATE TABLE IF NOT EXISTS users_location (
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 1
+AUTO_INCREMENT = 3
+AVG_ROW_LENGTH = 8192
 CHARACTER SET utf8
 COLLATE utf8_unicode_ci;
+
+CREATE OR REPLACE
+DEFINER = 'root'@'192.168.139.29'
+VIEW view1
+AS
+SELECT
+  `ul`.`id` AS `id`,
+  `u`.`login` AS `login`,
+  `ul`.`assign_pid` AS `assign_pid`
+FROM (`users_location` `ul`
+  JOIN `users` `u`
+    ON ((`ul`.`user_id` = `u`.`id`)));

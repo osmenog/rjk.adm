@@ -1,6 +1,6 @@
 <?php
-include_once "config.php";
-include_once "classes/Classes.php";
+//include_once "config.php";
+//include_once "classes/Classes.php";
 
 class Logger
 {
@@ -13,10 +13,10 @@ class Logger
   private static $events_count = 0;
   private static $is_cached = False;
   private static $last_error_msg = '';
-  
+
   //--
-  private static $tmp_hdl;
-  private static $is_tmp_created = False;
+  /*private static $tmp_hdl;
+  private static $is_tmp_created = False;*/
   
   public static function get_length() {
     if (self::$is_init == False) return False;
@@ -26,12 +26,12 @@ class Logger
       return self::count_log_events();
     }
   }
-  
+/*
   public function tmp_init() {
     $hdl = fopen("tmp.log", "a");
     self::$tmp_hdl = $hdl;
     self::$is_tmp_created = True;
-  }
+  }*/
   
   public static function get_last_error() {
     return self::$last_error_msg;
@@ -44,7 +44,7 @@ class Logger
     if (isset($config['rejik_db'][1])) $db_login = $config['rejik_db'][1];
     if (isset($config['rejik_db'][2])) $db_passwd = $config['rejik_db'][2];
     if (isset($config['rejik_db'][3])) $db_name = $config['rejik_db'][3];
-    if (isset($config['rejik_db'][4])) $db_codepage = $config['rejik_db'][4];
+    //if (isset($config['rejik_db'][4])) $db_codepage = $config['rejik_db'][4];
     
     //Инициализируем подключение к БД
     $sql_con = new mysqli($db_host, $db_login, $db_passwd, $db_name);
@@ -55,33 +55,28 @@ class Logger
     $sql_con->set_charset("utf8");
     
     //Устанавливаем кодировку соединения с БД Режика
-    
     self::$sql = $sql_con;
     
     //self::get_last_crc();
     self::$is_init = True;
     
     //echo self::$last_crc." - ".self::$last_id;
-    
-    //Проверяем, авторизован ли рользователь
-    self::$login = isset($_SESSION['login']) ? $_SESSION['login'] : "";
-    
     return true;
   }
   
-  public static function init_checker() {
+/*  public static function init_checker() {
     if (self::$is_init == False) {
       self::init();
     }
     self::$login = "auto_checker";
-  }
+  }*/
   
   public static function stop() {
     if (self::$is_init) self::$sql->close();
     if (self::$is_tmp_created) fclose(self::$tmp_hdl);
   }
   
-  public function add($event_code, $event_msg, $event_attrib = "", $datentime = - 1) {
+  public function add($event_code, $event_msg, $event_attrib = "", $datentime = - 1, $printable_login = "") {
     
     // Если компонент еще не инициализироан, то прерываем работу и создаем сообщение об ошибке
     if (self::$is_init == False) {
@@ -96,8 +91,13 @@ class Logger
     
     //$crc = self::get_crc (array (self::$last_id + 1, $event_type, $message, self::$login, $ip));
     $ip = (!isset($_SERVER['HTTP_X_FORWARDED_FOR']) || empty($_SERVER['HTTP_X_FORWARDED_FOR'])) ? $_SERVER['REMOTE_ADDR'] : $_SERVER['HTTP_X_FORWARDED_FOR'];
-    $login = self::$login;
-    
+
+    if ($printable_login != "") {
+      $login = $printable_login;
+    } else {
+      $login = isset($_SESSION['login']) ? $_SESSION['login'] : "";
+    }
+
     $query_str = "INSERT INTO `log` (`datentime`,`code`,`message`,`attribute`,`user_login`,`user_ip`,`crc`)
                       VALUES (" . ($datentime == - 1 ? "NOW()" : "'{$datentime}'") . ",
                       {$event_code},
@@ -114,8 +114,7 @@ class Logger
       self::$last_error_msg = "Во время выполнения запроса произошла ошибка: ({$sql_obj->errno}) {sql_obj->error}";
       return False;
     }
-    
-    //self::$last_id .= 1;
+
     return True;
   }
   
@@ -155,7 +154,7 @@ class Logger
     self::count_log_events();
     
     //Подготавливаем запрос
-    $query_str = "SELECT `id`,`datentime`,`code`,`message`,`attribute`,`user_login`,`user_ip`,`crc` FROM log ORDER BY id ASC LIMIT {$start}, {$len}";
+    $query_str = "SELECT `id`,`datentime`,`code`,`message`,`attribute`,`user_login`,`user_ip`,`crc` FROM log ORDER BY id DESC LIMIT {$start}, {$len}";
     //echo "<pre>" . $query_str . "</pre>";
     
     $sql_res = $sql_obj->query($query_str, MYSQLI_USE_RESULT);
@@ -180,45 +179,45 @@ class Logger
     }
   }
   
-  public function tmp_write($msg) {
+  /*public function tmp_write($msg) {
     if (self::$is_tmp_created) {
       fwrite(self::$tmp_hdl, $msg . "\r\n");
       return True;
     } else {
       return False;
     }
-  }
+  }*/
   
-  // /* private function get_crc ($in){
-  // global $config;
-  // //sort ($in); //Сортируем по-возрастанию
+   /* private function get_crc ($in){
+   global $config;
+   //sort ($in); //Сортируем по-возрастанию
   
-  // // Обьеденяем все параметры в одну строку
-  // $tmp = '';
-  // foreach ($in as $value) $tmp .= $value.".";
+   // Обьеденяем все параметры в одну строку
+   $tmp = '';
+   foreach ($in as $value) $tmp .= $value.".";
   
-  // // Добавляем предыдущий crc
-  // $tmp .= self::$last_crc;
-  // $out = md5 ($tmp);
-  // self::$last_crc = $out;
-  // if ($config['debug_mode']) echo "<h6>md5({$tmp})={$out}</h6>\n";
+   // Добавляем предыдущий crc
+   $tmp .= self::$last_crc;
+   $out = md5 ($tmp);
+   self::$last_crc = $out;
+   if ($config['debug_mode']) echo "<h6>md5({$tmp})={$out}</h6>\n";
   
-  // return $out;
-  // }*/
+   return $out;
+   }*/
   
-  //  private function get_last_crc() {
-  // $sqli = self::$worker->sql;
+   /*private function get_last_crc() {
+   $sqli = self::$worker->sql;
   
-  // $res = $sqli->query("SELECT id,crc FROM log ORDER BY id DESC LIMIT 1;");
-  // if (!$res) throw new mysql_exception($this->sql->error, $this->sql->errno);
+   $res = $sqli->query("SELECT id,crc FROM log ORDER BY id DESC LIMIT 1;");
+   if (!$res) throw new mysql_exception($this->sql->error, $this->sql->errno);
   
-  // $row = $res->fetch_row();
-  // $res->close();
+   $row = $res->fetch_row();
+   $res->close();
   
-  // self::$last_id = $row[0];
-  // self::$last_crc = $row[1];
+   self::$last_id = $row[0];
+   self::$last_crc = $row[1];
   
-  // //echo "<h6>set last_id=".self::$last_id." last_crc=".self::$last_crc."</h6>\n";
-  // }
+   //echo "<h6>set last_id=".self::$last_id." last_crc=".self::$last_crc."</h6>\n";
+   }*/
 }
 ?>

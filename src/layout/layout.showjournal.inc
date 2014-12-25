@@ -30,7 +30,7 @@
 
   Logger::init();
 
-  const LOG_EVENTS_ON_PAGE = 100;  
+  const LOG_EVENTS_ON_PAGE = 500;
 
   $count = Logger::get_length(); //Получаем количество записей в логе.
   
