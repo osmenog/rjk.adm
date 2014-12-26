@@ -6,7 +6,7 @@
 class HealthPanel {
   private $local_server_name;       //Имя текущего сервера
   private $local_server_id;         //Ид текущего сервера
-  public $servers_list;            //Список серверов (содержит обьекты типа RejikServer)
+  public  $servers_list;            //Список серверов (содержит обьекты типа RejikServer)
   private $master_servers_ids = array();        //Ид мастер-сервера
   
   //public $servers_status = array();
@@ -69,7 +69,7 @@ class HealthPanel {
         $srv_mode = $srv->get_work_mode();
         if ($srv_mode == WORK_MODE_MASTER) $this->master_servers_ids[]=$srv->get_id();
       } else {
-        echo "<h3>Ошибка!!! Не могу подключится к серверу {$srv}</br>{$srv->sql_error_message}</h3>";
+        ////echo "<h3>Ошибка!!! Не могу подключится к серверу {$srv}</br>{$srv->sql_last_error}</h3>";
       }
       //print_r ($this->servers_list->dbg_get_servers_state());
       //echo "<pre>\n"; print_r($srv); echo "</pre>\n";

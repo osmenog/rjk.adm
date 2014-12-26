@@ -53,10 +53,30 @@
     //---------------------------------------------------------------------------------
     // СОСТОЯНИЕ СИНХРОНИЗАЦИИ ПОЛЬЗОВАТЕЛЕЙ
     //---------------------------------------------------------------------------------
+    //Подключаемся к RDB и получаем список пользователей
+    $rjk = new rejik_worker ($config['rejik_db']);
+    $users_data = $rjk->users_get(FIELDS_LOGINS_AND_ID);
+
+    //$srvs_count = $hp->servers_list->count();
+    $short_srv_info = array();
+    foreach ($hp->servers_list as $srv) {
+      $short_srv_info[$srv->get_id()] = array($srv->get_hostname(),0);
+    }
+
+    foreach ($users_data as $row) {
+      $pid = $row['proxy_id'];
+      if (!isset($short_srv_info[$pid][1])) $short_srv_info[$pid] = array ("", 0);
+      $short_srv_info[$pid][1]++;
+    }
+
     echo "<h3>Пользователи:</h3>\n";
-    echo "<p>Всего пользователей в REJIK DB: " . "--0--" . "<br/>\n";
-    echo "<ul>\n<li>proxy2: " . "--80--" . "</li>\n";
-    echo "<li>proxy.msk: " . "--80--" . "</li>\n";
+    echo "<p>Всего пользователей в REJIK DB: " . count($users_data) . "<br/>\n";
+    echo "<ul>\n";
+    foreach ($short_srv_info as $k => $row) {
+      if (empty($row[0])) $row[0] = "Неизвестный сервер (pid={$k})";
+      echo "<li>{$row[0]}: {$row[1]}</li>\n";
+    }
+
     echo "</ul>\n";
     echo "</p>\n";
     echo "<p>Последняя синхронизация REJIK DB с локальным SAMS: 10.10.10 Успешно</p>";
@@ -127,7 +147,7 @@
         echo "<td class='text-danger'>НЕ ДОСТУПЕН</td>\n";
         $err = $value->get_error();
         //echo "<pre>"; $value->get_error(); echo "</pre>";
-        echo "<td><span style='font-size: 8pt;'>{$err['errno']}: " . iconv("CP1251", "UTF-8", $err['error']) . "</span></td>\n";
+        echo "<td><span style='font-size: 8pt;'>{$err[1]}: " . iconv("CP1251", "UTF-8", $err[0]) . "</span></td>\n";
       }
 
       $wm = $value->mode();
