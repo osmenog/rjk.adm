@@ -74,15 +74,18 @@
     echo "<ul>\n";
     foreach ($short_srv_info as $k => $row) {
       if (empty($row[0])) $row[0] = "Неизвестный сервер (pid={$k})";
-      echo "<li>{$row[0]}: {$row[1]}</li>\n";
+      if ($row[1] != 0) echo "<li>{$row[0]}: {$row[1]}</li>\n";
     }
 
     echo "</ul>\n";
     echo "</p>\n";
+    //todo Добавить возможность смотреть время синхронизации
     echo "<p>Последняя синхронизация REJIK DB с локальным SAMS: 10.10.10 Успешно</p>";
     echo "<button class='btn btn-success btn-xs' onClick='location.href=\"?action=status&sync_with_sams=1\"'>Синхронизировать пользователей</button>\n";
 
-    echo "<p>Всего пользователей текущего сервера: 80";
+    $local_pid = $hp->get_id();
+    $internal_users_count = isset($short_srv_info[$local_pid]) ? $short_srv_info[$local_pid][1] : "-";
+    echo "<p>Всего пользователей текущего сервера: {$internal_users_count}";
     echo "<ul>";
     echo "<li>--80-- внутренних пользователей</li>";
     echo "<li><a href='#'>подключить</a> пользователей proxy.msk</li>";
