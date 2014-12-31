@@ -32,9 +32,8 @@
   $config['server_id'] = 21;
 
   $config['servers'] = array(
-    //'proxy6.bankom.omsk.su' => array('root', 'osme', 21),
     //'192.168.139.249' => array ('root', 'osme', 22),
-    //'FreeBSD_2' => array ('repl_user', 'repl_pasword', 3)
+    //'FreeBSD_2' => array ($repl_username, $repl_password, 3)
   );
 
   //Если этот параметр существует, то при выыводи информации из БД САМС будет выполнятся преобразование кодировки
