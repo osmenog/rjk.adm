@@ -1,5 +1,8 @@
 <?php
-
+  include_once "config.php";
+  include_once "classes/ServersList.php";
+  include_once "classes/RejikServer.php";
+  include_once "classes/HealthPanel.php";
 
   //Фильтруем входные данные
   $id = filter_input(INPUT_GET, 'switch_master_to', FILTER_VALIDATE_INT);
@@ -9,91 +12,131 @@
   if ($sync_with_sams === 1) {
     include_once 'classes/UserSync.php';
     do_sync();
+    exit;
   }
 
-  include_once "config.php";
-  include_once "classes/ServersList.php";
-  include_once "classes/RejikServer.php";
-  include_once "classes/HealthPanel.php";
+  /**
+   * Функция выводит СОСТОЯНИЕ РАБОТЫ СЛУЖБ ТЕКУЩЕГО СЕРВЕРА
+   */
+  function _print_services_status() {
+    global $hp;
+    echo "<h3>Состояние работы служб текущего сервера:</h3>\n";
+    echo "<ul>\n";
+    echo "<li><b>Служба SQUID:</b> --ЗАГЛУШКА--</li>\n";
+    echo "<li><b>Служба SAMS:</b> --ЗАГЛУШКА--</li>\n";
+    echo "<li><b>Сервер БД для записи:</b> ".$hp->get_master_server()."</li>\n";
+    echo "</ul>\n";
+  }
 
-  try {
+  /**
+   * Функция выводит СОСТОЯНИЕ СИНХРОНИЗАЦИИ ПОЛЬЗОВАТЕЛЕЙ
+   * @throws mysql_exception
+   */
+  function _print_usersync_status() {
     global $config;
+    global $hp;
 
-    //Выполняем проверку прав доступа, и в случае проблем, выводим предупреждение.
-    include "classes/Notice.php";
-
-    //Инициализируем главный обьект
-    $hp = new HealthPanel();
-
-    //Если пришла команда смены мастера
-    if ($id !== NULL) {
-      $hp->switch_master($id);
-      exit;
-    }
-
-    //Загружаем состояние обьектов
-    //$hp->restore_session();
-
-    echo "<div class='page-header'>\n";
-    echo "<h1>\nПанель управления</br>\n";
-    echo "<small>" . $hp->get_local_server_name() . "</small>\n</h1>\n";
-    echo "<small>Внутренний идентификатор: " . $config['server_id'] . "</small>\n";
-    echo "</div>\n";
-
-    //---------------------------------------------------------------------------------
-    // СОСТОЯНИЕ РАБОТЫ СЛУЖБ ТЕКУЩЕГО СЕРВЕРА
-    //---------------------------------------------------------------------------------
-    //echo "<h3>Состояние работы служб текущего сервера:</h3>\n";
-    //echo "<ul>\n";
-    //echo "<li><b>Служба SQUID:</b> --ЗАГЛУШКА--</li>\n";
-    //echo "<li><b>Служба SAMS:</b> --ЗАГЛУШКА--</li>\n";
-    //echo "<li><b>Сервер БД для записи:</b> ".$hp->get_master_server()."</li>\n";
-    //echo "</ul>\n";
-
-    //---------------------------------------------------------------------------------
-    // СОСТОЯНИЕ СИНХРОНИЗАЦИИ ПОЛЬЗОВАТЕЛЕЙ
-    //---------------------------------------------------------------------------------
     //Подключаемся к RDB и получаем список пользователей
     $rjk = new rejik_worker ($config['rejik_db']);
     $users_data = $rjk->users_get(FIELDS_LOGINS_AND_ID);
 
-    //$srvs_count = $hp->servers_list->count();
-    $short_srv_info = array();
-    foreach ($hp->servers_list as $srv) {
-      $short_srv_info[$srv->get_id()] = array($srv->get_hostname(),0);
-    }
-
-    foreach ($users_data as $row) {
-      $pid = $row['proxy_id'];
-      if (!isset($short_srv_info[$pid][1])) $short_srv_info[$pid] = array ("", 0);
-      $short_srv_info[$pid][1]++;
-    }
-
     echo "<h3>Пользователи:</h3>\n";
-    echo "<p>Всего пользователей в REJIK DB: " . count($users_data) . "<br/>\n";
-    echo "<ul>\n";
-    foreach ($short_srv_info as $k => $row) {
-      if (empty($row[0])) $row[0] = "Неизвестный сервер (pid={$k})";
-      if ($row[1] != 0) echo "<li>{$row[0]}: {$row[1]}</li>\n";
+
+    if ($users_data !== 0) { // Если список НЕ пуст, то выводим информацию о пользователях...
+
+      //todo Добавить возможность смотреть время синхронизации
+      echo "<p>Последняя синхронизация REJIK DB с локальным SAMS: 10.10.10 Успешно</p>";
+      echo "<button class='btn btn-success btn-xs' onClick='location.href=\"?action=status&sync_with_sams=1\"'>Синхронизировать пользователей</button>\n";
+      echo "<br>";
+
+      //Собираем информацию о серверах.
+      $short_srv_info = array();
+      $servers = $hp->get_servers(); //Получаем список зарегистрированных в сестеме серверов
+
+      foreach ($users_data as $row) { //Перебираем пользователей и определяем, к какому серверу они относятся...
+        $pid = $row['proxy_id'];
+        $srv_obj = $servers->get_server_by_id($pid);
+        $srv_name = ($srv_obj !== False) ? $srv_obj->__toString() : "Unknown server (pid={$pid})";
+        $short_srv_info[$pid][0] = $srv_name;
+
+        //... также считаем количество пользователей на различных серверах.
+        if (isset($short_srv_info[$pid][1])) {
+          $short_srv_info[$pid][1]++;
+        } else {
+          $short_srv_info[$pid][1] = 1;
+        }
+      }
+
+      echo "<p>Всего зарегистрировано пользователей в REJIK DB: " . count($users_data) . "<br/>\n";
+      echo "<ul>\n";
+      foreach ($short_srv_info as $k => $row) {
+        if ($row[1] != 0) echo "<li>{$row[0]}: {$row[1]}</li>\n";
+      }
+
+      echo "</ul>\n";
+      echo "</p>\n";
+
+
+      $local_pid = $hp->get_local_id();
+      $internal_users_count = $short_srv_info[$local_pid][1];
+
+      //Получаем информацию о пользователях, подключенных к локальному серверу.
+      $linked_users_data = $rjk->users_get_linked($local_pid);
+
+      $linked_srv_info = array();
+      if ($linked_users_data !== 0) {
+        foreach ($linked_users_data as $row) {
+          $user_pid = $row['proxy_id'];
+          $srv_obj = $servers->get_server_by_id($user_pid);
+          $srv_name = ($srv_obj !== False) ? $srv_obj->__toString() : "Unknown server (pid={$user_pid})";
+          $linked_srv_info[$user_pid][0] = $srv_name;
+
+          //... также считаем количество пользователей на различных серверах.
+          if (isset($linked_srv_info[$user_pid][1])) {
+            $linked_srv_info[$user_pid][1]++;
+            $linked_srv_info[$user_pid][2][] = $row['login'];
+          } else {
+            $linked_srv_info[$user_pid][1] = 1;
+            $linked_srv_info[$user_pid][2] = array($row['login']);
+          }
+        }
+      }
+
+
+      // Блок, отображающий активных пользователей
+      echo "<p>На данном сервере активно ".( $internal_users_count+ (($linked_users_data === 0) ? 0 : count($linked_users_data)) )." пользвателей. Из них:";
+      echo "<ul>";
+      echo "<li><b>{$internal_users_count}</b> - внутренних пользователей</li>";
+      foreach ($linked_srv_info as $k => $row) {
+
+        if ($row[1]!=0) echo "<li><b>{$row[1]}</b> - пользователей сервера {$row[0]} <a href='?action=unlink_all_users&pid={$k}'><small><i>[отключить всех]</i></small></a></li>\n";
+        //print_r($row[2]);
+      }
+      echo "</ul></p>\n";
+
+      // Блок, отображающий кнопки, подключающие ВСЕХ пользователей с других серверов на которых есть пользователи.
+      echo "<ul>";
+      foreach ($short_srv_info as $k => $row) {
+        //Выводим кнопки для серверов, на которых есть пользователи. Не выводим кнопку для локального сервера
+        if ($row[1]!=0 && $k!=$local_pid) echo "<li><a href='?action=link_all_users&pid={$k}'>Подключить</a> всех ({$row[1]}) пользователей сервера {$row[0]}</li>";
+      }
+      echo "</ul>";
+
+    } else {   //... если список пользователей RDB пуст, то выводим предложение о синхронизации с SAMS
+      echo "<div class='alert alert-warning'>В базе Rejik DB отсутствуют пользователи.<br>";
+      echo "Рекомендуется выполнить синхронизацию c локальной БД SAMS:<br><br>";
+      echo "<button class='btn btn-success' onClick='location.href=\"?action=status&sync_with_sams=1\"'>Синхронизировать пользователей</button>\n";
+      echo "</div>";
     }
+  }
 
-    echo "</ul>\n";
-    echo "</p>\n";
-    //todo Добавить возможность смотреть время синхронизации
-    echo "<p>Последняя синхронизация REJIK DB с локальным SAMS: 10.10.10 Успешно</p>";
-    echo "<button class='btn btn-success btn-xs' onClick='location.href=\"?action=status&sync_with_sams=1\"'>Синхронизировать пользователей</button>\n";
+  /**
+   * Функция выводит СОСТОЯНИЕ РЕПЛИЦАЦИИ БАЗЫ ДАННЫХ
+   */
+  function _print_replication_state() {
+    global $config;
+    global $hp;
 
-    $local_pid = $hp->get_id();
-    $internal_users_count = isset($short_srv_info[$local_pid]) ? $short_srv_info[$local_pid][1] : "-";
-    echo "<p>Всего пользователей текущего сервера: {$internal_users_count}";
-    echo "<ul>";
-    echo "<li>--80-- внутренних пользователей</li>";
-    echo "<li><a href='#'>подключить</a> пользователей proxy.msk</li>";
-    echo "</ul>\n";
-
-    //---------------------------------------------------------------------------------
-    // СОСТОЯНИЕ РЕПЛИЦАЦИИ БАЗЫ ДАННЫХ
-    //---------------------------------------------------------------------------------
     echo "<div class='row'>\n";
     echo "<div class='col-md-8'>";
     echo "<h3>Состояние репликации:</h3>\n";
@@ -103,10 +146,10 @@
     echo "</div>";
     echo "</div>\n";
 
-
     //Стартуем проверку доступности серверов
-    $hp->check_availability();
-    //Сохраняем результаты проверки в открытой сессии
+    if ($config['use_check_cache'] == False) $hp->check_availability();
+
+    //Сохраняем результаты проверки в открытой сессии. Нужно только для отладки!
     //$hp->save_session();
 
     echo "<div class='panel panel-default'>\n";
@@ -177,6 +220,39 @@
     }
     echo "</table>\n";
     echo "</div>\n"; // of panel
+  }
+
+  try {
+    global $config;
+
+    //Выполняем проверку прав доступа, и в случае проблем, выводим предупреждение.
+    include "classes/Notice.php";
+
+    //Инициализируем главный обьект
+    global $hp;
+    $hp = new HealthPanel();
+
+    //Если пришла команда смены мастера
+    if ($id !== NULL) {
+      $hp->switch_master($id);
+      exit;
+    }
+
+    //Загружаем состояние обьектов
+    if ($config['use_check_cache'] == True) $hp->restore_session();
+
+    echo "<div class='page-header'>\n";
+    echo "<h1>\nПанель управления</br>\n";
+    echo "<small>" . $hp->get_local_server_name() . "</small>\n</h1>\n";
+    echo "<small>Внутренний идентификатор: " . $config['server_id'] . "</small>\n";
+    echo "</div>\n";
+
+    //_print_services_status();
+
+    _print_usersync_status();
+
+    _print_replication_state();
+
   } catch (Exception $e) {
     echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
   }

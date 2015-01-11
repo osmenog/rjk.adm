@@ -19,6 +19,9 @@
   //Режим отладки
   $config['debug_mode'] = True;
 
+  //Как будет обновляться статус серверов
+  $config['use_check_cache'] = True;
+
   //Название корневой папки проекта. Используется при указании абсолютного адреса.
   $config['proj_name'] = 'adm';
 
@@ -32,8 +35,8 @@
   $config['server_id'] = 21;
 
   $config['servers'] = array(
-    //'proxy6.bankom.omsk.su' => array('root', 'osme', 21),
-    //'192.168.139.249' => array ('root', 'osme', 22),
+    'proxy6.bankom.omsk.su' => array('root', 'osme', 22),
+    //'192.168.139.249' => array ('root', 'osme', 45),
     //'FreeBSD_2' => array ('repl_user', 'repl_pasword', 3)
   );
 

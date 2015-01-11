@@ -725,31 +725,67 @@ class rejik_worker extends worker {
   }
 
   /**
-   * Функция возвращает список пользователей, находящихся в REJIK DB
-   * @param int $verbose_mode обьем извлекаемых данных. Может быть задан константами:
-   * FIELDS_FULL - функция вернет массив, содержащий все поля
-   * FIELDS_LOGINS_AND_ID - функция вернет массив, содержащий только логины
-   * @uses FIELDS_FULL
-   * @uses FIELDS_LOGINS_AND_ID
-   * @return int|array
-   * <p>Возвращает 0 если в БД нет пользователей.</p>
-   * <p>Если был передан параметр FIELDS_FULL вернет массив:<br>
-   * ***</p>
-   * <p>Если был передан параметр FIELDS_LOGINS_AND_ID вернет массив:<br>
-   * array ( [id0] => ( [login] => aaa, [pid] => 1) , [id2] => ( [login] => bbb, [pid] => 1), ... )</p>
-   * @throws mysql_exception
+   * Функция возвращает список ВСЕХ пользователей, находящихся в REJIK DB
    */
-  public function users_get($verbose_mode = FIELDS_FULL) {
+  public function users_get($verbose_mode = FIELDS_FULL, $with_pid = -1) {
     //Выполняем запрос
     if ($verbose_mode === FIELDS_FULL) {
-      $query = "SELECT * FROM `users`;";
-    /*} elseif($verbose_mode === FIELDS_ONLY_LOGINS) {
-      $query = "SELECT `id`,`login` FROM `users`;";*/
+      $query = "SELECT * FROM `users`";
     } elseif ($verbose_mode === FIELDS_LOGINS_AND_ID) {
-      $query = "SELECT `id`,`login`,`proxy_id`,`name` FROM `users`;";
+      $query = "SELECT `id`,`login`,`proxy_id`,`name` FROM `users`";
     } else {
       return FALSE;
     }
+
+    if ($with_pid !== -1) {
+      $query .= " WHERE `proxy_id` = {$with_pid};";
+    }
+
+    $response = $this->sql->query($query);
+
+    //Если в результате запроса ничего не извлечено
+    if ($response->num_rows == 0) return 0;
+
+    //Если запрос не выполнен, то вызываем исключение
+    if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
+
+    //Построчно заполням конечный массив данными, полученными из БД
+    $res=array();
+    while ($row = $response->fetch_assoc()) {
+      $res[] = $row;
+    }
+
+    return $res;
+  }
+
+  /**
+   * Функция возвращает список пользователей, подключенных к серверу с $assigned_pid
+   * @param $assigned_pid ИД сервера, к которому привязаны пользователи
+   * @return array
+   * @throws mysql_exception
+   */
+  public function users_get_linked($assigned_pid){
+
+    $query = "SELECT
+                u.id,
+                u.login,
+                u.proxy_id,
+                ul.assign_pid AS `linked_pid`,
+                u.name,
+                u.password,
+                u.sams_group,
+                u.sams_domain,
+                u.sams_shablon,
+                u.sams_quotes,
+                u.sams_size,
+                u.sams_enabled,
+                u.sams_ip,
+                u.sams_ip_mask,
+                u.sams_flags
+              FROM `users_linked` ul
+              JOIN `users` u
+              ON ul.user_id = u.id
+              WHERE ul.assign_pid = {$assigned_pid};";
 
     $response = $this->sql->query($query);
 

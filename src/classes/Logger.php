@@ -76,7 +76,7 @@ class Logger
     if (self::$is_tmp_created) fclose(self::$tmp_hdl);
   }
   
-  public function add($event_code, $event_msg, $event_attrib = "", $datentime = - 1, $printable_login = "") {
+  public static function add($event_code, $event_msg, $event_attrib = "", $datentime = - 1, $printable_login = "") {
     
     // Если компонент еще не инициализироан, то прерываем работу и создаем сообщение об ошибке
     if (self::$is_init == False) {
@@ -144,7 +144,7 @@ class Logger
     return self::$events_count;
   }
   
-  public function get($start = 0, $len = 250) {
+  public static function get($start = 0, $len = 250) {
     if (self::$is_init == False) {
       self::$last_error_msg = "Компонент logger не инициализирован!";
       return False;

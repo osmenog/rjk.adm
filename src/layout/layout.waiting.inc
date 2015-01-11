@@ -58,7 +58,7 @@
               console.log (err_t+' '+err_m);
               print_alert_box({'error_msg': err_m, 'error_type': err_t});
             },
-            timeout: 10000
+            timeout: 30000
           });
         });
       </script>

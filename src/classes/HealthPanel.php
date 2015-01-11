@@ -237,7 +237,7 @@ class HealthPanel {
     return $m_srv;
   }
 
-  public function get_id() {
+  public function get_local_id() {
     return $this->local_server_id;
   }
 }

@@ -76,18 +76,16 @@ function do_sync() {
     $sp->copy_to_rejik($users_to_copy);
 
     //Подключаем конфликтных пользователей к нашему прокси
-    $connected_users = $sp->connect_users_to_proxy($conflict_users);
+    $users_to_link = $sp->link_users_to_proxy($conflict_users);
 
     //Выводим на экран различную информацию о ходе синхронизации.
-    display_content($sp, $users_to_copy, $users_to_remove, $connected_users);
+    display_content($sp, $users_to_copy, $users_to_remove, $users_to_link);
 
 
   } catch (Exception $e) {
       echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
   }
 
-
-  exit;
   return True;
 }
 function print_table($printable_array, $title, $id) {
@@ -316,11 +314,11 @@ class sams_sync {
    * Функция "подключает" пользователей к текущему прокси
    * @param $users Массив с логинами пользователей и их pid
    */
-  public function connect_users_to_proxy($users) {
+  public function link_users_to_proxy($users) {
     //Выходим, если массив пустой
     if (count($users)==0) return array();
 
-    $connected_users = array(); //Результирующий массив
+    $linked_users = array(); //Результирующий массив
 
     //Обрабвтываем каждого конфликтного пользователя
     foreach ($users as $row) {
@@ -330,24 +328,62 @@ class sams_sync {
       $local_pid = $this->server_id;
 
       //Проверяем, был ли пользователь подключен ранее...
-      $query = "SELECT `id`, `user_id`, `assign_pid` FROM `users_location` WHERE user_id={$uid} AND assign_pid={$local_pid};";
+      $query = "SELECT `id`, `user_id`, `assign_pid` FROM `users_linked` WHERE user_id={$uid} AND assign_pid={$local_pid};";
       $res = $this->rejik_conn->do_query($query);
       if ($res->num_rows == 0) {
         //Если не был подключен, то подключаем пользователя:
-        $query = "INSERT INTO users_location (user_id, assign_pid) VALUES('{$uid}', {$local_pid});";
+        $query = "INSERT INTO users_linked (user_id, assign_pid) VALUES('{$uid}', {$local_pid});";
         $res = $this->rejik_conn->do_query($query);
         //fixme Придумать код для сообщения
         if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
-
         $row['assign_pid'] = $local_pid;
-        $connected_users[] = $row;
+        $linked_users[] = $row;
+
       }else {
         //Если был подключен, то не обрабатываем его.
         continue;
       };
     }
 
-    return $connected_users;
+    return $linked_users;
+  }
+
+  /**
+   * Функция "отключает" пользователей от текущего прокси
+   * @param $users
+   */
+  public function unlink_users_from_proxy($users) {
+    //Выходим, если массив пустой
+    if (count($users)==0) return array();
+
+    $unlinked_users = $users; //Создаем копию входящего массива с пользователями
+
+    //Обрабвтываем каждого конфликтного пользователя
+    foreach ($users as $key => $row) {
+      //1.Проверяем, был ли пользователь подключен к прокси ранее.
+      $uid = $row['id'];
+      $pid = $row['proxy_id'];
+      $local_pid = $this->server_id;
+
+      //Проверяем, был ли пользователь подключен ранее...
+      $query = "SELECT `id`, `user_id`, `assign_pid` FROM `users_linked` WHERE user_id={$uid} AND assign_pid={$local_pid};";
+      $res = $this->rejik_conn->do_query($query);
+
+      if ($res->num_rows != 0) {
+        //Если был подключен, то отключаем пользователя:
+        $query = "DELETE FROM `users_linked` WHERE `user_id`={$uid} AND `assign_pid`={$local_pid}";
+        $res = $this->rejik_conn->do_query($query);
+        //fixme Придумать код для сообщения
+        if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был отключен от прокси (pid={$local_pid})","",-1);
+        $unlinked_users[$key]['result'] = 'True';
+      }else {
+        //Если не был подключен, то не обрабатываем его.
+        $unlinked_users[$key]['result'] = 'Skip';
+        continue;
+      };
+    }
+
+    return $unlinked_users;
   }
 
   public function copy_to_rejik($users) {

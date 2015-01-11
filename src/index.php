@@ -296,6 +296,13 @@ function process_post_actions() {
       	include "layout/layout.status.inc";
       	break;
 
+      case 'unlink_all_users':
+        include "layout/layout.linkusers.inc";
+        break;
+
+      case 'link_all_users':
+        include "layout/layout.linkusers.inc";
+        break;
       // case 'logout':
       //   CloseSession();
 
