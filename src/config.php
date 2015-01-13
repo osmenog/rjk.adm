@@ -25,6 +25,10 @@
   //Название корневой папки проекта. Используется при указании абсолютного адреса.
   $config['proj_name'] = 'adm';
 
+  //Идентификатор и название группы, в которую будут перемещаться удаленные пользователи
+  $config['trash_group_id'] = '51592397f28d5';
+  $config['trash_group_default_name'] = 'removed';
+
   //Количество ссылок на одной странице
   $config['urls_per_page'] = 250;
 
@@ -32,11 +36,11 @@
   $config['private_key'] = 'secret';
 
   //ID этого сервера. Такой же как и в конфиге MySQL
-  $config['server_id'] = 21;
+  $config['server_id'] = 1;
 
   $config['servers'] = array(
-    'proxy6.bankom.omsk.su' => array('root', 'osme', 22),
-    //'192.168.139.249' => array ('root', 'osme', 45),
+    //'proxy6.bankom.omsk.su' => array('root', 'osme', 22),
+    '192.168.139.29' => array ('root', 'osme', 2),
     //'FreeBSD_2' => array ('repl_user', 'repl_pasword', 3)
   );
 

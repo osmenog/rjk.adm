@@ -168,6 +168,8 @@ class proxy_worker extends worker {
     		return TRUE;
     	}
     }
+
+
 } //end of proxy worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class rejik_worker extends worker {
@@ -784,11 +786,13 @@ class rejik_worker extends worker {
 
     $response = $this->sql->query($query);
 
+    //Если запрос не выполнен, то вызываем исключение
+    if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
+
     //Если в результате запроса ничего не извлечено
     if ($response->num_rows == 0) return 0;
 
-    //Если запрос не выполнен, то вызываем исключение
-    if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
+
 
     //Построчно заполням конечный массив данными, полученными из БД
     $res=array();

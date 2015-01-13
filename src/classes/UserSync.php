@@ -46,7 +46,7 @@ function do_sync() {
     //Получаем пользователей режика, привязанных к серверу.
     //Получаем ВСЕХ пользователей REJIK DB
     $rejik_users = $sp->get_rejik_logins();
-    //echo "<pre>"; print_r($rejik_users); echo "</pre>";
+    echo "<pre>"; print_r($rejik_users); echo "</pre>";
 
     //Формируем список пользователей, которых нужно перенести слева -> направо
     // (пользователи, которые были созданы в SAMS)
@@ -77,6 +77,10 @@ function do_sync() {
 
     //Подключаем конфликтных пользователей к нашему прокси
     $users_to_link = $sp->link_users_to_proxy($conflict_users);
+
+    //Обрабатываем пользователей, помеченных на удаление. Перемещаем их в специальную группу SAMS
+    //$sp->remove_users($users_to_remove);
+
 
     //Выводим на экран различную информацию о ходе синхронизации.
     display_content($sp, $users_to_copy, $users_to_remove, $users_to_link);
@@ -189,7 +193,7 @@ class sams_sync {
     $res = array();
     //Перебираем список пользователей
     foreach ($rejik_data as $row) {
-      //Если пользовательь относится к текущему серверу, добавляем его в массив. Остальных игнорируем
+      //Если пользователь относится к текущему серверу, добавляем его в массив. Остальных игнорируем
       if ($row['proxy_id'] == $this->server_id) {
         $res[]=array ("id" => $row['id'], "login" => $row['login']);
       }
