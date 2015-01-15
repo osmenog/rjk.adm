@@ -135,7 +135,8 @@ class proxy_worker extends worker {
           $row['name'] = empty($row["name"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['name']);
           $row['soname'] = empty($row["soname"]) ? '' : iconv($config['conv'][0], $config['conv'][1], $row['soname']);
         }
-        $res[$row['nick']] = $row;
+        //$res[$row['nick']] = $row;
+        $res[] = $row;
       }
     } elseif ($verbose_mode == FIELDS_ONLY_LOGINS) {
       //$row = $response->fetch_row();
@@ -803,6 +804,26 @@ class rejik_worker extends worker {
     return $res;
   }
 
+  public function users_get_linked_all () {
+    //Проверяем, был ли пользователь подключен ранее...
+    $query = "SELECT `id`, `user_id`, `assign_pid` FROM `users_linked`;";
+    $response = $this->sql->query($query);
+
+    //Если запрос не выполнен, то вызываем исключение
+    if (!$response) throw new mysql_exception($this->sql->error, $this->sql->errno);
+
+    //Если в результате запроса ничего не извлечено
+    if ($response->num_rows == 0) return 0;
+
+    //Построчно заполням конечный массив данными, полученными из БД
+    $res=array();
+    while ($row = $response->fetch_assoc()) {
+      $res[] = $row;
+    }
+
+    return $res;
+  }
+
   public function is_user ($username) {
     //защищаемся
     $username = $this->sql->real_escape_string($username);
@@ -839,6 +860,7 @@ class rejik_worker extends worker {
 
     return $response->fetch_assoc();
   }
+
   // ==========================================================================================================================
   // Функции импорта
   // ==========================================================================================================================

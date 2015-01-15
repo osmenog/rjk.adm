@@ -33,6 +33,17 @@ function do_sync() {
 
   try {
     $sp = new sams_sync($config['server_id']);
+    $sp->do_sync();
+
+  } catch (Exception $e) {
+    echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
+  }
+
+  return True;
+
+  //------------------------------------------
+  try {
+    $sp = new sams_sync($config['server_id']);
 
     //Получаем список пользователей SAMS
     $sams_users = $sp->get_sams_logins();
@@ -395,19 +406,18 @@ class sams_sync {
     if (count($users)==0) return FALSE;
 
     foreach ($users as $row) {
-      $v = $row['login'];
-      $user_data = $this->sams_userdata[$v];
+      //$user_data = $this->sams_userdata[$v];
       $pid = $this->server_id;
-      $name = trim($user_data['family']." ".$user_data['name']." ".$user_data['soname']);
-      $login = strtolower(trim($v));
-      $password     = $user_data['passwd' ];
-      $sams_group   = $user_data['group'  ];
-      $sams_domain  = $user_data['domain' ];
-      $sams_shablon = $user_data['shablon'];
-      $sams_quotes  = $user_data['quotes' ];
-      $sams_enabled = $user_data['enabled'];
-      $sams_ip      = $user_data['ip'     ];
-      $sams_mask    = $user_data['ipmask' ];
+      $name = trim($row['family']." ".$row['name']." ".$row['soname']);
+      $login = strtolower(trim($row['nick']));
+      $password     = $row['passwd' ];
+      $sams_group   = $row['group'  ];
+      $sams_domain  = $row['domain' ];
+      $sams_shablon = $row['shablon'];
+      $sams_quotes  = $row['quotes' ];
+      $sams_enabled = $row['enabled'];
+      $sams_ip      = $row['ip'     ];
+      $sams_mask    = $row['ipmask' ];
 
 
       //$name = iconv("ISO-8859-5","CP1251", $name);
@@ -447,6 +457,176 @@ class sams_sync {
 
     return True;
   }
+  private function is_exist($login, $users_data) {
+    foreach ($users_data as $k=>$row) {
+      if ($row['login'] == $login) return $k;
+    }
+    return False;
+  }
 
+  private function is_equal ($sams_user, $rejik_user) {
+    //var_dump($sams_user, $rejik_user) ;
+    //Пользователи считаются разными, если отличаются:
+    //1. ФИО
+    //2. Пароль
+    //3. Активность
+    //4. Квота
+    //if ($sams_user[''])
+    $fullname = trim( $sams_user['family'].' '.$sams_user['name'].' '.$sams_user['soname'] );
+    if ($rejik_user['name'] != $fullname) return False;
+    if ($rejik_user['password'] != $sams_user['passwd']) return False;
+    if ($rejik_user['sams_enabled'] != $sams_user['enabled']) return False;
+    if ($rejik_user['sams_quotes'] != $sams_user['quotes']) return False;
+    return true;
+  }
+
+  private function is_linked_with ($user_id, $linked_data) {
+    if ($linked_data === 0) return FALSE;
+
+    foreach ($linked_data as $linked_row) {
+      if ($linked_row['user_id'] == $user_id) {
+        if ($linked_row['assign_pid'] == $this->server_id) return true;
+      }
+    }
+    return false;
+  }
+
+  public function do_sync(){
+    //Получаем данные с SAMS и RDB
+    $sams_data = $this->get_sams_userdata();
+    if ($sams_data == 0) throw new LogicException("В БД SAMS отсутствуют пользователи");
+
+    $rejik_data = $this->get_rejik_userdata();
+    if ($rejik_data == 0) $rejik_data = array();
+
+    $linked_users = $this->rejik_conn->users_get_linked_all();
+
+    $sams_users_to_copy = array();
+    $sams_users_updated = array();
+    $sams_users_conflicted = array();
+    $sams_users_to_link = array();
+    $sams_users_to_remove = array();
+
+    //Перебираем пользователей SAMS
+    foreach ($sams_data as $sams_row) {
+      //Проверяем: Пользователь с логином $sams_row['nick'] Имеется в RDB?
+      $rjk_user_key = $this->is_exist($sams_row['nick'], $rejik_data);
+      if ($rjk_user_key !== FALSE ) {
+
+        $rejik_user = & $rejik_data[$rjk_user_key]; //ТУТ ПРОИСХОДИТ ПЕРЕДАЧА ПО ССЫЛКЕ!!!
+
+        //Проверяем, является ли пользователь "родным" по отношению к текущему прокси.
+        $rejik_user_pid = $rejik_user['proxy_id'];
+
+        if ($this->server_id == $rejik_user_pid) {
+          //... Если является родным, то
+
+          //Проверяем, изменены ли данные пользователя SAMS
+          if (!$this->is_equal($sams_row, $rejik_user)) {
+            //Если у какого-либо пользователя SAMS поменялись данные, то добавляем его в список на изменение.
+            $sams_users_updated[] = $sams_row;
+
+          }
+          $rejik_user['proc'] = '1';
+          continue;  //переходим к солед. пользователю.
+
+        } else {//... если пользователь не родной, то
+          //Проверяем, изменены ли данные пользователя SAMS
+          if (!$this->is_equal($sams_row, $rejik_user)) {
+            //Если у какого-либо пользователя SAMS поменялись данные, то добавляем его в список на изменение.
+            $sams_users_conflicted[] = $sams_row;
+            $rejik_user['proc'] = '1';
+            continue;
+          }
+
+          //Пользователь есть в списке подключенных пользователей?
+          if (!$this->is_linked_with($rejik_user['id'], $linked_users)) {
+            $sams_users_to_link[] = $rejik_user;
+          }
+
+        }
+      } else {
+        //... если пользователь SAMS не найден в RDB, то помещаем в список sams_users_to_copy (копирование из SAMS в RDB)
+        $sams_users_to_copy[] = $sams_row;
+      }
+
+      $rejik_user['proc'] = '1';
+    }
+
+    //Получаем список пользователей, которые не были затронуты.
+    //По факту это пользователи, которые остались в RDB, но отсутствуют в SAMS
+    foreach ($rejik_data as & $row) {
+      if (!isset($row['proc']) && $row['proxy_id'] == $this->server_id) $sams_users_to_remove[] = $row;
+    }
+
+    echo "<h3>***</h3>";
+    echo "<pre>"; print_r ($sams_users_to_copy);echo "</pre>";
+    echo "<pre>"; print_r ($sams_users_updated); echo "</pre>";
+    echo "<pre>"; print_r ($sams_users_conflicted); echo "</pre>";
+    echo "<pre>"; print_r ($sams_users_to_link); echo "</pre>";
+    echo "<pre>"; print_r ($sams_users_to_remove); echo "</pre>";
+
+
+
+    //Копируем подготовленных пользователей в REJIK DB
+    $this->copy_to_rejik($sams_users_to_copy);
+
+    //Подключаем конфликтных пользователей к нашему прокси
+    $this->link_users_to_proxy($sams_users_to_link);
+
+    //Обновляем измененных пользователей в RDB
+    $this->update_users_data($sams_users_updated);
+
+    $this->delete_removed_users($sams_users_to_remove);
+  }
+
+  public function update_users_data($updated_users) {
+    //Выходим, если массив пустой
+    if (count($updated_users)==0) return array();
+
+    $updated = array(); //Результирующий массив
+
+    //Обрабвтываем каждого конфликтного пользователя
+    foreach ($updated_users as $row) {
+      $login=$row['nick'];
+      $name = trim($row['family']." ".$row['name']." ".$row['soname']);
+      $sams_quotes = $row['quotes'];
+      $sams_enabled = $row['enabled'];
+      $sams_passwd = $row['passwd'];
+
+      //Проверяем, был ли пользователь подключен ранее...
+      $query = "UPDATE `users` SET
+                `name`    = '{$name}'   ,
+                `sams_quotes`  = '{$sams_quotes}' ,
+                `sams_enabled` = '{$sams_enabled}',
+                `password`  = '{$sams_passwd}'
+                WHERE `login`='{$login}';";
+
+      $res = $this->rejik_conn->do_query($query);
+      //fixme добавить возможность перечисления атрибутов
+      if ($res) Logger::add(0,"У пользователя {$login} были обновлены атрибуты","",-1,"sams_sync");
+    }
+
+    return $updated;
+  }
+
+  public function delete_removed_users($deleted_users) {
+    //Выходим, если массив пустой
+    if (count($deleted_users)==0) return array();
+
+    $deleted = array(); //Результирующий массив
+
+    //Обрабвтываем каждого конфликтного пользователя
+    foreach ($deleted_users as $row) {
+      $uid = $row['id'];
+      $login = $row['login'];
+      $pid = $row['proxy_id'];
+
+      $query = "DELETE FROM `users` WHERE `id` = {$uid};";
+      $res = $this->rejik_conn->do_query($query);
+
+      if ($res) Logger::add(0,"Пользователь {$login} (id={$uid}, pid={$pid}) был удален в ходе синхронизации","",-1,"sams_sync");
+    }
+  }
 }
 ?>
