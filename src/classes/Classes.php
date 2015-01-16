@@ -170,7 +170,21 @@ class proxy_worker extends worker {
     	}
     }
 
+  public function get_groups() {
+    $query = "SELECT `name`,`nick` FROM `groups`;";
 
+    $response = $this->sql->query($query);
+    if (!$response) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+
+    if ($response->num_rows == 0) return 0;
+
+    $res = array();
+    while ($row = $response->fetch_row()) {
+      $res[] = $row;
+    }
+
+    return $res;
+  }
 } //end of proxy worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class rejik_worker extends worker {
@@ -860,6 +874,8 @@ class rejik_worker extends worker {
 
     return $response->fetch_assoc();
   }
+
+
 
   // ==========================================================================================================================
   // Функции импорта

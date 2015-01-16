@@ -220,4 +220,33 @@ class Logger
    //echo "<h6>set last_id=".self::$last_id." last_crc=".self::$last_crc."</h6>\n";
    }*/
 }
+
+class FileLogger {
+  private static $hdl;
+  private static $is_created = False;
+  private static $dir_path = '';
+  private static $is_throwable = True;
+
+  public static function init($filename) {
+    global $config;
+    self::$dir_path = $config['log_dir'];
+
+    if (!file_exists(self::$dir_path)) throw new logger_exception ("Дириктория ".self::$dir_path." не существует");
+
+    self::$hdl = @fopen(self::$dir_path.$filename, "w"); //a
+    $e = error_get_last();
+    if (self::$hdl == False) throw new logger_exception("Ошибка открытия файла",$e);
+
+    self::$is_created = True;
+  }
+
+  public static function add($msg, $event_attrib = "") {
+    if (self::$is_created == False) return False;
+    $res = fwrite(self::$hdl, $msg);
+  }
+
+  public static function close() {
+    if (self::$is_created) fclose(self::$hdl);
+  }
+}
 ?>
