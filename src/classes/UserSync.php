@@ -459,6 +459,7 @@ class sams_sync {
 
     return True;
   }
+
   private function is_exist($login, $users_data) {
     foreach ($users_data as $k=>$row) {
       if ($row['login'] == $login) return $k;
@@ -531,88 +532,125 @@ class sams_sync {
     $sams_users_to_link = array();
     $sams_users_to_remove = array();
 
-    ////FileLogger::add("Proccess SAMS users:\n");
+    FileLogger::add("Proccess SAMS users:\n");
     //Перебираем пользователей SAMS
-    ////$c = 1; $cc = count($sams_data);
+    $c = 1; $cc = count($sams_data);
     foreach ($sams_data as $sams_row) {
-      ////FileLogger::add(" ({$c} of {$cc}) {$sams_row['nick']}:\n");
+      FileLogger::add(" ({$c} of {$cc}) {$sams_row['nick']}:\n");
       //Проверяем: Пользователь с логином $sams_row['nick'] Имеется в RDB?
       $rjk_user_key = $this->is_exist($sams_row['nick'], $rejik_data);
+      FileLogger::add("   Search user in RDB...");
       if ($rjk_user_key !== FALSE ) {
-
+        FileLogger::add("Found\n");
         $rejik_user = & $rejik_data[$rjk_user_key]; //ТУТ ПРОИСХОДИТ ПЕРЕДАЧА ПО ССЫЛКЕ!!!
+
 
         //Проверяем, является ли пользователь "родным" по отношению к текущему прокси.
         $rejik_user_pid = $rejik_user['proxy_id'];
 
+        ////FileLogger::add("   SAMS user server: {$this->server_id}\n");
+        ////FileLogger::add("   RDB user parent server: {$rejik_user_pid}\n");
         if ($this->server_id == $rejik_user_pid) {
           //... Если является родным, то
-
+          FileLogger::add("   Users belong to the same server with pid={$rejik_user_pid}\n");
           //Проверяем, изменены ли данные пользователя SAMS
+          FileLogger::add("   Check the SAMS user has changed...");
           if (!$this->is_equal($sams_row, $rejik_user)) {
             //Если у какого-либо пользователя SAMS поменялись данные, то добавляем его в список на изменение.
+            FileLogger::add("changes found\n");
+            FileLogger::add("   SAMS userdata:\n".print_r($sams_row, true));
+            FileLogger::add("   RDB userdata:\n".print_r($rejik_user, true));
+            FileLogger::add("   *Marked as 'sams_users_updated'\n");
             $sams_users_updated[] = $sams_row;
-
+          } else {
+            FileLogger::add("not changed\n");
           }
           $rejik_user['proc'] = '1';
-          ////$c++;
+          $c++;
           continue;  //переходим к солед. пользователю.
 
         } else {//... если пользователь не родной, то
+          FileLogger::add("   Users relates to different server(sams_pid={$this->server_id}; rdb_pid={$rejik_user_pid})\n");
+
           //Проверяем, изменены ли данные пользователя SAMS
+          FileLogger::add("   Check the SAMS user has changed...");
           if (!$this->is_equal($sams_row, $rejik_user)) {
             //Если у какого-либо пользователя SAMS поменялись данные, то добавляем его в список на изменение.
             $sams_users_conflicted[] = $sams_row;
             $rejik_user['proc'] = '1';
-            ////$c++;
+            $c++;
+            FileLogger::add("changes found\n");
+            FileLogger::add("   SAMS userdata:\n".print_r($sams_row, true));
+            FileLogger::add("   RDB userdata:\n".print_r($rejik_user, true));
+            FileLogger::add("   *Marked as 'sams_users_updated'\n");
             continue;
+          } else {
+            FileLogger::add("not changed\n");
           }
 
           //Пользователь есть в списке подключенных пользователей?
+          FileLogger::add("   Whether the SAMS user is linked...");
           if (!$this->is_linked_with($rejik_user['id'], $linked_users)) {
+            FileLogger::add("not linked..\n");
+            FileLogger::add("   *Marked as 'sams_users_to_link'\n");
             $sams_users_to_link[] = $rejik_user;
+          } else {
+            FileLogger::add("already linked\n");
           }
 
         }
       } else {
         //... если пользователь SAMS не найден в RDB, то помещаем в список sams_users_to_copy (копирование из SAMS в RDB)
+        FileLogger::add("Not found\n");
         $sams_users_to_copy[] = $sams_row;
+        FileLogger::add("   *Marked as 'sams_users_to_copy'\n");
       }
 
       $rejik_user['proc'] = '1';
-      ////$c++;
+      $c++;
     }
 
     //Получаем список пользователей, которые не были затронуты.
     //По факту это пользователи, которые остались в RDB, но отсутствуют в SAMS
+    FileLogger::add("\n\nDetermine deleted users in SAMS:\n");
     foreach ($rejik_data as & $row) {
-      if (!isset($row['proc']) && $row['proxy_id'] == $this->server_id) $sams_users_to_remove[] = $row;
+      if (!isset($row['proc']) && $row['proxy_id'] == $this->server_id) {
+        FileLogger::add(" {$row['nick']}");
+        $sams_users_to_remove[] = $row;
+      }
     }
+
+    if (count($sams_users_to_remove)==0) {
+      FileLogger::add(" Deleted users not found!\n");
+    } else {
+      FileLogger::add(count($sams_users_to_remove)." Marked as 'sams_users_to_remove'\n");
+    }
+
+    FileLogger::add("\nsams_users_to_copy:\n");
+    FileLogger::add(print_r($sams_users_to_copy, true));
+    FileLogger::add("\nsams_users_updated:\n");
+    FileLogger::add(print_r($sams_users_updated, true));
+    FileLogger::add("\nsams_users_conflicted:\n");
+    FileLogger::add(print_r($sams_users_conflicted, true));
+    FileLogger::add("\nsams_users_to_link:\n");
+    FileLogger::add(print_r($sams_users_to_link, true));
+    FileLogger::add("\nsams_users_to_remove:\n");
+    FileLogger::add(print_r($sams_users_to_remove, true));
 
     echo "<h3>sams_users_to_copy</h3>";
     echo "<pre style='font-size: 8pt;'>"; print_r ($sams_users_to_copy);echo "</pre>";
-    FileLogger::add("\nsams_users_to_copy:\n");
-    FileLogger::add(print_r($sams_users_to_copy, true));
 
     echo "<h3>sams_users_updated</h3>";
     echo "<pre style='font-size: 8pt;'>"; print_r ($sams_users_updated); echo "</pre>";
-    FileLogger::add("\nsams_users_updated:\n");
-    FileLogger::add(print_r($sams_users_updated, true));
 
     echo "<h3>sams_users_conflicted</h3>";
     echo "<pre style='font-size: 8pt;'>"; print_r ($sams_users_conflicted); echo "</pre>";
-    FileLogger::add("\nsams_users_conflicted:\n");
-    FileLogger::add(print_r($sams_users_conflicted, true));
 
     echo "<h3>sams_users_to_link</h3>";
     echo "<pre style='font-size: 8pt;'>"; print_r ($sams_users_to_link); echo "</pre>";
-    FileLogger::add("\nsams_users_to_link:\n");
-    FileLogger::add(print_r($sams_users_to_link, true));
 
     echo "<h3>sams_users_to_remove</h3>";
     echo "<pre style='font-size: 8pt;'>"; print_r ($sams_users_to_remove); echo "</pre>";
-    FileLogger::add("\nsams_users_to_remove:\n");
-    FileLogger::add(print_r($sams_users_to_remove, true));
 
     //Копируем подготовленных пользователей в REJIK DB
     $this->copy_to_rejik($sams_users_to_copy);
@@ -620,14 +658,13 @@ class sams_sync {
     //Подключаем пользователей к нашему прокси...
     $this->link_users_to_proxy($sams_users_to_link);
     //... и переносим пользователей SAMS в группу linked
-    $this->fix_linked_users_group($sams_users_to_link);
+    ////$this->fix_linked_users_group($sams_users_to_link);
 
     //Обновляем измененных пользователей в RDB
     $this->update_users_data($sams_users_updated);
 
     //Удаляем пользователей, которые были удалены с SAMS
     $this->delete_removed_users($sams_users_to_remove);
-
 
 
     //
