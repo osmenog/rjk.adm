@@ -185,6 +185,31 @@ class proxy_worker extends worker {
 
     return $res;
   }
+
+  public function sams_create_user ($user) {
+    $sams_uid = '';
+    $nick    = $user['login'];
+    $fio     = explode(" ", $user['name']);
+    $family  = $fio[0];
+    $name    = $fio[1];
+    $soname  = $fio[2];
+    $group   = $user['sams_group'];
+    $domain  = $user['sams_domain'];
+    $passwd  = $user['password'];
+    $shablon = $user['sams_shablon'];
+    $quotes  = $user['sams_quotes'];
+    $size    = $user['sams_size'];
+    $enabled = $user['sams_enabled'];
+    $ip      = $user['sams_ip'];
+    $mask    = $user['sams_ip_mask'];
+
+    $query = "INSERT INTO squidusers (user_id, assign_pid) VALUES('{$uid}', {$local_pid});";
+    $res = $this->rejik_conn->do_query($query);
+    //fixme Придумать код для сообщения
+    if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
+    $row['assign_pid'] = $local_pid;
+    $linked_users[] = $row;
+  }
 } //end of proxy worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
 class rejik_worker extends worker {

@@ -2,32 +2,43 @@
   include_once "classes/HealthPanel.php";
   include_once 'classes/UserSync.php';
 
-  $action = $_GET['action'];
-  $pid = filter_input(INPUT_GET, 'pid', FILTER_VALIDATE_INT);
+  function print_server_hint($server_name, $server_id) {
+    $e = "<code><abbr title='Proxy_id={$server_id}'>{$server_name}</abbr></code>";
+    return $e;
+  }
+
+  //Получаем входные параметры, и фильтруем
+  $action = $_GET['action']; // действие: подключение или отключение пользователей
+  $pid = filter_input(INPUT_GET, 'pid', FILTER_VALIDATE_INT); //pid сервера, пользователи которого будут подключены
   if ($pid === False) throw new InvalidArgumentException("Неверно задан входящий параметр 'pid'", 1);
 
-  $confirm = filter_input(INPUT_GET, 'confirm', FILTER_VALIDATE_INT);
+  $confirm = filter_input(INPUT_GET, 'confirm', FILTER_VALIDATE_INT); //флаг подтверждения операции
   if ($confirm === False) throw new InvalidArgumentException("Неверно задан входящий параметр 'confirm'", 1);
+
   global $config;
 
+  //Инициализируем обработчик серверов.
   $hp = new HealthPanel();
   $servers = $hp->get_servers(); //Получаем список зарегистрированных в сестеме серверов
 
-  //Проверяем, зарегистрирован ли сервер в системе
+  //Проверяем, зарегистрирован ли сервер-донор в системе
   if ($servers->get_server_by_id($pid) === FALSE) throw new Exception ("Сервер с pid={$pid} не зарегистрирован в системе");
 
   //Проверяем, не является ли подключаемый сервер - локальным
   if ($hp->get_local_id() == $pid) throw new Exception ("Нельзя подключить пользователей к самому себе. local_pid={$hp->get_local_id()}; pid={$pid}");
 
+  //Выполняем действие: "подключение пользователей"
   if ($action=='link_all_users') {
     try {
       //Подключаемся к RDB и получаем список пользователей для сервера, с которого будут подключены пользователи
       $rjk = new rejik_worker ($config['rejik_db']);
-      $users_data = $rjk->users_get(FIELDS_LOGINS_AND_ID, $pid);
+      $users_data = $rjk->users_get(FIELDS_FULL, $pid);
+
+      //Обрабатываем исключительную ситуацию
       if ($users_data === 0) throw new Exception("На сервере с pid={$pid} отсутствуют пользователи. Выполните синхронизацию.",999);
 
-      //Получаем список пользователей, подключенных к текущему серверу...
-      $linked_users = $rjk->users_get_linked($pid);
+      //Получаем список пользователей, подключенных к текущему серверу.
+      $linked_users = $rjk->users_get_linked($hp->get_local_id());
       $already_linked_users = array();
 
       if ($linked_users !== 0) {
@@ -49,10 +60,14 @@
       //Если не был получен подтверждающий параметр, то выводим страницу подтверждения ...
       if ($confirm === NULL) {
         echo "<div class='page-header'>\n";
-        echo "<h1>Подтвердите операцию</h1>\n";
+        echo "<h2>Подключение пользователей другого сервера</h2>\n";
         echo "</div>\n";
 
-        echo "<p>К серверу ".$hp->get_local_server_name()." (pid=".$hp->get_local_id().") будут подключены следующие пользователи:</p>";
+        echo "<div class='alert alert-warning'><b>Внимание!</b><br>Данная процедура создаст выбранных пользователей в БД SAMS</div>\n";
+
+        //echo "<p>К серверу ".$hp->get_local_server_name()." (pid=".$hp->get_local_id().") будут подключены следующие пользователи:</p>";
+        echo "<p>К серверу ".print_server_hint($hp->get_local_server_name(), $hp->get_local_id())." будут подключены следующие пользователи:</p>";
+
         //elseif ($action == 'unlink_all_users') {
         //  echo "<p>На сервере ".$hp->get_local_server_name()." (pid=".$hp->get_local_id().") будут отключены следующие пользователи:</p>";
         //}

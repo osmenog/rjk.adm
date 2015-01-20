@@ -158,7 +158,7 @@ function login ($login, $pass) {
     $_SESSION['server_verification'] = FALSE;
 
     logger::add(1, "Успешная аутентификация пользователя [{$login}]", $login);
-    header("Location: /{$config ['proj_name']}/index.php");
+    header("Location: /{$config ['proj_name']}/index.php?action=status");
   } else {
     $alert_message .= "<div class='alert alert-danger'>Логин или пароль введены не правильно. Попробуйте еще раз.</div>\n";
     logger::add(2, "При аутентификации пользователя [{$login}] был указан неверный пароль", $login);

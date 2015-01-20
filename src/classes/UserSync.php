@@ -355,6 +355,10 @@ class sams_sync {
         //Если не был подключен, то подключаем пользователя:
         $query = "INSERT INTO users_linked (user_id, assign_pid) VALUES('{$uid}', {$local_pid});";
         $res = $this->rejik_conn->do_query($query);
+
+        //Создаем пользователя в САМС
+        $this->sams_conn->sams_create_user($row);
+
         //fixme Придумать код для сообщения
         if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
         $row['assign_pid'] = $local_pid;
@@ -364,6 +368,8 @@ class sams_sync {
 
     return $linked_users;
   }
+
+
 
   /**
    * Функция "отключает" пользователей от текущего прокси
