@@ -35,12 +35,15 @@
   function _print_usersync_status() {
     global $config;
     global $hp;
+
+    echo "<h3>Пользователи:</h3>\n";
+
     try {
       //Подключаемся к RDB и получаем список пользователей
       $rjk = new rejik_worker ($config['rejik_db']);
       $users_data = $rjk->users_get(FIELDS_LOGINS_AND_ID);
 
-      echo "<h3>Пользователи:</h3>\n";
+
 
       if ($users_data !== 0) { // Если список НЕ пуст, то выводим информацию о пользователях...
 
@@ -129,7 +132,7 @@
         echo "</div>";
       }
     } catch (Exception $e) {
-      echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
+      echo "<div class='alert alert-danger'><b>Невозможно отобразить состояние пользователей:</b><br> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
     }
 
   }
@@ -233,19 +236,25 @@
     global $config;
 
     //Выполняем проверку прав доступа, и в случае проблем, выводим предупреждение.
-    include "classes/Notice.php";
-
+    if ($id === NULL) {
+      include "classes/Notice.php";
+    }
     //Инициализируем главный обьект
     global $hp;
     $hp = new HealthPanel();
 
     //Если пришла команда смены мастера
     if ($id !== NULL) {
+      echo "<div class='page-header'>";
+      echo "<h1>Переключение режима работы серверов</h1>";
+      echo "</div>";
+
       $hp->switch_master($id);
       exit;
     }
 
     //Загружаем состояние обьектов
+
     if ($config['use_check_cache'] == True) $hp->restore_session();
 
     echo "<div class='page-header'>\n";

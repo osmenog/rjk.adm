@@ -2,6 +2,11 @@
   include_once "classes/ServersList.php";
   include_once "classes/RejikServer.php";
 
+  function print_server_hint($server_name, $server_id) {
+    $e = "<code><abbr title='Proxy_id={$server_id}'>{$server_name}</abbr></code>";
+    return $e;
+  }
+
 //Класс осуществляет процесс управления репликацией и смены отказавшего сервера
 class HealthPanel {
   private $local_server_name;       //Имя текущего сервера
@@ -21,7 +26,7 @@ class HealthPanel {
 
     //Добавляем в список серверов текущий сервер.
     //$servers_cfg[$local_hostname]=array($config['rejik_db'][1], $config['rejik_db'][2], $local_id);
-    $servers_cfg[$config['rejik_db'][0]]=array($config['rejik_db'][1], $config['rejik_db'][2], $local_id);
+    $servers_cfg[$config['rejik_db'][0]]=array($config['repl_user_name'], $config['repl_user_passwd'], $local_id);
 
     //Получаем массив серверов из конфига
     $servers_cfg = array_merge ($servers_cfg, $config ['servers']);
@@ -133,47 +138,77 @@ class HealthPanel {
 //
 //  }
 
-  //Функция вызывает ряд команд, и производит смену мастера.
+  //Функция меняет режим работы сервера. $id - становится мастером.
   public function switch_master($id) {
     
     try {
-      //Проверяем, существует ли такой ID
+      //Проверяем, существует ли сервер с такоим ID
       $srv = $this->servers_list->get_server_by_id($id);
+      if (!$srv) throw new OutOfBoundsException("В 'switch_master' указан не существующий ID", 1);
 
-      if (!$srv) { //Такого ID нет
-        throw new OutOfBoundsException("В 'switch_master' указан не существующий ID", 1);
-      }
-
-      echo "<h1>Переключаем {$srv} в режим \"Мастер\"</h1>\n";
+      echo "<h2><b>Этап 1: </b>Проверка состояния сервера</h2>\n";
       
       //Проверяем доступность серверов
       $this->check_availability();
-       
-      if (!$srv->is_connected()) throw new LogicException("Сервер {$srv} не доступен!",1);
 
-      //Определяем режим сервера, и если он не слейв, то прекращаем работу
-      if ($srv->get_work_mode() == WORK_MODE_MASTER) throw new LogicException("Сервер {$srv} уже работает в режиме MASTER",1);
+      //Если будущий мастер-сервер определяется как "не доступный", то прерываем процесс смены.
+      if (!$srv->is_connected()) {
+        throw new LogicException("Сервер {$srv} не доступен!",1);
+      } else {
+        echo "<h3>Сервер ".print_server_hint ($srv, $srv->get_id())." доступен<h3>";
+      }
 
-      echo "<h1>Отправляем запросы серверам:<h1>\n";
+      //Определяем режим работы будущего мастер-сервера, и если он уже является мастером, то прекращаем работу
+      if ($srv->get_work_mode() == WORK_MODE_MASTER) {
+        throw new LogicException("Сервер {$srv} уже работает в режиме MASTER",1);
+      } else {
+        echo "<h3>Сервер ".print_server_hint ($srv, $srv->get_id())." готов к смене режима работы<h3>";
+      }
 
-      //Определяем оставшиеся сервера, и отправляем сапрос по смене мастера
+      //todo На самом деле тут ничего не устанавливается :[
+      echo "<h2><b>Этап 2:</b> Устанавливаем режим БД \"только для чтения\"</h2>";
+      //fixme доработать
+
+      echo "<h2><b>Этап 3:</b> <small>Инициализируем МАСТЕР-режим на ".print_server_hint ($srv, $srv->get_id())."</small></h2>\n";
+      //Сброс логов репликации
+      try {
+        $srv->do_query("STOP SLAVE;");
+        $srv->do_query("RESET MASTER;");
+        $master_info = $srv->show_master_status();
+        if ($master_info == 0) throw new Exception("SHOW MASTER STATUS вернул нулевое значение");
+      } catch (Exception $e) {
+        echo "<h3>Cброс логов репликации не выполнен!</h3>";
+        throw $e;
+      }
+
+      echo "<h2><b>Этап 4:</b> Выполняем смену мастера на других серверах</h2>\n";
+      //Определяем оставшиеся сервера, и отправляем сапрос на смену мастера
       foreach ($this->servers_list as $s) {
-        //Если сервер Доступен И не является выбранным сервером
+        //Так как процедуры для мастера мы выполнили ранее, то его необходимо пропустить в данном обработчике.
+        if( $s->get_id() == $id ) continue;
+
+        echo "<h3>Отправляем запрос на сервер ".print_server_hint ($s, $s->get_id())."</h3>";
+        //Если сервер не доступен, то пропускаем.
         if( !$s->is_connected() ) {
-          echo "<h2>Сервер {$s} не доступен</h2>";
+          echo "<h4>Сервер не доступен</h4>";
           continue;
         }
 
-        if ( $s->get_id() != $id ) {
-          echo "<h2>Серверу {$s} отправлен запрос на смену мастера</h2>";
-          $s->change_master_to($srv);
-        } else {
-          
-          if ( $s->reset_slave() ) {
-            echo "<h2>На сервере {$s} отключен Слейв-режим</h2>";
-          } else {
-            throw new LogicException("На сервере {$s} произошла ошибка при отключении SLAVE режима: {$s->get_error()}",1);
-          }
+        //Отправляем запрос на смену мастера
+        try {
+          echo "<h4>Останавливаем сервер</h4>";
+          $s->do_query("STOP SLAVE;");
+          $s->do_query("RESET SLAVE;");
+          $s->do_query("RESET MASTER;");
+
+          echo "<h4>Выполняем запрос на смену</h4>";
+          $s->change_master_to($srv, $master_info['File'], $master_info['Position']);
+
+          echo "<h4>Запускаем сервер</h4>";
+          $s->do_query("START SLAVE;");
+        } catch (Exception $e) {
+          echo "<h3>Смена мастера не выполнена!</h3>";
+          throw $e;
         }
 
         //echo $s->is_connected()." - ".$s->get_work_mode()." - ".$s->get_id();

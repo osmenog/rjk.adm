@@ -2,11 +2,6 @@
   include_once "classes/HealthPanel.php";
   include_once 'classes/UserSync.php';
 
-  function print_server_hint($server_name, $server_id) {
-    $e = "<code><abbr title='Proxy_id={$server_id}'>{$server_name}</abbr></code>";
-    return $e;
-  }
-
   //Получаем входные параметры, и фильтруем
   $action = $_GET['action']; // действие: подключение или отключение пользователей
   $pid = filter_input(INPUT_GET, 'pid', FILTER_VALIDATE_INT); //pid сервера, пользователи которого будут подключены

@@ -4,9 +4,9 @@
 // -------------------------------------------------------------
 
   //Параметры БД САМС
-  $config  ['sams_db'] = array('localhost', 'sams', 'qwerty', 'squidctrl', 'utf8');
+  $config  ['sams_db'] = array('proxy6', 'sams', 'qwerty', 'squidctrl', 'utf8');
   //Параметры БД Режика
-  $config ['rejik_db'] = array('localhost', 'rejik_adm', 'admin3741', 'rejik', 'utf8');
+  $config ['rejik_db'] = array('proxy6', 'rejik_adm', 'admin3741', 'rejik', 'utf8');
 
 // -------------------------------------------------------------
 //Вспомогательные опции
@@ -19,7 +19,7 @@
   $config['debug_mode'] = True;
 
   //Как будет обновляться статус серверов
-  $config['use_check_cache'] = True;
+  $config['use_check_cache'] = False;
 
   //Название корневой папки проекта. Используется при указании абсолютного адреса.
   $config['proj_name'] = 'adm';
@@ -35,11 +35,12 @@
   $config['private_key'] = 'secret';
 
   //ID этого сервера. Такой же как и в конфиге MySQL
-  $config['server_id'] = 1;
+  $config['server_id']        = 3;
+  $config['repl_user_name']   = 'repl_user';
+  $config['repl_user_passwd'] = 'repl_user';
 
   $config['servers'] = array(
-    //'proxy6.bankom.omsk.su' => array('root', 'osme', 22),
-    '192.168.139.29' => array ('root', 'osme', 2),
+    'proxy2.bankom.omsk.su' => array($config['repl_user_name'], $config['repl_user_passwd'], 1),
     //'FreeBSD_2' => array ('repl_user', 'repl_pasword', 3)
   );
 

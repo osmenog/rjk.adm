@@ -21,11 +21,13 @@ function CheckPermissions() {
         "Для устранения ошибки выполните на REJIK DB следующий скрипт:<br>".
         "<code>GRANT REPLICATION CLIENT, REPLICATION SLAVE ON *.* TO '{$config['rejik_db'][1]}'@'{$config['rejik_db'][0]}';</code>".
         "</div>";
+    } elseif ($me->getCode() == 1045){
+      echo "<div class='alert alert-danger'><b>Самопроверка выявила ошибку. Недостаточно прав для доступа в REJIK DB</b><br>{$me->getCode()} : {$me->getMessage()}<br/></div>\n";
     } else {
-      echo "<div class='alert alert-danger'><b>Ошибка</b> {$me->getCode()} : {$me->getMessage()}<br/></div>\n";
+      echo "<div class='alert alert-danger'><b>Самопроверка выявила ошибку при выполнении запроса:</b><br>{$me->getCode()} : {$me->getMessage()}</div>\n";
     }
   } catch (Exception $e) {
-    echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
+    echo "<div class='alert alert-danger'><b>Ошибка при самопроверке (Функция 'CheckPermissions'):</b><br>{$e->getCode()} : {$e->getMessage()}</div>\n";
   }
 
   //В этом блоке проверяем права на запись в следующие папки:

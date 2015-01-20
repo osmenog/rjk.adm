@@ -212,155 +212,120 @@ class RejikServer
     //Функция устанавливает режим работы
     $this->work_mode = $work_mode;
   }*/
-  
-  public function change_master_to(RejikServer $master_server) {
-    
-    //$master_host, $master_user, $master_password) {
-    //Функция переключает режим репликации на другой сервер
-    
-    $mysqli = $this->sql_obj;
-    
-    //Подготавливаем запросы
-    $query = "STOP SLAVE;";
-    $query.= "RESET SLAVE; RESET MASTER; ";
-    $ip = gethostbyname($master_server->hostname);
-    $query.= "CHANGE MASTER TO MASTER_HOST = \"{$ip}\", MASTER_USER = \"{$master_server->username}\", MASTER_PASSWORD = \"{$master_server->password}\", MASTER_AUTO_POSITION=1; ";
-    $query.= "START SLAVE;";
-    
-    //Экранируем против всякой залупы
-    //$query =  $mysqli->real_escape_string($query);
-    
+
+public function change_master_to(RejikServer $master_server, $file, $position) {
+  //$master_host, $master_user, $master_password) {
+
+  //Функция переключает режим репликации на другой сервер
+  $mysqli = $this->sql_obj;
+  $ip = gethostbyname($master_server->hostname);
+  $query = "CHANGE MASTER TO MASTER_HOST = \"{$ip}\",
+                     MASTER_USER = \"{$master_server->username}\",
+                     MASTER_PASSWORD = \"{$master_server->password}\",
+                     MASTER_LOG_FILE = \"{$file}\",
+                     MASTER_LOG_POS = {$position};";
+  //MASTER_AUTO_POSITION=1;";
+  echo "<pre>"; print_r ($query); echo "</pre>";
+
+  $res = $mysqli->query($query);
+  if (!$res) {
+    throw new mysql_exception($this->sql_obj->error, $this->sql_obj->errno);
+  }
+}
+
+public function change_master_ex($master_host, $master_user, $master_password) {
+
+  //Функция переключает режим репликации на другой сервер
+  echo "<h1>master_change on " . $this . "</h1>\n";
+
+  //Подготавливаем запросы
+  $query = "SHOW SLAVE STATUS; ";
+  $query.= "STOP SLAVE; ";
+  $query.= "RESET SLAVE; ";
+  $query.= "CHANGE MASTER TO MASTER_HOST = '192.168.10.251', MASTER_USER = 'repl_user', MASTER_PASSWORD = 'repl', MASTER_AUTO_POSITION=1;";
+
+  $mysqli = $this->sql_obj;
+
+  //Экранируем против всякой залупы
+  $query = $mysqli->real_escape_string($query);
+
+  if ($mysqli->multi_query($query)) {
+    $result = $mysqli->store_result();
     echo "<pre>\n";
-    print_r($query);
+    echo "<b>Первый вызов store result:</b></br>";
+    print_r($result);
+    echo "\n<b>errors:</b></br>";
+    print_r($this->dbg_get_error());
     echo "</pre>\n";
-    
-    //Выполняем мультизапрос
-    if ($mysqli->multi_query($query)) {
-      
-      // Получаем все результаты мульти-запроса
-      do {
-        
-        //Получаем ответ от n-ого запроса
-        if ($result = $mysqli->store_result()) {
-          echo "<pre>\n";
-          print_r($result);
-          echo "</pre>\n";
-          while ($row = $result->fetch_row()) {
-            echo "<pre>";
-            print_r($row);
-            echo "</pre>\n";
-          }
-          
-          //$result->free();
-          
-        } else {
-          if ($mysqli->errno) {
-            echo "<pre><b>При вызове store_result произошла ошибка:</b></br>\n[" . $mysqli->errno . "] " . $mysqli->error . "</pre>";
-          }
-        }
-      } while ($mysqli->next_result());
-      var_dump($mysqli->error);
+
+    if ($mysqli->more_results()) {
+      printf("-----------------\n");
+    }
+
+    if ($mysqli->next_result()) {
+      echo "<pre><b>next_result вернул TRUE</b></pre>";
     } else {
-      
-      //Если вылезла ошибка, выводим на экран
-      echo "<pre>\n";
-      echo ("<b>master_query вернул FALSE</b>\n");
+      echo "<pre><b>next_result вернул FALSE</b></br>";
+      echo "\n";
+      echo ("<b>errors:</b></br>");
       print_r($this->dbg_get_error());
       echo "</pre>\n";
     }
-  } 
-  public function change_master_ex($master_host, $master_user, $master_password) {
-    
-    //Функция переключает режим репликации на другой сервер
-    echo "<h1>master_change on " . $this . "</h1>\n";
-    
-    //Подготавливаем запросы
-    $query = "SHOW SLAVE STATUS; ";
-    $query.= "STOP SLAVE; ";
-    $query.= "RESET SLAVE; ";
-    $query.= "CHANGE MASTER TO MASTER_HOST = '192.168.10.251', MASTER_USER = 'repl_user', MASTER_PASSWORD = 'repl', MASTER_AUTO_POSITION=1;";
-    
-    $mysqli = $this->sql_obj;
-    
-    //Экранируем против всякой залупы
-    $query = $mysqli->real_escape_string($query);
-    
-    if ($mysqli->multi_query($query)) {
-      $result = $mysqli->store_result();
-      echo "<pre>\n";
-      echo "<b>Первый вызов store result:</b></br>";
-      print_r($result);
-      echo "\n<b>errors:</b></br>";
+
+    $result = $mysqli->store_result();
+    echo "<pre>\n";
+    echo "<b>Первый вызов store result:</b></br>";
+    print_r($result);
+    echo "\n<b>errors:</b></br>";
+    print_r($this->dbg_get_error());
+    echo "</pre>\n";
+
+    if ($mysqli->more_results()) {
+      printf("-----------------\n");
+    }
+
+    if ($mysqli->next_result()) {
+      echo "<pre><b>next_result вернул TRUE</b></pre>";
+    } else {
+      echo "<pre><b>next_result вернул FALSE</b></br>";
+      echo "\n";
+      echo ("<b>errors:</b></br>");
       print_r($this->dbg_get_error());
       echo "</pre>\n";
-      
-      if ($mysqli->more_results()) {
-        printf("-----------------\n");
-      }
-      
-      if ($mysqli->next_result()) {
-        echo "<pre><b>next_result вернул TRUE</b></pre>";
-      } else {
-        echo "<pre><b>next_result вернул FALSE</b></br>";
-        echo "\n";
-        echo ("<b>errors:</b></br>");
-        print_r($this->dbg_get_error());
+    }
+
+    exit;
+
+    // Получаем все результаты мульти-запроса
+    do {
+
+      //Получаем ответ от n-ого запроса
+      if ($result = $mysqli->store_result()) {
+        echo "<pre>\n";
+        print_r($result);
         echo "</pre>\n";
-      }
-      
-      $result = $mysqli->store_result();
-      echo "<pre>\n";
-      echo "<b>Первый вызов store result:</b></br>";
-      print_r($result);
-      echo "\n<b>errors:</b></br>";
-      print_r($this->dbg_get_error());
-      echo "</pre>\n";
-      
-      if ($mysqli->more_results()) {
-        printf("-----------------\n");
-      }
-      
-      if ($mysqli->next_result()) {
-        echo "<pre><b>next_result вернул TRUE</b></pre>";
-      } else {
-        echo "<pre><b>next_result вернул FALSE</b></br>";
-        echo "\n";
-        echo ("<b>errors:</b></br>");
-        print_r($this->dbg_get_error());
-        echo "</pre>\n";
-      }
-      
-      exit;
-      
-      // Получаем все результаты мульти-запроса
-      do {
-        
-        //Получаем ответ от n-ого запроса
-        if ($result = $mysqli->store_result()) {
-          echo "<pre>\n";
-          print_r($result);
+        while ($row = $result->fetch_row()) {
+          echo "<pre>";
+          print_r($row);
           echo "</pre>\n";
-          while ($row = $result->fetch_row()) {
-            echo "<pre>";
-            print_r($row);
-            echo "</pre>\n";
-          }
-          
-          //$result->free();
-          
-        } else {
-          var_dump($mysqli->error);
         }
+
+        //$result->free();
+
+      } else {
         var_dump($mysqli->error);
-        var_dump($mysqli->next_result());
-      } while ($mysqli->next_result());
-    } else {
-      echo "<pre>\n";
-      echo ("<b>master_query вернул FALSE</b>");
-      print_r($this->dbg_get_error());
-      echo "</pre>\n";
-    }
-  } 
+      }
+      var_dump($mysqli->error);
+      var_dump($mysqli->next_result());
+    } while ($mysqli->next_result());
+  } else {
+    echo "<pre>\n";
+    echo ("<b>master_query вернул FALSE</b>");
+    print_r($this->dbg_get_error());
+    echo "</pre>\n";
+  }
+}
+
   public function getHostname() {
     return $this->hostname;
   }
@@ -387,5 +352,36 @@ class RejikServer
     
     return True;
   }
+
+  public function do_query($str) {
+    //Выполняем запрос
+    $str = $this->sql_obj->real_escape_string ($str);
+    $res = $this->sql_obj->query($str);
+
+    //Если ошибка, то прерываем выполнение и возвращаем False.
+    if (!$res) {
+      throw new mysql_exception($this->sql_obj->error, $this->sql_obj->errno);
+    }
+
+    return $res;
+  }
+
+  public function show_master_status() {
+    $query = "SHOW MASTER STATUS;";
+    $res = $this->sql_obj->query($query);
+
+    if (!$res) throw new mysql_exception($this->sql_obj->error, $this->sql_obj->errno);
+
+    //Если запрос ничего не вернул
+    if ($res->num_rows == 0) return 0;
+
+    $result = $res->fetch_assoc();
+
+    //Очищаем полученные данные
+    $res->close();
+
+    return $result;
+  }
+
 }
 ?>

@@ -27,6 +27,12 @@
 //  <li role="presentation"><a href="#">Messages</a></li>
 //</ul>
 
+if ($list === 0) {
+  echo "<div class='alert alert-warning'>В базе Rejik DB отсутствуют пользователи.<br>";
+  echo "Рекомендуется выполнить синхронизацию c локальной БД SAMS:<br><br>";
+  echo "<button class='btn btn-success' onClick='location.href=\"?action=status&sync_with_sams=1\"'>Синхронизировать пользователей</button>\n";
+  echo "</div>";
+} else {
   echo "  <div class='userlist panel panel-default'>\n";
   echo "    <table class='table table-striped table-condensed'>\n";
   echo "      <tr><th>Выбор</th><th>Логин</th><th>ФИО</th><th>Родитель</th></tr>\n\n";
@@ -38,4 +44,7 @@
   };
   echo "	</table>\n";
   echo "</div>\n";
+}
+
+
 ?>

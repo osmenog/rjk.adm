@@ -51,6 +51,7 @@ class ServersList implements Iterator {
     for ($i=0; $i <= (count($this->servers_id))-1; $i++) {
       if ($this->servers_id[$i] == $id) return $this->servers[$i];
     }
+
     return False;
   }
 
