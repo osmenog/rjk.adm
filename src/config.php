@@ -4,9 +4,9 @@
 // -------------------------------------------------------------
 
   //Параметры БД САМС
-  $config  ['sams_db'] = array('proxy6', 'sams', 'qwerty', 'squidctrl', 'utf8');
+  $config  ['sams_db'] = array('localhost', 'sams', 'qwerty', 'squidctrl', 'utf8');
   //Параметры БД Режика
-  $config ['rejik_db'] = array('proxy6', 'rejik_adm', 'admin3741', 'rejik', 'utf8');
+  $config ['rejik_db'] = array('localhost', 'rejik_adm', 'admin3741', 'rejik', 'utf8');
 
 // -------------------------------------------------------------
 //Вспомогательные опции

@@ -73,7 +73,7 @@ class Logger
   
   public static function stop() {
     if (self::$is_init) self::$sql->close();
-    if (self::$is_tmp_created) fclose(self::$tmp_hdl);
+    //if (self::$is_tmp_created) fclose(self::$tmp_hdl);
   }
   
   public static function add($event_code, $event_msg, $event_attrib = "", $datentime = - 1, $printable_login = "") {

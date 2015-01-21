@@ -32,7 +32,7 @@ function do_sync() {
   echo "<h1>SYNC!</h1>";
 
   try {
-    FileLogger::init('user_sync.log');
+    //FileLogger::init('user_sync.log');
     $sp = new sams_sync($config['server_id']);
     $sp->do_sync();
 
@@ -357,7 +357,7 @@ class sams_sync {
         $res = $this->rejik_conn->do_query($query);
 
         //Создаем пользователя в САМС
-        $this->sams_conn->sams_create_user($row);
+        //$this->sams_conn->sams_create_user($row);
 
         //fixme Придумать код для сообщения
         if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");

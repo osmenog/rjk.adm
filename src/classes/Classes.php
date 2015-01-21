@@ -12,6 +12,10 @@ const FIELDS_LOGINS_AND_ID = 2;
 const SOURCE_SAMS = 0;
 const SOURCE_RDB = 1;
 
+const AS_RAW = 0;
+const AS_ROW = 1;
+const AS_ASSOC_ROW = 2;
+
 class worker {
   //todo добавить описание класса в phpdoc
 	//protected $sql;
@@ -46,10 +50,32 @@ class worker {
 		$this->sql = $mysqli;
 	}
 
-  public function do_query($query_str){
+  public function do_query($query_str, $return_type = AS_RAW){
     $res = $this->sql->query($query_str);
-    if (!$res) throw new mysql_exception ($this->sql->error, $this->sql->errno);
+    //Возвращает FALSE в случае неудачи.
+    //В случае успешного выполнения запросов SELECT, SHOW, DESCRIBE или EXPLAIN mysqli_query() вернет объект mysqli_result.
+    //Для остальных успешных запросов mysqli_query() вернет TRUE.
 
+    if ($res === FALSE) {
+      throw new mysql_exception ($this->sql->error, $this->sql->errno);
+    } elseif ($res === TRUE) {
+      return TRUE;
+    } elseif ($res instanceof mysqli_result){
+      switch ($return_type){
+        case AS_RAW:
+          return $res;
+        case AS_ROW:
+          return $res->fetch_row();
+        default:
+          return $res;
+      }
+    } else {
+      throw new Exception ("mysqli->query вернула неизвестный обьект");
+    }
+  }
+
+  public function get_affected_rows() {
+    $res = $this->sql->affected_rows;
     return $res;
   }
 
@@ -206,8 +232,8 @@ class proxy_worker extends worker {
     $query = "INSERT INTO squidusers (user_id, assign_pid) VALUES('{$uid}', {$local_pid});";
     $res = $this->rejik_conn->do_query($query);
     //fixme Придумать код для сообщения
-    if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
-    $row['assign_pid'] = $local_pid;
+    //if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
+    //$row['assign_pid'] = $local_pid;
     $linked_users[] = $row;
   }
 } //end of proxy worker

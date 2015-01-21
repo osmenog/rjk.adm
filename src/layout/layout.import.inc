@@ -16,11 +16,11 @@ if ($is_confirm == 1) {
       $importer->start();
     } catch (Exception $e) {
       //Если в процессе импорта произошла ошибка
-      echo "<div class='alert alert-danger'>Произошла ошибка при выполнении импорта!</br>".$e->getMessage()."</div>";
+      echo "<div class='alert alert-danger'><b>Произошла ошибка при выполнении импорта!</b></br>".$e->getMessage()."</div>";
     }
   } else {
     //Если нет одного из параметров, то выходим.
-    echo "<div class='alert alert-warning'>Ошибка! Не передан один из параметров.</br>Процесс импорта остановлен.</div>";
+    echo "<div class='alert alert-warning'><b>Ошибка! Не передан один из параметров.</b></br>Процесс импорта остановлен.</div>";
   }
 
 } else {
@@ -29,7 +29,7 @@ if ($is_confirm == 1) {
 
 function print_form() {
   ?>
-  <div class='alert alert-danger'><b>Внимание!!!</b> Все данные в таблицах БД Режик будут очищены с помощью 'TRUNCATE TABLE'</div>
+  <div class='alert alert-danger'><b>Внимание!!!</b> Список банлистов и пользовательских прав в БД Режик будут очищены с помощью 'TRUNCATE TABLE'</div>
   <form role="form" action="?action=import&confirm=1" method="POST">
     <div class="form-group">
       <label for="bl_path">Путь до папки с бан-листами:</label>

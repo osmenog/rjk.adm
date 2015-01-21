@@ -40,15 +40,13 @@
 
     try {
       //Подключаемся к RDB и получаем список пользователей
-      $rjk = new rejik_worker ($config['rejik_db']);
+      $rjk        = new rejik_worker ($config['rejik_db']);
       $users_data = $rjk->users_get(FIELDS_LOGINS_AND_ID);
-
-
 
       if ($users_data !== 0) { // Если список НЕ пуст, то выводим информацию о пользователях...
 
         //todo Добавить возможность смотреть время синхронизации
-        echo "<p>Последняя синхронизация REJIK DB с локальным SAMS: 10.10.10 Успешно</p>";
+        //echo "<p>Последняя синхронизация REJIK DB с локальным SAMS: 10.10.10 Успешно</p>";
         echo "<button class='btn btn-success btn-xs' onClick='location.href=\"?action=status&sync_with_sams=1\"'>Синхронизировать пользователей</button>\n";
         echo "<br>";
 
@@ -81,7 +79,7 @@
 
 
         $local_pid = $hp->get_local_id();
-        $internal_users_count = $short_srv_info[$local_pid][1];
+        $internal_users_count = isset($short_srv_info[$local_pid][1]) ? $short_srv_info[$local_pid][1] : 0;
 
         //Получаем информацию о пользователях, подключенных к локальному серверу.
         $linked_users_data = $rjk->users_get_linked($local_pid);
@@ -165,13 +163,12 @@
       echo "<tr>\n
           <th width='40%'>Имя сервера</th>\n
           <th width='10%'>Доступность</th>\n
-          <th width='40%'>Статус</th>\n
+          <th width='40%'>Статус репликации</th>\n
           <th width='10%'> </th>\n
           </tr>\n";
       echo "</thead>\n";
       //echo "<pre>\n"; foreach ($hp->servers_list as $s) { echo "{$s}\n"; var_dump($s->sql_error); }; echo "</pre>\n";
       foreach ($hp->get_servers() as $value) {
-
         echo "<tr>\n";
         echo "<td><span>{$value}</span>\n";
         $srv_id = $value->get_id();

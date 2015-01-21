@@ -159,11 +159,11 @@ class HealthPanel {
       }
 
       //Определяем режим работы будущего мастер-сервера, и если он уже является мастером, то прекращаем работу
-      if ($srv->get_work_mode() == WORK_MODE_MASTER) {
-        throw new LogicException("Сервер {$srv} уже работает в режиме MASTER",1);
-      } else {
+      //if ($srv->get_work_mode() == WORK_MODE_MASTER) {
+      //  throw new LogicException("Сервер {$srv} уже работает в режиме MASTER",1);
+      //} else {
         echo "<h3>Сервер ".print_server_hint ($srv, $srv->get_id())." готов к смене режима работы<h3>";
-      }
+      //}
 
       //todo На самом деле тут ничего не устанавливается :[
       echo "<h2><b>Этап 2:</b> Устанавливаем режим БД \"только для чтения\"</h2>";

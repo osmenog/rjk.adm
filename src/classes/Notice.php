@@ -3,13 +3,19 @@ function CheckPermissions() {
   //Данная функция проверяет права доступа к БД, и выполняет различные тесты.
   //В случае, если один из тестов не выполняется, пользователь получит уведомление.
   global $config;
+
   try {
     //Подключаемся к REJIK DB
     $rjk = new rejik_worker($config['rejik_db']);
-    $res = $rjk->sql->query("SHOW SLAVE STATUS;");
-    if (!$res) {
-      throw new mysql_exception ($rjk->sql->error, $rjk->sql->errno);
+    $rjk->do_query("SHOW SLAVE STATUS;");
+
+    $res = $rjk->do_query("SHOW VARIABLES LIKE 'read_only';", AS_ROW);
+    $read_only_mode = isset($res[1]) ? (strtolower($res[1])=="on" ? TRUE : FALSE) : FALSE;
+    if ($read_only_mode) {
+      echo "<div class='alert alert-info'><b>Внимание!</b><br>База данных RDB подключена в режиме 'только для чтения'";
+      echo "</div>";
     }
+
   } catch (mysql_exception $me) {
     if ($me->getCode() == 1227) {
       echo "<div class='alert alert-warning'>".
