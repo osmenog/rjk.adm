@@ -492,7 +492,7 @@ class rejik_worker extends worker {
     // Description ...: Возвращает массив УРЛов относящихся к заданному $banlist
     // Parameters ....: $banlist - название бан-листа
     //                  $raw_mode = [true|false]
-    // Return values .: Успех - если $raw-mode =
+    // Return values .: Успех - если $raw-get_work_mode =
     //                            true - будет возвращаться массив Array [][id,url]
     //                            false - будет возвращаться массив строк url
     //                  	  - Возвращает 0, если банлист не содержит УРЛы

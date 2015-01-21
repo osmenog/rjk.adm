@@ -7,37 +7,29 @@ const WORK_MODE_UNDEFINED = - 1;
 
 class RejikServer
 {
-  private $server_id;   //Уникальный ID сервера (задается в конфиге mysql)
-  private $hostname;    //Имя хоста, на котором работает mysql
-  private $username;    //Имя пользователя
-  private $password;    //Пароль пользователя
-  private $sql_obj;     //Обьект, взаимодействующий с mysql
-  private $sql_connected = False;    //Равен true, если установлено соединение с mysql
-  private $aviable = False;          //Равен true, если хост сервера доступен (включен и пингуется)
-  public $sql_last_error = FALSE;    //Равен False, если ошибок нет. Иначе содержит ошибки, связанные с mysql (не репликация)
-  public $sql_last_errno = 0;
-  private $work_mode = WORK_MODE_UNDEFINED;    //Режим работы сервера (Мастер, Слейв или Не определено)
-  private $real_host_name = '';
+  private $server_id;             //Уникальный ID сервера (задается в конфиге mysql)
+  private $hostname;              //Имя хоста, на котором работает mysql
+  private $real_hostname;
+  private $username;              //Имя пользователя
+  private $password;              //Пароль пользователя
+  private $sql_obj;               //Обьект, взаимодействующий с mysql
+  private $sql_connected = False; //Равен true, если установлено соединение с mysql
+  private $sql_connect_error;     //Равен False, если ошибок нет. Иначе содержит ошибки, связанные с mysql (не репликация)
+  private $sql_connect_errno;
+  private $work_mode;             //Режим работы сервера (Мастер, Слейв или Не определено)
+
   private $is_read_only;
 
-  public function get_real_host_name() {
-    //Если в конфигах имя сервера указано как localhost, то определяем реальное имя хоста
-    if ($this->hostname == 'localhost') {
-      return $this->real_host_name;
-    } else {
-      return $this->hostname;
-    }
-  }
-
+  // -------------------------------------------------------------------------------------------------------
+  // МАГИЧЕСКИЕ МЕТОДЫ
+  // -------------------------------------------------------------------------------------------------------
   public function __construct($host, $user = '', $passwd = '', $id = 0) {
     $this->server_id = $id;
     $this->hostname = $host;
-    if ($host == "localhost") {
-      $this->real_host_name = gethostname();
-    }
-
     $this->username = $user;
     $this->password = $passwd;
+    $this->work_mode = WORK_MODE_UNDEFINED;
+    $this->_update_real_hostname();
   }
   
   public function __destruct() {
@@ -49,8 +41,15 @@ class RejikServer
   }
 
   public function __sleep() {
-    //fixme добавить новые свойства
-    return array('server_id', 'sql_connected', 'work_mode', 'hostname', 'username', 'password', 'sql_last_error','sql_last_errno');
+    return array('server_id',
+                 'hostname',
+                 'real_hostname',
+                 'username',
+                 'password',
+                 'sql_connected',
+                 'sql_connect_error',
+                 'sql_connect_errno',
+                 'work_mode');
   }
   
   public function __wakeup() {
@@ -59,21 +58,13 @@ class RejikServer
       $this->connect();
     }
   }
-  
-  private function set_error_var($error, $errno = 0) {
-    $this->sql_error = array('error' => $error, 'errno' => $errno);
-  }
+  // -------------------------------------------------------------------------------------------------------
 
-
-  public function get_error() {
-    return array($this->sql_last_error, $this->sql_last_errno);
-  }
-
-  public function get_error_str() {
-    if ($this->sql_error !== False) {
-      return $this->sql_error['errno'].": ".$this->sql_error['error'];
+  public function get_connect_error() {
+    if (isset($this->sql_connect_error)) {
+      return array($this->sql_connect_error, $this->sql_connect_errno);
     } else {
-      return '';
+      return FALSE;
     }
   }
 
@@ -95,88 +86,48 @@ class RejikServer
       //так как в манах (http://ru2.php.net/manual/ru/mysqli.connect-error.php) написано:
       //Возвращает последнее сообщение об ошибке после вызова mysqli_connect()
 
-      $this->sql_last_errno = $this->sql_obj->connect_errno;
-      $this->sql_last_error = $this->sql_obj->connect_error;
+      $this->sql_connect_errno = $this->sql_obj->connect_errno;
+      $this->sql_connect_error = $this->sql_obj->connect_error;
       $this->sql_connected = False;
       return False;
     } else {
       $this->sql_connected = True;
+      $this->_update_work_mode();
       return True;
     }
   }
-  
+
+  private function _update_real_hostname() {
+    if ($this->hostname == 'localhost') {
+      $this->real_hostname = gethostname();
+    } else {
+      $this->real_hostname = $this->hostname;
+    }
+  }
+
+  public function get_real_hostname() {
+    return $this->real_hostname;
+  }
+
   public function get_hostname() {
     //Функция возвращает имя данного сервера
     return $this->hostname;
   }
   
   public function get_id() {
-    
     //Функция возвращает ID данного сервера
     return $this->server_id;
   }
   
   public function is_connected() {
-    return $this->sql_connected;
+    return isset($this->sql_connected) ? $this->sql_connected : FALSE;
   }
   
-  public function get_repl_status($master_mode = False) {
-    //Функция возвращает статус работы сервера.
-    //Если это мастер, то возвращается ответ на запрос SHOW MASTER STATUS
-    //Если это слейв, то возвращает SHOW SLAVE STATUS
-    
-    try {
-      //Выполняем запрос
-      if ($master_mode) {
-        $res = $this->do_query("SHOW MASTER STATUS;", AS_ROW);
-      } else {
-        $res = $this->do_query("SHOW SLAVE STATUS;", AS_ROW);
-      }
-    } catch (mysql_exception $e) {
-      $this->sql_last_errno = $e->getCode();
-      $this->sql_last_error = $e->getMessage();
-      return False;
-    }
-
-    return $res;
-  }
-  
-  public function get_slave_hosts() {
-    
-    //Функция возвращает список слейвов, подклюенных к мастеру.
-    //Функция выполняется только на мастере!!!!!
-    //Возвращает результат выполнения запроса на SHOW SLAVE HOSTS
-    //Если произошла ошибка - возвращает False
-    //Если сервер ничего не вернул, то возвращает 0
-    
-    //Выполняем запрос
-    $res = $this->do_query("SHOW SLAVE HOSTS;");
-
-    //Если ошибка, то прерываем выполнение и возвращаем False.
-    if (!$res) {
-      $this->sql_last_errno = $this->sql_obj->errno;
-      $this->sql_last_error = $this->sql_obj->error;
-      return False;
-    }
-    
-    //Если запрос ничего не вернул
-    if ($res->num_rows == 0) return 0;
-    
-    while ($row = $res->fetch_assoc()) {
-      $result[] = $row;
-    }
-    
-    //Очищаем полученные данные
-    $res->close();
-    
-    return $result;
-  }
-  
-  public function get_work_mode() {
+  private function _update_work_mode() {
     //Функция определяет и возвращает режим работы текущего сервера
     
     // сначала проверяем, является ли он мастером:
-    $r = $this->get_slave_hosts();
+    $r = $this->show_slave_hosts();
     //Проверяем на наличие ошибок
     if ($r===False) return FALSE;
 
@@ -186,7 +137,7 @@ class RejikServer
     } else {
       //Проверяем, что сервер является Слейвом.
       //Получаем SLAVE STATUS. Если в поле host указан адрес, то это слейв.
-      $tmp = $this->get_repl_status(False);
+      $tmp = $this->show_slave_status(False);
       if (isset($tmp['Slave_IO_Running']) && $tmp['Slave_IO_Running'] != 'No') {
         $this->work_mode = WORK_MODE_SLAVE;
       } else {
@@ -197,7 +148,7 @@ class RejikServer
     return $this->work_mode;
   }
   
-  public function mode() {
+  public function get_work_mode() {
     return $this->work_mode;
   }
 
@@ -219,10 +170,6 @@ class RejikServer
     if (!$res) {
       throw new mysql_exception($this->sql_obj->error, $this->sql_obj->errno);
     }
-  }
-
-  public function getHostname() {
-    return $this->hostname;
   }
 
   public function do_query($query_str, $return_type = AS_RAW){
@@ -254,9 +201,41 @@ class RejikServer
 
   public function show_master_status() {
     $res = $this->do_query("SHOW MASTER STATUS;", AS_ASSOC_ROW);
+
+    if ($res == 0) return 0;
+
+    return $res;
+  }
+
+  public function show_slave_hosts() {
+
+    //Функция возвращает список слейвов, подклюенных к мастеру.
+    //Функция выполняется только на мастере!!!!!
+    //Возвращает результат выполнения запроса на SHOW SLAVE HOSTS
+    //Если произошла ошибка - возвращает False
+    //Если сервер ничего не вернул, то возвращает 0
+
+    //Выполняем запрос
+    $res = $this->do_query("SHOW SLAVE HOSTS;");
+
     //Если запрос ничего не вернул
     if ($res == 0) return 0;
+
+    while ($row = $res->fetch_assoc()) {
+      $result[] = $row;
+    }
+
     //Очищаем полученные данные
+    $res->close();
+
+    return $result;
+  }
+
+  public function show_slave_status() {
+    $res = $this->do_query("SHOW SLAVE STATUS;", AS_ASSOC_ROW);
+
+    if ($res == 0) return 0;
+
     return $res;
   }
 }

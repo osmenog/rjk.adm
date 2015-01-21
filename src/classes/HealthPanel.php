@@ -95,7 +95,7 @@ class HealthPanel {
     if ($srv->get_work_mode()==WORK_MODE_SLAVE) {
       
       //Если режим SLAVE, то выполняем SHOW SLAVE STATUS
-      $stat = $srv->get_repl_status(False);
+      $stat = $srv->show_slave_status();
       if (!$stat) {return array($srv->sql_last_errno => $srv->sql_last_error);}
 
       //Заполняем массив интересующими нас ключами
@@ -159,7 +159,7 @@ class HealthPanel {
       }
 
       //Определяем режим работы будущего мастер-сервера, и если он уже является мастером, то прекращаем работу
-      //if ($srv->get_work_mode() == WORK_MODE_MASTER) {
+      //if ($srv->_update_work_mode() == WORK_MODE_MASTER) {
       //  throw new LogicException("Сервер {$srv} уже работает в режиме MASTER",1);
       //} else {
         echo "<h3>Сервер ".print_server_hint ($srv, $srv->get_id())." готов к смене режима работы<h3>";
@@ -211,7 +211,7 @@ class HealthPanel {
           throw $e;
         }
 
-        //echo $s->is_connected()." - ".$s->get_work_mode()." - ".$s->get_id();
+        //echo $s->is_connected()." - ".$s->_update_work_mode()." - ".$s->get_id();
       }
     } catch (Exception $e) {
       throw $e;

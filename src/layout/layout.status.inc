@@ -172,9 +172,9 @@
         echo "<tr>\n";
         echo "<td><span>{$value}</span>\n";
         $srv_id = $value->get_id();
-        if ($value->mode() == WORK_MODE_MASTER) {
+        if ($value->get_work_mode() == WORK_MODE_MASTER) {
           echo " <span class='label label-danger'>МАСТЕР</span>";
-        } elseif ($value->mode() == WORK_MODE_SLAVE) {
+        } elseif ($value->get_work_mode() == WORK_MODE_SLAVE) {
           echo " <span class='label label-warning'>ПОДЧИНЕННЫЙ</span>";
         }
         echo "</td>\n";
@@ -195,12 +195,12 @@
         } else {
 
           echo "<td class='text-danger'>НЕ ДОСТУПЕН</td>\n";
-          $err = $value->get_error();
+          $err = $value->get_connect_error();
           //echo "<pre>"; $value->get_error(); echo "</pre>";
           echo "<td><span style='font-size: 8pt;'>{$err[1]}: " . iconv("CP1251", "UTF-8", $err[0]) . "</span></td>\n";
         }
 
-        $wm = $value->mode();
+        $wm = $value->get_work_mode();
         if (($wm == WORK_MODE_SLAVE || $wm == WORK_MODE_UNDEFINED) && $avaiable) {
           echo "<td><button type='button' onClick='location.href=\"?action=status&switch_master_to=" . $value->get_id() . "\"' class='btn btn-primary btn-xs'> Сделать мастером</button></td>\n";
         } else {
