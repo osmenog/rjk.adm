@@ -20,7 +20,7 @@
   if ($servers->get_server_by_id($pid) === FALSE) throw new Exception ("Сервер с pid={$pid} не зарегистрирован в системе");
 
   //Проверяем, не является ли подключаемый сервер - локальным
-  if ($hp->get_local_id() == $pid) throw new Exception ("Нельзя подключить пользователей к самому себе. local_pid={$hp->get_local_id()}; pid={$pid}");
+  if ($hp->get_current_id() == $pid) throw new Exception ("Нельзя подключить пользователей к самому себе. local_pid={$hp->get_current_id()}; pid={$pid}");
 
   //Выполняем действие: "подключение пользователей"
   if ($action=='link_all_users') {
@@ -33,7 +33,7 @@
       if ($users_data === 0) throw new Exception("На сервере с pid={$pid} отсутствуют пользователи. Выполните синхронизацию.",999);
 
       //Получаем список пользователей, подключенных к текущему серверу.
-      $linked_users = $rjk->users_get_linked($hp->get_local_id());
+      $linked_users = $rjk->users_get_linked($hp->get_current_id());
       $already_linked_users = array();
 
       if ($linked_users !== 0) {
@@ -60,11 +60,11 @@
 
         echo "<div class='alert alert-warning'><b>Внимание!</b><br>Данная процедура создаст выбранных пользователей в БД SAMS</div>\n";
 
-        //echo "<p>К серверу ".$hp->get_local_server_name()." (pid=".$hp->get_local_id().") будут подключены следующие пользователи:</p>";
-        echo "<p>К серверу ".print_server_hint($hp->get_local_server_name(), $hp->get_local_id())." будут подключены следующие пользователи:</p>";
+        //echo "<p>К серверу ".$hp->get_current_host()." (pid=".$hp->get_current_id().") будут подключены следующие пользователи:</p>";
+        echo "<p>К серверу ".print_server_hint($hp->get_current_host(), $hp->get_current_id())." будут подключены следующие пользователи:</p>";
 
         //elseif ($action == 'unlink_all_users') {
-        //  echo "<p>На сервере ".$hp->get_local_server_name()." (pid=".$hp->get_local_id().") будут отключены следующие пользователи:</p>";
+        //  echo "<p>На сервере ".$hp->get_current_host()." (pid=".$hp->get_current_id().") будут отключены следующие пользователи:</p>";
         //}
 
         //Выводим пользователей, которые будут подключены.
@@ -142,7 +142,7 @@
     try {
       //Получаем список ВСЕХ пользователей, подключенных к текущему серверу...
       $rjk = new rejik_worker ($config['rejik_db']);
-      $linked_users = $rjk->users_get_linked($hp->get_local_id());
+      $linked_users = $rjk->users_get_linked($hp->get_current_id());
       if ($linked_users === 0) throw new Exception("На сервере с pid={$pid} отсутствуют подключенные пользователи",999);
 
       //Выбираем пользователей, подключенных к данному серверу и имеющих нужный $pid
@@ -156,7 +156,7 @@
         echo "<div class='page-header'>\n";
         echo "<h1>Подтвердите операцию</h1>\n";
         echo "</div>\n";
-        echo "<p>На сервере ".$hp->get_local_server_name()." (pid=".$hp->get_local_id().") будут отключены следующие пользователи:</p>";
+        echo "<p>На сервере ".$hp->get_current_host()." (pid=".$hp->get_current_id().") будут отключены следующие пользователи:</p>";
 
         echo "<table>";
         echo "<table class='table table-condensed'>\n";

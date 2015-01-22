@@ -32,9 +32,7 @@
     }
     
     echo "<br/>\n";
-    echo "<center>\n";
     echo "<button class='btn btn-success btn-lg' onClick='location.href=\"?action=check\"'>Выполнить проверку</button>  \n";
-    echo "</center>\n";
   } catch (exception $e) {
     echo "<div class='alert alert-danger'><b>Ошибка</b>Вылетело исключение.<br/>{$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
   }

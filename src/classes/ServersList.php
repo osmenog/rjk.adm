@@ -11,6 +11,8 @@ class ServersList implements Iterator {
         $this->servers[] = new RejikServer ($key, $value[0], $value[1], $value[2]);
         $this->servers_id[] = $value[2];
       }
+    } else {
+      throw new Exception ("Не верно указаны параметры сервера");
     }
   }
 
@@ -58,6 +60,17 @@ class ServersList implements Iterator {
   public function add_server (RejikServer $srv) {
     $this->servers[] = $srv;
     $this->servers_id[] = $srv->get_id();
+  }
+
+  public function add($hostname, $username = '', $password = '', $id = 0) {
+    if ($hostname != '') {
+      $this->servers[] = new RejikServer($hostname, $username, $password, $id);
+      $this->servers_id[] = $id;
+    } else {
+      throw new Exception ("Не верно указаны параметры сервера");
+    }
+
+    return TRUE;
   }
 
   public function count(){

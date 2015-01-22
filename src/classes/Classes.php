@@ -1023,7 +1023,25 @@ class rejik_worker extends worker {
 
     return $res;
   }
-
+//
+//  private function _read_db_var($var_name){
+//
+//
+//  }
+//
+//  private function  _set_db_var($var_name, $value){
+//
+//  }
+//
+//  public function get_masterserver() {
+//    $master = $this->do_query("SELECT `value` FROM `variables` WHERE `name`=`master`;", AS_ROW);
+//    if ($master->num_rows == 0) {
+//      $master="";
+//    } else {
+//      //$master;
+//    }
+//    return $master;
+//  }
 } //end of rejik_worker
   
 /**
@@ -1166,9 +1184,6 @@ function set_user_acl($user, $banlists) {
   } catch (Exception $e) {
     echo "<div class='alert alert-danger'><b>Логическая ошибка</b><br/>{$e->getCode()} : {$e->getMessage()}</div>\n";
   }
-
-
-
 
 }
 function create_banlist ($name, $short_desc, $full_desc) {

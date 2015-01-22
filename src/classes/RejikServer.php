@@ -59,7 +59,11 @@ class RejikServer
     }
   }
   // -------------------------------------------------------------------------------------------------------
-
+  /**
+   * Функция возвращает последнюю ошибку при подключении к SQL серверу
+   * @return array|bool Возвращает массив с ошибкой если она возникала ранее.
+   *                    Либо FALSE, если ошибки не было
+   */
   public function get_connect_error() {
     if (isset($this->sql_connect_error)) {
       return array($this->sql_connect_error, $this->sql_connect_errno);
@@ -68,6 +72,10 @@ class RejikServer
     }
   }
 
+  /**
+   * Функция устанавливает соединение с SQL сервером
+   * @return bool Возвращает TRUE - если соединение было установлено, либо FALSE в случае ошибки
+   */
   public function connect() {
     
     //Создаем обьект mysql
@@ -92,11 +100,20 @@ class RejikServer
       return False;
     } else {
       $this->sql_connected = True;
-      $this->_update_work_mode();
+      try {
+        $this->_update_work_mode();
+        $this->_read_only_mode();
+      } catch (Exception $e) {
+        $this->sql_connect_errno = $e->getCode();
+        $this->sql_connect_error = $e->getMessage();
+      }
       return True;
     }
   }
 
+  /**
+   * Функция определяет реальное имя хоста, если в настройках указано, что он "localhost"
+   */
   private function _update_real_hostname() {
     if ($this->hostname == 'localhost') {
       $this->real_hostname = gethostname();
@@ -105,27 +122,44 @@ class RejikServer
     }
   }
 
+  /**
+   * Функция возвращает реальное имя хоста
+   * @return string имя хоста
+   */
   public function get_real_hostname() {
     return $this->real_hostname;
   }
 
+  /**
+   * Функция возвращает имя хоста, указанного в настройках подключения
+   * @return string имя хоста
+   */
   public function get_hostname() {
     //Функция возвращает имя данного сервера
     return $this->hostname;
   }
-  
+
+  /**
+   * //Функция возвращает ID данного сервера
+   * @return int
+   */
   public function get_id() {
-    //Функция возвращает ID данного сервера
     return $this->server_id;
   }
-  
+
+  /**
+   * Функция возвращает состояние, - подключен ли обьект к SQL или нет
+   * @return bool
+   */
   public function is_connected() {
     return isset($this->sql_connected) ? $this->sql_connected : FALSE;
   }
-  
+
+  /**
+   * Функция определяет и возвращает режим работы текущего сервера
+   * @return int
+   */
   private function _update_work_mode() {
-    //Функция определяет и возвращает режим работы текущего сервера
-    
     // сначала проверяем, является ли он мастером:
     $r = $this->show_slave_hosts();
     //Проверяем на наличие ошибок
@@ -147,11 +181,21 @@ class RejikServer
 
     return $this->work_mode;
   }
-  
+
+  /**
+   * Функция возвращает режим работы сервера
+   * @return int
+   */
   public function get_work_mode() {
     return $this->work_mode;
   }
 
+  /**
+   * @param RejikServer $master_server
+   * @param $file
+   * @param $position
+   * @throws mysql_exception
+   */
   public function change_master_to(RejikServer $master_server, $file, $position) {
     //$master_host, $master_user, $master_password) {
 
@@ -172,6 +216,13 @@ class RejikServer
     }
   }
 
+  /**
+   * Функция выполняет SQL запрос на установку репликации с сервером
+   * @param string $query_str Текст запроса
+   * @param int $return_type  Флаг, указывающий на то, в каком формате будет предоставлен результат
+   * @throws Exception
+   * @throws mysql_exception
+   */
   public function do_query($query_str, $return_type = AS_RAW){
     //$query_str = $this->sql_obj->real_escape_string ($query_str);
     $res = $this->sql_obj->query($query_str);
@@ -199,14 +250,24 @@ class RejikServer
     }
   }
 
+  /**
+   * @return int|void
+   * @throws Exception
+   * @throws mysql_exception
+   */
   public function show_master_status() {
     $res = $this->do_query("SHOW MASTER STATUS;", AS_ASSOC_ROW);
 
-    if ($res == 0) return 0;
+    if ($res === 0) return 0;
 
     return $res;
   }
 
+  /**
+   * @return array|int
+   * @throws Exception
+   * @throws mysql_exception
+   */
   public function show_slave_hosts() {
 
     //Функция возвращает список слейвов, подклюенных к мастеру.
@@ -219,8 +280,9 @@ class RejikServer
     $res = $this->do_query("SHOW SLAVE HOSTS;");
 
     //Если запрос ничего не вернул
-    if ($res == 0) return 0;
+    if ($res->num_rows == 0) return 0;
 
+    $result = array();
     while ($row = $res->fetch_assoc()) {
       $result[] = $row;
     }
@@ -231,12 +293,31 @@ class RejikServer
     return $result;
   }
 
+  /**
+   * @return int|void
+   * @throws Exception
+   * @throws mysql_exception
+   */
   public function show_slave_status() {
     $res = $this->do_query("SHOW SLAVE STATUS;", AS_ASSOC_ROW);
 
-    if ($res == 0) return 0;
+    if ($res === 0) return 0;
 
     return $res;
   }
+
+  private function _read_only_mode() {
+    $res = $this->do_query("SHOW VARIABLES LIKE 'read_only';", AS_ROW);
+    $rom = isset($res[1]) ? (strtolower($res[1])=="on" ? TRUE : FALSE) : FALSE;
+    $this->is_read_only = $rom;
+    return $rom;
+  }
+
+  public function is_read_only() {
+    return $this->is_read_only;
+  }
+
+
+
 }
 ?>

@@ -1,19 +1,15 @@
 ﻿--
 -- Скрипт сгенерирован Devart dbForge Studio for MySQL, Версия 6.2.280.0
 -- Домашняя страница продукта: http://www.devart.com/ru/dbforge/mysql/studio
--- Дата скрипта: 31.12.14 13:18:02
+-- Дата скрипта: 22.01.15 17:53:23
 -- Версия сервера: 5.6.21-log
 -- Версия клиента: 4.1
 --
 
 
-DROP DATABASE IF EXISTS rejik;
-CREATE DATABASE IF NOT EXISTS rejik
-CHARACTER SET utf8
-COLLATE utf8_unicode_ci;
-
 USE rejik;
 
+DROP TABLE IF EXISTS banlists;
 CREATE TABLE IF NOT EXISTS banlists (
   id int(11) NOT NULL AUTO_INCREMENT,
   name varchar(25) binary NOT NULL,
@@ -24,11 +20,12 @@ CREATE TABLE IF NOT EXISTS banlists (
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 35
+AUTO_INCREMENT = 1
 AVG_ROW_LENGTH = 2730
 CHARACTER SET utf8
 COLLATE utf8_bin;
 
+DROP TABLE IF EXISTS checker;
 CREATE TABLE IF NOT EXISTS checker (
   id int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   file varchar(255) binary NOT NULL,
@@ -38,11 +35,12 @@ CREATE TABLE IF NOT EXISTS checker (
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 257
+AUTO_INCREMENT = 1
 AVG_ROW_LENGTH = 2048
 CHARACTER SET utf8
 COLLATE utf8_bin;
 
+DROP TABLE IF EXISTS log;
 CREATE TABLE IF NOT EXISTS log (
   id int(11) NOT NULL AUTO_INCREMENT,
   datentime datetime NOT NULL,
@@ -56,11 +54,12 @@ CREATE TABLE IF NOT EXISTS log (
   UNIQUE INDEX id (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 2431
+AUTO_INCREMENT = 3042
 AVG_ROW_LENGTH = 280
 CHARACTER SET utf8
 COLLATE utf8_bin;
 
+DROP TABLE IF EXISTS servers;
 CREATE TABLE IF NOT EXISTS servers (
   sql_id int(11) NOT NULL,
   hostname varchar(255) NOT NULL,
@@ -73,6 +72,7 @@ ENGINE = INNODB
 CHARACTER SET utf8
 COLLATE utf8_unicode_ci;
 
+DROP TABLE IF EXISTS urls;
 CREATE TABLE IF NOT EXISTS urls (
   id int(11) NOT NULL AUTO_INCREMENT,
   url varchar(255) binary NOT NULL,
@@ -80,11 +80,12 @@ CREATE TABLE IF NOT EXISTS urls (
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 983026
+AUTO_INCREMENT = 932183
 AVG_ROW_LENGTH = 49
 CHARACTER SET utf8
 COLLATE utf8_bin;
 
+DROP TABLE IF EXISTS users;
 CREATE TABLE IF NOT EXISTS users (
   id int(11) NOT NULL AUTO_INCREMENT,
   login varchar(25) NOT NULL,
@@ -103,11 +104,12 @@ CREATE TABLE IF NOT EXISTS users (
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 599
+AUTO_INCREMENT = 616
 AVG_ROW_LENGTH = 4096
 CHARACTER SET utf8
 COLLATE utf8_unicode_ci;
 
+DROP TABLE IF EXISTS users_acl;
 CREATE TABLE IF NOT EXISTS users_acl (
   id int(11) NOT NULL AUTO_INCREMENT,
   nick varchar(25) binary NOT NULL,
@@ -115,23 +117,34 @@ CREATE TABLE IF NOT EXISTS users_acl (
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 2050
+AUTO_INCREMENT = 1255
 AVG_ROW_LENGTH = 546
 CHARACTER SET utf8
 COLLATE utf8_bin;
 
-CREATE TABLE IF NOT EXISTS users_location (
+DROP TABLE IF EXISTS users_linked;
+CREATE TABLE IF NOT EXISTS users_linked (
   id int(11) NOT NULL AUTO_INCREMENT,
   user_id int(11) NOT NULL,
   assign_pid int(11) NOT NULL,
   PRIMARY KEY (id)
 )
 ENGINE = INNODB
-AUTO_INCREMENT = 599
-AVG_ROW_LENGTH = 82
+AUTO_INCREMENT = 1213
 CHARACTER SET utf8
 COLLATE utf8_unicode_ci;
 
+DROP TABLE IF EXISTS variables;
+CREATE TABLE IF NOT EXISTS variables (
+  name varchar(50) NOT NULL,
+  value varchar(255) NOT NULL,
+  PRIMARY KEY (name)
+)
+ENGINE = INNODB
+CHARACTER SET utf8
+COLLATE utf8_unicode_ci;
+
+DROP VIEW IF EXISTS view1 CASCADE;
 CREATE OR REPLACE
 DEFINER = 'root'@'192.168.139.29'
 VIEW view1
@@ -140,6 +153,6 @@ SELECT
   `ul`.`id` AS `id`,
   `u`.`login` AS `login`,
   `ul`.`assign_pid` AS `assign_pid`
-FROM (`users_location` `ul`
+FROM (`users_linked` `ul`
   JOIN `users` `u`
     ON ((`ul`.`user_id` = `u`.`id`)));
