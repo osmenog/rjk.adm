@@ -133,6 +133,7 @@
       echo "<div class='alert alert-danger'><b>Невозможно отобразить состояние пользователей:</b><br> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
     }
 
+    $rjk->closedb();
   }
 
   /**
@@ -152,7 +153,22 @@
       echo "</div>\n";
 
       //Стартуем проверку доступности серверов
-      if ($config['use_check_cache'] == False) $hp->check_availability();
+      if ($config['use_check_cache'] == False) {
+        $hp->check_availability();
+        //$hp->determine_master();
+      }
+      try {
+        $hp->check_master_availability();
+      } catch (Exception $e) {
+        echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
+      }
+
+
+      //////////////////////////////////////////////////
+      if ($_SESSION['master_id'] == -1) {
+        echo "<div class='alert alert-warning'><b>Необходимо назначить мастер-сервер</b></div>";
+      }
+      //////////////////////////////////////////////////
 
       //Сохраняем результаты проверки в открытой сессии. Нужно только для отладки!
       //$hp->save_session();
@@ -183,7 +199,6 @@
           <th width='5%'>*</th>\n
           </tr>\n";
       echo "</thead>\n";
-
       foreach ($servers_info as $r) {
         echo "<tr>";
         if ($r['is_ro']) {

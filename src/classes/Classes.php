@@ -3,7 +3,6 @@
 //include_once "config.php";
 include_once "classes/Exceptions.php";
 include_once "classes/Logger.php";
-include_once "classes/SyncProvider.php";
 include_once "classes/Checker.php";
 
 const FIELDS_FULL = 0;
@@ -33,7 +32,6 @@ class worker {
 
   public function __construct($db_config) {
     //todo добавить описание phpdoc
-    global $config;
 		//db: [0 - хост, 1 - логин, 2- пасс, 3 - имя бд, 4 - кодировка]
 
 		if (isset($db_config[0])) $this->db_host = $db_config[0];
@@ -90,7 +88,7 @@ class worker {
 class proxy_worker extends worker {
 //todo добавить описание класса в phpdoc
 
-	public function get_userscount () {
+	public function get_userscount() {
     //todo добавить описание phpdoc
     $query_str = "SELECT Count(*) FROM squidusers\n";
 		$res = $this->sql->query($query_str);
@@ -213,28 +211,28 @@ class proxy_worker extends worker {
   }
 
   public function sams_create_user ($user) {
-    $sams_uid = '';
-    $nick    = $user['login'];
-    $fio     = explode(" ", $user['name']);
-    $family  = $fio[0];
-    $name    = $fio[1];
-    $soname  = $fio[2];
-    $group   = $user['sams_group'];
-    $domain  = $user['sams_domain'];
-    $passwd  = $user['password'];
-    $shablon = $user['sams_shablon'];
-    $quotes  = $user['sams_quotes'];
-    $size    = $user['sams_size'];
-    $enabled = $user['sams_enabled'];
-    $ip      = $user['sams_ip'];
-    $mask    = $user['sams_ip_mask'];
-
-    $query = "INSERT INTO squidusers (user_id, assign_pid) VALUES('{$uid}', {$local_pid});";
-    $res = $this->rejik_conn->do_query($query);
-    //fixme Придумать код для сообщения
-    //if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
-    //$row['assign_pid'] = $local_pid;
-    $linked_users[] = $row;
+//    $sams_uid = '';
+//    $nick    = $user['login'];
+//    $fio     = explode(" ", $user['name']);
+//    $family  = $fio[0];
+//    $name    = $fio[1];
+//    $soname  = $fio[2];
+//    $group   = $user['sams_group'];
+//    $domain  = $user['sams_domain'];
+//    $passwd  = $user['password'];
+//    $shablon = $user['sams_shablon'];
+//    $quotes  = $user['sams_quotes'];
+//    $size    = $user['sams_size'];
+//    $enabled = $user['sams_enabled'];
+//    $ip      = $user['sams_ip'];
+//    $mask    = $user['sams_ip_mask'];
+//
+//    $query = "INSERT INTO squidusers (user_id, assign_pid) VALUES('{$uid}', {$local_pid});";
+//    $res = $this->rejik_conn->do_query($query);
+//    //fixme Придумать код для сообщения
+//    //if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
+//    //$row['assign_pid'] = $local_pid;
+//    $linked_users[] = $row;
   }
 } //end of proxy worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
@@ -573,12 +571,6 @@ class rejik_worker extends worker {
 
     //3. Запись в лог
     Logger::add (21, "В банлист [{$banlist}] добавлен адрес [{$url}]", $banlist);
-
-    //Если включена синхронизация, то добавляем URL в пул задач
-    if ($this->sync_provider !== null) {
-      $this->sync_provider->add_url_to_queue(1, $banlist, $url, $row['id']);
-    }
-
     return $row['id'];
   }
 
@@ -1023,25 +1015,18 @@ class rejik_worker extends worker {
 
     return $res;
   }
-//
-//  private function _read_db_var($var_name){
-//
-//
-//  }
-//
-//  private function  _set_db_var($var_name, $value){
-//
-//  }
-//
-//  public function get_masterserver() {
-//    $master = $this->do_query("SELECT `value` FROM `variables` WHERE `name`=`master`;", AS_ROW);
-//    if ($master->num_rows == 0) {
-//      $master="";
-//    } else {
-//      //$master;
-//    }
-//    return $master;
-//  }
+
+  public function get_db_var($var_name) {
+    $var_name_safed = $this->sql->real_escape_string($var_name);
+
+    $res = $this->do_query("SELECT `value` FROM `variables` WHERE `name`='{$var_name_safed}';", AS_ROW);
+
+    if ($res === NULL) { //Если запись о мастере отсутствует
+      return False;
+    } else {
+      return $res[0];
+    }
+  }
 } //end of rejik_worker
   
 /**

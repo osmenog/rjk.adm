@@ -46,7 +46,6 @@ class HealthPanel {
   public function __wakeup() {
   }
 
-
   public function get_current_server() {
     return $this->current_server;
   }
@@ -59,7 +58,6 @@ class HealthPanel {
     return $this->current_server->get_real_hostname();
   }
 
-
   private function init_session() {
     global $config;
     //Стартуем сессию
@@ -69,7 +67,6 @@ class HealthPanel {
       session_start();
     }
   }
-
 
   //Функция проверяет доступность всех серверов, и определяет режим их работы
   public function check_availability () {
@@ -262,7 +259,67 @@ class HealthPanel {
     return $m_srv;
   }
 
+  public function test_get_master() {
+    $current_srv = $this->current_server;
+    $res = $current_srv->do_query("SELECT `value` FROM `variables` WHERE `name`=`master_id`;", AS_ROW);
 
+    if ($res->num_rows == 0) { //Если запись о мастере отсутствует
+      return False;
+    } else {
+      return True;
+    }
+  }
 
+  /**
+   * Функция получает из локальной RDB значение переменной master_server и сохраняет его в переменной сессии.
+   */
+  public function determine_master() {
+    global $config;
+    try {
+      //Устанавливаем коннект с локальной базой RDB
+      $rjk = new rejik_worker($config['rejik_db']);
+
+      //Получаем значение переменной master_id из базы
+      $master_pid = $rjk->get_db_var("master_id");
+
+      //Если значение переменной по каким-то причинам не удается получить, или такого pid не существует,
+      //то считаем, что МАСТЕР-СЕРВЕР не определен. При этом пользователю должен выводиться АЛЕРТ на главной странице.
+      if ($master_pid !== NULL) {
+
+        $master_srv = $this->servers_list->get_server_by_id($master_pid);
+
+        if ($master_srv === FALSE) {
+          //throw new Exception("Отсутствует сервер с id='{$master_pid}''");
+          $_SESSION['master_id'] = -1;
+        } else {
+          $_SESSION['master_id'] = $master_pid;
+        }
+      } else {
+        $_SESSION['master_id'] = -1;
+      }
+    } catch (Exception $m) {}
+  }
+
+  public function check_master_availability() {
+    global $config;
+    $master_pid = isset($_SESSION['master_id']) ? $_SESSION['master_id'] : -1;
+    if ($master_pid == -1) return FALSE;
+
+    try {
+      //Если локальный сервер является мастером
+      if ($master_pid == $this->get_current_id()) {
+        $ro = $this->current_server->is_read_only();
+        //Проверяем доступна ли база для записи
+        if ($ro == TRUE) {
+          //...если недоступна, то снимаем блокировку
+          $this->current_server->disable_read_only();
+        }
+      } else {
+        //
+      }
+    } catch (Exception $e) {
+      throw new Exception ("Невозможно проверить доступность МАСТЕР-сервера: ".$e->getMessage(),$e->getCode());
+    }
+  }
 }
 ?>

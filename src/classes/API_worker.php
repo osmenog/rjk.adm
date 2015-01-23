@@ -7,7 +7,7 @@ class api_worker {
   protected $rejik;
   private $verison;
 
-  public function __construct ($rejik, $version) {
+  public function __construct (rejik_worker $rejik, $version) {
     $this->$version=$version;
 
     if (is_object($rejik) && get_class($rejik)=='rejik_worker'){
@@ -227,7 +227,10 @@ class api_worker {
 
       //Выполняем проверку доступности серверов
       $hp->check_availability();
-      
+
+      //Определяем мастер-сервер
+      $hp->determine_master();
+
       //Сохраняем результаты проверки в открытой сессии
       $hp->save_session();
       

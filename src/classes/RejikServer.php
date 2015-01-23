@@ -102,7 +102,7 @@ class RejikServer
       $this->sql_connected = True;
       try {
         $this->_update_work_mode();
-        $this->_read_only_mode();
+        $this->_get_read_only_mode();
       } catch (Exception $e) {
         $this->sql_connect_errno = $e->getCode();
         $this->sql_connect_error = $e->getMessage();
@@ -224,6 +224,10 @@ class RejikServer
    * @throws mysql_exception
    */
   public function do_query($query_str, $return_type = AS_RAW){
+    if (!$this->sql_connected) {
+      throw new Exception("RejikServer object not connected...");
+    }
+
     //$query_str = $this->sql_obj->real_escape_string ($query_str);
     $res = $this->sql_obj->query($query_str);
     //Возвращает FALSE в случае неудачи.
@@ -306,11 +310,23 @@ class RejikServer
     return $res;
   }
 
-  private function _read_only_mode() {
+  private function _get_read_only_mode() {
     $res = $this->do_query("SHOW VARIABLES LIKE 'read_only';", AS_ROW);
     $rom = isset($res[1]) ? (strtolower($res[1])=="on" ? TRUE : FALSE) : FALSE;
     $this->is_read_only = $rom;
     return $rom;
+  }
+
+  public function enable_read_only() {
+    $res = $this->do_query("FLUSH TABLES WITH READ LOCK;", AS_ROW);
+
+    $res = $this->do_query("SET GLOBAL read_only = ON;", AS_ROW);
+  }
+
+  public function disable_read_only() {
+    $res = $this->do_query("SET GLOBAL read_only = OFF;", AS_ROW);
+    $res = $this->do_query("UNLOCK TABLES;", AS_ROW);
+
   }
 
   public function is_read_only() {
