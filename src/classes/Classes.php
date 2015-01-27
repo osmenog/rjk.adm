@@ -15,6 +15,81 @@ const AS_RAW = 0;
 const AS_ROW = 1;
 const AS_ASSOC_ROW = 2;
 
+class db_connector {
+  private $sql_connect;
+
+  protected $db_host		= '';
+  protected $db_login		= '';
+  protected $db_passwd	= '';
+  protected $db_name		= '';
+  protected $db_codepage	= '';
+
+  public function __construct($db_config) {
+    if (isset($db_config[0])) $this->db_host = $db_config[0];
+    if (isset($db_config[1])) $this->db_login = $db_config[1];
+    if (isset($db_config[2])) $this->db_passwd = $db_config[2];
+    if (isset($db_config[3])) $this->db_name = $db_config[3];
+    if (isset($db_config[4])) $this->db_codepage = $db_config[4];
+
+    @$mysqli = new mysqli($this->db_host, $this->db_login, $this->db_passwd, $this->db_name);
+    if ($mysqli->connect_errno) {
+      throw new mysql_exception($mysqli->connect_error, $mysqli->connect_errno);
+    }
+
+    $this->sql_connect = $mysqli;
+  }
+
+  protected function query($query_text, $return_type) {
+    //$query_str = $this->sql_obj->real_escape_string ($query_str);
+    $res = $this->sql_connect->query($query_text);
+    //Возвращает FALSE в случае неудачи.
+    //В случае успешного выполнения запросов SELECT, SHOW, DESCRIBE или EXPLAIN mysqli_query() вернет объект mysqli_result.
+    //Для остальных успешных запросов mysqli_query() вернет TRUE.
+
+    if ($res === FALSE) {
+      throw new mysql_exception ($this->sql_obj->error, $this->sql_obj->errno);
+    } elseif ($res === TRUE) {
+      return TRUE;
+    } elseif ($res instanceof mysqli_result){
+      switch ($return_type){
+        case AS_RAW:
+          return $res;
+        case AS_ROW:
+          return ($res->num_rows == 0) ? 0 : $res->fetch_row();
+        case AS_ASSOC_ROW:
+          return ($res->num_rows == 0) ? 0 : $res->fetch_assoc();
+        default:
+          return $res;
+      }
+    } else {
+      throw new Exception ("mysqli->query вернула неизвестный обьект");
+    }
+  }
+
+  public function get_affected_rows() {
+    return $this->sql_connect->affected_rows;
+  }
+
+  protected function closeConnection(){
+    $this->sql_connect->close();
+  }
+
+
+}
+
+class db_balancer{
+  private $master_conn;
+  private $slave_conn;
+
+  public function __construct($master_config, $slave_config){
+    $master_conn = new db_connector($master_config);
+    $slave_conn = new db_connector($slave_config);
+  }
+
+  public function do_query($query_text) {
+    return $this->master_conn->query($query_text);
+  }
+}
 class worker {
   //todo добавить описание класса в phpdoc
 	//protected $sql;
@@ -239,6 +314,8 @@ class proxy_worker extends worker {
 class rejik_worker extends worker {
   //todo добавить описание класса в phpdoc
   private $sync_provider;
+  private $db_writer;
+
   // ==========================================================================================================================
   public function __construct ($db_config) {
     //todo добавить описание phpdoc
@@ -247,17 +324,11 @@ class rejik_worker extends worker {
 
     global $config;
     if ($config ['admin_log']==True) logger::init(); //Инициализируем логер
-    //Logger::tmp_init();
-    //Logger::stop();
-    
-//Включаем модуль синхронизации
-//    if ($config['sync_enabled']) {
-//      try {
-//        $this->sync_provider = new SyncProvider();
-//      } catch (exception $e) {}
-//    }
 
+    //Если
   }
+
+
   // ==========================================================================================================================
   // Работа с Категориями (Бан-Листами)
   // ==========================================================================================================================
@@ -1027,6 +1098,22 @@ class rejik_worker extends worker {
       return $res[0];
     }
   }
+
+  public function set_db_var($var_name, $value) {
+    $var_name_safed = $this->sql->real_escape_string($var_name);
+    $var_value_safed = $this->sql->real_escape_string($value);
+
+    $res = $this->do_query("INSERT INTO `variables` (`name`,`value`)
+                            VALUES ('{$var_name_safed}', '{$var_value_safed}')
+                            ON DUPLICATE KEY UPDATE `value` = '{$var_value_safed}';");
+
+    if ($res === NULL) { //Если запись о мастере отсутствует
+      return False;
+    } else {
+      return $res[0];
+    }
+  }
+
 } //end of rejik_worker
   
 /**

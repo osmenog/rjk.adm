@@ -6,6 +6,7 @@ function CheckPermissions() {
 
   try {
     //Подключаемся к REJIK DB
+    //fixme Поидее тут должен выполняться корннект от имени repl_user. Пользователь для записи не запрашивает статус репликации.
     $rjk = new rejik_worker($config['rejik_db']);
     $rjk->do_query("SHOW SLAVE STATUS;");
 

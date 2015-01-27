@@ -152,29 +152,39 @@
       echo "</div>";
       echo "</div>\n";
 
+      echo "<script src='js/jquery.webui-popover.js'></script>";
+
       //Стартуем проверку доступности серверов
       if ($config['use_check_cache'] == False) {
         $hp->check_availability();
         //$hp->determine_master();
       }
+
+      $servers = $hp->get_servers();
+
       try {
-        $hp->check_master_availability();
-      } catch (Exception $e) {
-        echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
+        //Определяем мастер-сервер
+        $hp->determine_master();
+        //$hp->check_master_availability();
+      } catch (mysql_exception $e) {
+        echo "<div class='alert alert-danger'><b>Критическая ошибка при определении мастер сервера:</b><br>{$e->getCode()} : {$e->getMessage()}</div>\n";
       }
 
+      $m_pid = isset($_SESSION['master_id']) ? $_SESSION['master_id'] : -1;
+      $m_available = isset($_SESSION['master_available']) ? $_SESSION['master_available'] : -1;
 
-      //////////////////////////////////////////////////
-      if ($_SESSION['master_id'] == -1) {
+      if ($m_pid == -1) {
         echo "<div class='alert alert-warning'><b>Необходимо назначить мастер-сервер</b></div>";
+      } elseif(!$m_available) {
+        echo "<div class='alert alert-danger'><b>Мастер-сервер</b><br></div>";
       }
-      //////////////////////////////////////////////////
 
       //Сохраняем результаты проверки в открытой сессии. Нужно только для отладки!
       //$hp->save_session();
 
+
       $servers_info = array();
-      foreach ($hp->get_servers() as $srv) {
+      foreach ($servers as $srv) {
         $row = array( "host" => $srv->get_real_hostname(),
                       "is_master"  => FALSE,
                       "pid"  => $srv->get_id(),
@@ -201,11 +211,18 @@
       echo "</thead>\n";
       foreach ($servers_info as $r) {
         echo "<tr>";
-        if ($r['is_ro']) {
-          echo "<td class='text-center'><span class='glyphicon glyphicon-star'></span> ro</td>";
-        } else {
+        if ($m_pid == $r['pid'] && $m_available === TRUE) {
           echo "<td class='text-center'><span class='glyphicon glyphicon-star'></span></td>";
+        } elseif ($m_pid == $r['pid'] && $m_available === FALSE)  {
+          echo "<td class='text-center'><span class='glyphicon glyphicon-star-empty'></span></td>";
+        } else {
+          echo "<td></td>";
         }
+        //if ($r['is_ro']) {
+          //echo "<td class='text-center'><span class='glyphicon glyphicon-star'></span> ro</td>";
+        //} else {
+
+        //}
 
 
         echo "<td>".print_server_hint ($r['host'], $r['pid'])."</td>";
@@ -214,14 +231,20 @@
           if ($r['conn_error'] === FALSE) {
             echo "<td class='text-center'><span class='glyphicon glyphicon-ok'></span></td>";
           } else {
-            echo "<td class='text-center'><span class='glyphicon glyphicon-warning-sign'></span> {$r['conn_error'][0]}</td>";
+            echo "<td class='text-center'>
+                <a id='err{$r['pid']}' class='glyphicon glyphicon-warning-sign' href='#'>Предупреждение</a>
+                <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Предупреждение', trigger: 'hover', placement: 'right-top'});  </script>
+            </td>";
           }
         } else {
-          //fixme Сделать вывод ошибки в виде тултипа
-          echo "<td class='text-center'><span class='glyphicon glyphicon-remove'></span> {$r['conn_error'][0]}</td>";
+
+          echo "<td class='text-center'>
+            <a id='err{$r['pid']}' class='glyphicon glyphicon-remove' href='#'>Ошибка</a>
+            <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Ошибка', trigger: 'hover', placement: 'right-top'});  </script>
+          </td>";
         }
         echo "<td></td>";
-        echo "<td>*</td>";
+        echo "<td><button type='button' onClick='location.href=\"?action=status&switch_master_to={$r['pid']}\"' class='btn btn-primary btn-xs'>Сделать мастером</button></td>";
         echo "<td>*</td>";
 //
 //
@@ -320,7 +343,7 @@
 
     //_print_services_status();
 
-    _print_usersync_status();
+    //_print_usersync_status();
 
     _print_replication_state();
 

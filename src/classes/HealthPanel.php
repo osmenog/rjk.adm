@@ -127,7 +127,12 @@ class HealthPanel {
 
   //Функция меняет режим работы сервера. $id - становится мастером.
   public function switch_master($id) {
-    
+    $check_stages = array ("Проверка состояния текущего сервера",
+                           "Проверка режима работы текущего сервера",
+                           "Сброс бинарных логов",
+                           "Сброс режима работы",
+                           "");
+
     try {
       //Проверяем, существует ли сервер с такоим ID
       $srv = $this->servers_list->get_server_by_id($id);
@@ -167,6 +172,19 @@ class HealthPanel {
         echo "<h3>Cброс логов репликации не выполнен!</h3>";
         throw $e;
       }
+
+      echo "<h2><b>Этап 3.1:</b> Запись в Id мастера в локальную RDB";
+      global $config;
+      //Устанавливаем коннект с локальной базой RDB
+      try {
+        $rjk = new rejik_worker($config['rejik_db']);
+        $rjk->set_db_var('master_id', $id);
+        $rjk->closedb();
+      } catch (Exception $e) {
+        echo "<h3>Запись в Id мастера в локальную RDB не выполнена!</h3>";
+        throw $e;
+      }
+
 
       echo "<h2><b>Этап 4:</b> Выполняем смену мастера на других серверах</h2>\n";
       //Определяем оставшиеся сервера, и отправляем сапрос на смену мастера
@@ -254,7 +272,7 @@ class HealthPanel {
     }
     
     //Сохраняем id  мастерсервера в сессию
-    $_SESSION['master_server_id'] = $m_srv_id;
+    $_SESSION['master_id'] = $m_srv_id;
 
     return $m_srv;
   }
@@ -275,51 +293,65 @@ class HealthPanel {
    */
   public function determine_master() {
     global $config;
+    //Устанавливаем коннект с локальной базой RDB и Получаем значение переменной master_id из базы
+    $rjk = new rejik_worker($config['rejik_db']);
+    $master_pid = $rjk->get_db_var("master_id");
+    $rjk->closedb();
+
+    $_SESSION['master_id'] = -1;
+    $_SESSION['master_available'] = False;
+
+
+    //Если значение переменной по каким-то причинам не удается получить, или такого pid не существует,
+    //то считаем, что МАСТЕР-СЕРВЕР не определен. При этом пользователю должен выводиться АЛЕРТ на главной странице.
+    if ($master_pid === NULL) return FALSE;
+
+    $_SESSION['master_id'] = $master_pid;
+
+    //Проверяем, есть ли мастер в списке серверов
+    $master_srv = $this->servers_list->get_server_by_id($master_pid);
+
+    if ($master_srv === FALSE) return FALSE; //Если нет, то выходим.
+
     try {
-      //Устанавливаем коннект с локальной базой RDB
-      $rjk = new rejik_worker($config['rejik_db']);
-
-      //Получаем значение переменной master_id из базы
-      $master_pid = $rjk->get_db_var("master_id");
-
-      //Если значение переменной по каким-то причинам не удается получить, или такого pid не существует,
-      //то считаем, что МАСТЕР-СЕРВЕР не определен. При этом пользователю должен выводиться АЛЕРТ на главной странице.
-      if ($master_pid !== NULL) {
-
-        $master_srv = $this->servers_list->get_server_by_id($master_pid);
-
-        if ($master_srv === FALSE) {
-          //throw new Exception("Отсутствует сервер с id='{$master_pid}''");
-          $_SESSION['master_id'] = -1;
-        } else {
-          $_SESSION['master_id'] = $master_pid;
-        }
-      } else {
-        $_SESSION['master_id'] = -1;
+      $rjk_master = new rejik_worker(array($master_srv->__toString(), $config['db_user_name'], $config['db_user_pass'], 'rejik'));
+      if ($rjk_master) {
+        $_SESSION['master_available'] = True;
+        $_SESSION['master_host'] = $master_srv->__toString();
       }
-    } catch (Exception $m) {}
+    } catch (Exception $e) {
+      throw $e;
+      //Подавляем исключение.
+    }
+
+    $rjk_master->closedb();
+
+    return TRUE;
   }
 
   public function check_master_availability() {
     global $config;
-    $master_pid = isset($_SESSION['master_id']) ? $_SESSION['master_id'] : -1;
-    if ($master_pid == -1) return FALSE;
+    $m_pid = isset($_SESSION['master_id']) ? $_SESSION['master_id'] : -1;
 
-    try {
-      //Если локальный сервер является мастером
-      if ($master_pid == $this->get_current_id()) {
-        $ro = $this->current_server->is_read_only();
-        //Проверяем доступна ли база для записи
-        if ($ro == TRUE) {
-          //...если недоступна, то снимаем блокировку
-          $this->current_server->disable_read_only();
-        }
-      } else {
-        //
+    //Проверяем, еслть ли мастер сервер в списке серверов
+    $master = $this->get_servers()->get_server_by_id($m_pid);
+    if (!$master) {
+      //Если нет, то считаем, что мастер не доступен
+      $_SESSION['master_available'] = FALSE;
+      return FALSE;
+    } else {
+      //Если сервер есть в списке, то пробуем подключиться к нему под основной учетной записью rejik_adm
+      try {
+        $rjk = new rejik_worker(array($master->__toString(), $config['db_user_name'], $config['db_user_pass'], 'rejik'));
+      } catch (Exception $e) {
+        throw new Exception ("Невозможно проверить доступность МАСТЕР-сервера: ".$e->getMessage(),$e->getCode());
       }
-    } catch (Exception $e) {
-      throw new Exception ("Невозможно проверить доступность МАСТЕР-сервера: ".$e->getMessage(),$e->getCode());
+      $rjk->closedb();
     }
+
+    //$_SESSION['master_available'] = ($master_srv->is_connected()) ? TRUE : FALSE;
+
+
   }
 }
 ?>

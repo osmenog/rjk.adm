@@ -43,7 +43,7 @@ $(document).ready (function() {
 });
 
 var Rejik = {
-  rejik_url: '/rejik2/ajax.php?v=1',    // Путь до AJAX API
+  rejik_url: '/adm/ajax.php?v=1',    // Путь до AJAX API
   visible_urls: 0,                      // Количество ссылок, отображаемых на экране (меняется при удалении или добавлении ссылок)
   real_urls_count: 0,                   // Общее количество ссылок в банлисте
   urls_per_page: 200,                   // Макс. количество ссылок на одной странице
