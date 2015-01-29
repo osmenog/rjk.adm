@@ -6,5 +6,7 @@
 lastcheck.log
 src/users/
 src/banlists/
+install/users/
+install/banlists/
 src/import/
 .idea/

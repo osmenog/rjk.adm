@@ -1,0 +1,19 @@
+﻿USE `rejik`;
+
+STOP SLAVE; 
+RESET MASTER;
+RESET SLAVE;
+START SLAVE;
+
+TRUNCATE TABLE `banlists`;
+TRUNCATE TABLE `checker`;
+TRUNCATE TABLE `log`;
+TRUNCATE TABLE `servers`;
+TRUNCATE TABLE `urls`;
+TRUNCATE TABLE `users`;
+TRUNCATE TABLE `users_acl`;
+TRUNCATE TABLE `users_linked`;
+TRUNCATE TABLE `variables`;
+
+
+SHOW SLAVE STATUS;
