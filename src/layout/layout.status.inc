@@ -40,7 +40,7 @@
 
     try {
       //Подключаемся к RDB и получаем список пользователей
-      $rjk        = new rejik_worker ($config['rejik_db']);
+      $rjk        = new rejik_worker2 ($config['rejik_db']);
       $users_data = $rjk->users_get(FIELDS_LOGINS_AND_ID);
 
       if ($users_data !== 0) { // Если список НЕ пуст, то выводим информацию о пользователях...
@@ -133,7 +133,7 @@
       echo "<div class='alert alert-danger'><b>Невозможно отобразить состояние пользователей:</b><br> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
     }
 
-    $rjk->closedb();
+    //$rjk->closedb();
   }
 
   /**
@@ -174,10 +174,10 @@
       $m_available = isset($_SESSION['master_available']) ? $_SESSION['master_available'] : -1;
 
       if ($m_pid == -1) {
-        echo "<div class='alert alert-warning'><b>Необходимо назначить мастер-сервер</b></div>";
-      } elseif(!$m_available) {
+        echo "<div class='alert alert-warning'><b>Необходимо назначить мастер-сервер</b><br>Все данные будут доступны только для чтения</div>";
+      }/* elseif(!$m_available) {
         echo "<div class='alert alert-danger'><b>Мастер-сервер</b><br></div>";
-      }
+      }*/
 
       //Сохраняем результаты проверки в открытой сессии. Нужно только для отладки!
       //$hp->save_session();
@@ -218,12 +218,10 @@
         } else {
           echo "<td></td>";
         }
-        //if ($r['is_ro']) {
-          //echo "<td class='text-center'><span class='glyphicon glyphicon-star'></span> ro</td>";
-        //} else {
 
-        //}
-
+//        if ($r['is_ro']) {
+//          echo "<span>ro</span>";
+//        }
 
         echo "<td>".print_server_hint ($r['host'], $r['pid'])."</td>";
 
@@ -240,7 +238,7 @@
 
           echo "<td class='text-center'>
             <a id='err{$r['pid']}' class='glyphicon glyphicon-remove' href='#'>Ошибка</a>
-            <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Ошибка', trigger: 'hover', placement: 'right-top'});  </script>
+            <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Ошибка при соединении', trigger: 'hover', placement: 'right-top'});  </script>
           </td>";
         }
         echo "<td></td>";
@@ -314,9 +312,10 @@
     global $config;
 
     //Выполняем проверку прав доступа, и в случае проблем, выводим предупреждение.
-    if ($id === NULL) {
-      include "classes/Notice.php";
-    }
+    //if ($id === NULL) {
+    //  include "classes/Notice.php";
+    //}
+
     //Инициализируем главный обьект
     global $hp;
     $hp = new HealthPanel();
@@ -341,9 +340,9 @@
     echo "<small>Внутренний идентификатор: " . $config['server_id'] . "</small>\n";
     echo "</div>\n";
 
-    //_print_services_status();
+    _print_services_status();
 
-    //_print_usersync_status();
+    _print_usersync_status();
 
     _print_replication_state();
 

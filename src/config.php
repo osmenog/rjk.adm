@@ -3,10 +3,19 @@
 //Настройки соединения для текущего сервера
 // -------------------------------------------------------------
 
+  //ID этого сервера. Такой же как и в конфиге MySQL
+  $config['server_id']        = 3;
+
+  $config['repl_user_name']   = 'repl_user';
+  $config['repl_user_passwd'] = '12341234';
+
+  $config['db_user_name']     = 'rejik_adm';
+  $config['db_user_pass']     = '43214321';
+
   //Параметры БД САМС
   $config  ['sams_db'] = array('localhost', 'sams', 'qwerty', 'squidctrl', 'utf8');
   //Параметры БД Режика
-  $config ['rejik_db'] = array('localhost', 'rejik_adm', 'admin3741', 'rejik', 'utf8');
+  $config ['rejik_db'] = array('localhost', $config['db_user_name'], $config['db_user_pass'], 'rejik', 'utf8');
 
 // -------------------------------------------------------------
 //Вспомогательные опции
@@ -33,11 +42,6 @@
 
   //Секретный ключ сервера
   $config['private_key'] = 'secret';
-
-  //ID этого сервера. Такой же как и в конфиге MySQL
-  $config['server_id']        = 3;
-  $config['repl_user_name']   = 'repl_user';
-  $config['repl_user_passwd'] = 'repl_user';
 
   $config['servers'] = array(
     'proxy2.bankom.omsk.su' => array($config['repl_user_name'], $config['repl_user_passwd'], 1),
