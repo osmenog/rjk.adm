@@ -8,7 +8,7 @@ class slave_connect extends mysql_connection {
 
 }
 
-class worker2 {
+class worker {
 
   protected $master;
   protected $slave;
@@ -25,7 +25,7 @@ class worker2 {
 
   }
 
-  public function __destruct() {
+  public function close_db() {
     if (isset($this->slave)) {
       $this->slave->close_db();
     }

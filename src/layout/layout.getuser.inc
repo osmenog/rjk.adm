@@ -13,10 +13,11 @@
 
     //Получаем список бан-листов, которые не применяются к пользователю.
     $user_banlists = $rejik->user_acl_get($user);
+    if ($user_banlists == 0) $user_banlists = array();
     //echo "<pre>"; print_r($user_banlists); echo "</pre>";
 
     //Получаем список банлистов
-    $banlists = $rejik->banlists_get(true);
+    $banlists = $rejik->banlists_get();
 
     if ($banlists==0) {
       echo "<div class='alert alert-danger'>В базе нет ни одного бан-листа.</div>\n";
@@ -56,7 +57,7 @@
     };
 
     //Выполняем, привязан ли пользователь к каким-либо удаленным банлистам.
-    $banlists = $rejik->banlists_get();
+    $banlists = $rejik->banlists_get_list();
 
     foreach ($user_banlists as $value) {
       //Если бан листа пользователя нет в глобальном списке

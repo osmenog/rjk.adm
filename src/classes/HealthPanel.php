@@ -296,7 +296,7 @@ class HealthPanel {
     //Устанавливаем коннект с локальной базой RDB и Получаем значение переменной master_id из базы
     $rjk = new rejik_worker($config['rejik_db']);
     $master_pid = $rjk->get_db_var("master_id");
-    $rjk->closedb();
+    $rjk->close_db();
 
     $_SESSION['master_id'] = -1;
     $_SESSION['master_available'] = False;
@@ -324,7 +324,7 @@ class HealthPanel {
       //Подавляем исключение.
     }
 
-    $rjk_master->closedb();
+    $rjk_master->close_db();
 
     return TRUE;
   }

@@ -47,7 +47,7 @@
 
             $u_path=$_SERVER['DOCUMENT_ROOT']."/{$config['proj_name']}/users/";
             $b_path=$_SERVER['DOCUMENT_ROOT']."/{$config ['proj_name']}/banlists/";
-            $banlists = $rejik->banlists_get();
+            $banlists = $rejik->banlists_get_list();
 
             foreach ($banlists as $value) {
               echo "<tr>\n";

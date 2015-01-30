@@ -126,7 +126,7 @@
 			global $config;
 			$rejik = new rejik_worker ($config['rejik_db']);
 
-			return $rejik->banlist_get_urls($banlist, true, ($page-1)*$urls_per_page, $urls_per_page);
+			return $rejik->banlist_get_urls($banlist, ($page-1)*$urls_per_page, $urls_per_page);
 		}
 
 

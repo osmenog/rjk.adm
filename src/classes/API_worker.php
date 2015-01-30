@@ -111,7 +111,7 @@ class api_worker {
 
       if (!$rjk->is_banlist($banlist)) throw new api_exception ("Banlist not found",3);
       
-      $urls = $rjk->banlist_get_urls ($banlist, true, $offset, $limit);
+      $urls = $rjk->banlist_get_urls ($banlist, $offset, $limit);
       //echo "{$offset} | {$limit}";
       $json_obj = array ('banlist'=>$banlist,
                          'limit'=>$limit,

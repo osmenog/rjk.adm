@@ -50,7 +50,7 @@ class Checker
 //echo "Start...\n";
 
 //Получаем список банлистов
-    $banlists = $rejik->banlists_get();
+    $banlists = $rejik->banlists_get_list();
     $error_flag = false;
 
 //---------------------------------------------------------------------------------------------------

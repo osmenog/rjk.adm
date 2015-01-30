@@ -4,7 +4,7 @@
 
   try {
     $rejik = new rejik_worker ($config['rejik_db']);
-    $list = $rejik->banlists_get(true);
+    $list = $rejik->banlists_get();
   
     if ($list==0) {
       echo "<div class='alert alert-danger'>В базе нет ни одного бан-листа.</div>\n";

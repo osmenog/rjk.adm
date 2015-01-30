@@ -12,7 +12,6 @@ interface db_connection {
 abstract class mysql_connection implements db_connection {
 
   protected static $instances = array();
-
   protected $db_link;
   protected $db_host;
   protected $db_login;
@@ -47,6 +46,12 @@ abstract class mysql_connection implements db_connection {
     return get_called_class();
   }
 
+  protected function __construct(){}
+  protected function __clone(){}
+  protected function __sleep(){}
+  protected function __wakeup(){}
+
+  // -------------------------------------------------------------------
   protected function _init($db_config) {
     if (isset($db_config[0])) $this->db_host = $db_config[0];
     if (isset($db_config[1])) $this->db_login = $db_config[1];
@@ -63,15 +68,11 @@ abstract class mysql_connection implements db_connection {
     $this->db_link->set_charset("utf8"); //Устанавливаем кодировку соединения с БД Режика
   }
 
-
-
   private function _query($query_text){
-
     $res = $this->db_link->query($query_text);
     //Возвращает FALSE в случае неудачи.
     //В случае успешного выполнения запросов SELECT, SHOW, DESCRIBE или EXPLAIN mysqli_query() вернет объект mysqli_result.
     //Для остальных успешных запросов mysqli_query() вернет TRUE.
-
     if ($res === FALSE) {
       throw new mysql_exception ($this->db_link->error, $this->db_link->errno);
     }
@@ -82,29 +83,54 @@ abstract class mysql_connection implements db_connection {
   public function get_all($query_text) {
     $res = $this->_query($query_text);
 
-    if (!($res instanceof mysqli_result)) {
-      throw new mysql_exception ("bad query");
-    }
+//    if (!($res instanceof mysqli_result)) {
+//      throw new mysql_exception ("bad query");
+//    }
 
-    return $res;
+    if ($res->num_rows == 0) {
+      return 0;
+    } else {
+      return $res;
+    }
+  }
+
+  public function get_all_assoc($query_text) {
+    $res = $this->_query($query_text);
+
+//    if (!($res instanceof mysqli_result)) {
+//      throw new mysql_exception ("bad query");
+//    }
+
+    if ($res->num_rows == 0) return 0;
+
+    $res_assoc=array();
+    while ($row = $res->fetch_assoc()) $res_assoc[] = $row;
+
+    //Очищаем данные, полученные запросом.
+    $res->close();
+
+    return $res_assoc;
   }
 
   public function get_row($query_text) {
     $res = $this->_query($query_text);
 
-    if (!($res instanceof mysqli_result)) {
-      throw new mysql_exception ("bad query");
-    }
+//    if (!($res instanceof mysqli_result)) {
+//      throw new mysql_exception ("bad query");
+//    }
 
-    return ($res->num_rows == 0) ? 0 : $res->fetch_row();
+    $res_val = ($res->num_rows == 0) ? 0 : $res->fetch_row();
+    $res->close();
+
+    return $res_val;
   }
 
   public function get_row_assoc($query_text) {
     $res = $this->_query($query_text);
 
-    if (!($res instanceof mysqli_result)) {
-      throw new mysql_exception ("bad query");
-    }
+//    if (!($res instanceof mysqli_result)) {
+//      throw new mysql_exception ("bad query");
+//    }
 
     return ($res->num_rows == 0) ? 0 : $res->fetch_assoc();
   }
@@ -117,13 +143,13 @@ abstract class mysql_connection implements db_connection {
 
   }
 
+  public function escape_string($text) {
+    return $this->db_link->real_escape_string($text);
+  }
+
   public function close_db() {
     if (isset($this->db_link)) @mysqli_close($this->db_link);
   }
 
-  protected function __construct(){}
-  protected function __clone(){}
-  protected function __sleep(){}
-  protected function __wakeup(){}
 }
 ?>

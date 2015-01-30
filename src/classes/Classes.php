@@ -15,7 +15,7 @@ const AS_RAW = 0;
 const AS_ROW = 1;
 const AS_ASSOC_ROW = 2;
 
-class worker {
+class worker2 {
   //todo добавить описание класса в phpdoc
 	//protected $sql;
   //fixme Исправить видимость свойства. Для прямых запросов к БД будет использоваться do_query;
@@ -85,7 +85,7 @@ class worker {
   }
 } //end of worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
-class proxy_worker extends worker {
+class proxy_worker extends worker2 {
 //todo добавить описание класса в phpdoc
 
 	public function get_userscount() {
@@ -236,7 +236,7 @@ class proxy_worker extends worker {
   }
 } //end of proxy worker
 // -----------------------------------------------------------------------------------------------------------------------------------------------
-class rejik_worker extends worker {
+class rejik_worker2 extends worker2 {
   //todo добавить описание класса в phpdoc
   private $sync_provider;
   private $db_writer;
@@ -1143,6 +1143,7 @@ function set_user_acl($user, $banlists) {
 
     //2. Получаем список бан-листов пользователя
     $user_banlists = $rejik->user_acl_get($user);
+    if ($user_banlists == 0) $user_banlists = array();
 
     //3. Удаляем дубликаты из входящего списка банлистов
     // В данном случае попадание сюда дубликатов невозможно,
