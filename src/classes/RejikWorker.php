@@ -38,7 +38,7 @@ class rejik_worker extends worker {
   public function banlists_get_list() {
     $response_obj = $this->slave->get_all ("SELECT `name` FROM `banlists`;");
 
-    if ($response_obj === 0) return 0;
+    if ($response_obj === 0) return array();
 
     $result = array();
     while ($row = $response_obj->fetch_row()) {
@@ -175,9 +175,14 @@ class rejik_worker extends worker {
     $full_desc  = $this->master->escape_string ($full_desc );
 
     // 1. Проверяем, есть ли банлист с таким именем. Если есть - то исключение.
-    if (array_search($name, $this->banlists_get_list())!==False) {
+    if ($this->is_banlist($name)) {
       throw new rejik_exception("Banlist '{$name}' already exists",1);
     }
+
+//    if (array_search($name, $this->banlists_get_list()) !== 0) {
+//
+//
+//    }
 
     // 2. Фильтруем XSS уязвимости
     $name = htmlspecialchars ($name);

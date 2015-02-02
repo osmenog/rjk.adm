@@ -1,31 +1,50 @@
 <?php
+include_once "classes/HealthPanel.php";
+
 //Получаем флаг подтверждения
 $is_confirm = (isset($_GET['confirm']) ? $_GET['confirm'] : '');
 
-//Если флаг = 1 то выполняем процедуру импорта, инача выводим форму настроек.
-if ($is_confirm == 1) {
+//Проверяем, запущен ли процесс импорта на сервере, являющимся мастером
+try {
+  $m_id = (int) $_SESSION['master_id'];
+  $m_av = $_SESSION['master_available'];
+  $hp = new HealthPanel();
+  $srvrs = $hp->get_servers();
+  $l_id = $hp->get_current_id();
 
-  $importer = import::getInstance();
-
-  //Инициализируем переменные
-  if (isset($_POST['bl_path']) && isset($_POST['usr_path'])) {
-    $importer-> source_bl_dir = $_POST['bl_path'];
-    $importer->source_usr_dir = $_POST['usr_path'];
-
-    try {
-      $importer->start();
-    } catch (Exception $e) {
-      //Если в процессе импорта произошла ошибка
-      echo "<div class='alert alert-danger'><b>Произошла ошибка при выполнении импорта!</b></br>".$e->getMessage()."</div>";
-    }
+  if ($l_id != $m_id) {
+    echo "<div class='alert alert-warning'>Процедуру импорта необходимо запускать на МАСТЕР-сервере (".print_server_hint($srvrs->get_server_by_id($m_id), $m_id).")</div>";
   } else {
-    //Если нет одного из параметров, то выходим.
-    echo "<div class='alert alert-warning'><b>Ошибка! Не передан один из параметров.</b></br>Процесс импорта остановлен.</div>";
+    //Если флаг = 1 то выполняем процедуру импорта, инача выводим форму настроек.
+    if ($is_confirm == 1) {
+
+      $importer = import::getInstance();
+
+      //Инициализируем переменные
+      if (isset($_POST['bl_path']) && isset($_POST['usr_path'])) {
+        $importer-> source_bl_dir = $_POST['bl_path'];
+        $importer->source_usr_dir = $_POST['usr_path'];
+
+        try {
+          $importer->start();
+        } catch (Exception $e) {
+          //Если в процессе импорта произошла ошибка
+          echo "<div class='alert alert-danger'><b>Произошла ошибка при выполнении импорта!</b></br>".$e->getMessage()."</div>";
+        }
+      } else {
+        //Если нет одного из параметров, то выходим.
+        echo "<div class='alert alert-warning'><b>Ошибка! Не передан один из параметров.</b></br>Процесс импорта остановлен.</div>";
+      }
+
+    } else {
+      print_form();
+    }
   }
 
-} else {
-  print_form();
+} catch (Exception $e) {
+  echo "<div class='alert alert-danger'><b>Произошла ошибка при выполнении импорта!</b></br>".$e->getMessage()."</div>";
 }
+
 
 function print_form() {
   ?>

@@ -179,9 +179,8 @@ class HealthPanel {
       try {
         $rjk = new rejik_worker($config['rejik_db']);
         $rjk->set_db_var('master_id', $id);
-        $rjk->closedb();
       } catch (Exception $e) {
-        echo "<h3>Запись в Id мастера в локальную RDB не выполнена!</h3>";
+        echo "<h3>Запись ID мастера в RDB не выполнена!</h3>";
         throw $e;
       }
 

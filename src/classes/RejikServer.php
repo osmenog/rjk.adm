@@ -201,7 +201,7 @@ class RejikServer
 
     //Функция переключает режим репликации на другой сервер
     $mysqli = $this->sql_obj;
-    $ip = gethostbyname($master_server->get_real_host_name());
+    $ip = gethostbyname($master_server->get_real_hostname());
     $query = "CHANGE MASTER TO MASTER_HOST = \"{$ip}\",
                        MASTER_USER = \"{$master_server->username}\",
                        MASTER_PASSWORD = \"{$master_server->password}\",

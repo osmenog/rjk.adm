@@ -172,7 +172,7 @@ class sams_sync {
 
   public function __destruct() {
     $this->sams_conn->closedb();
-    $this->rejik_conn->closedb();
+    //$this->rejik_conn->closedb();
   }
 
   /**
