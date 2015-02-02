@@ -604,6 +604,19 @@ class rejik_worker extends worker {
     return $res;
   }
 
+  public function is_user_linked ($uid, $pid) {
+    $query = "SELECT `id`, `user_id`, `assign_pid` FROM `users_linked` WHERE user_id={$uid} AND assign_pid={$pid};";
+    $response = $this->master->query($query);
+
+    //Если в результате запроса ничего не извлечено
+    if ($response->num_rows == 0) {
+      return FALSE;
+    } else {
+      return TRUE;
+    }
+
+  }
+
   public function is_user ($username) {
     //защищаемся
     $username = $this->slave->escape_string($username);
@@ -616,6 +629,129 @@ class rejik_worker extends worker {
       return TRUE;
     } else {
       throw new Exception ("В базе содержится несколько пользователей, имеющих  логин {$username}.<br>Проверьте БД");
+    }
+  }
+
+  public function user_link_with ($uid, $pid) {
+    $query = "INSERT INTO users_linked (user_id, assign_pid) VALUES('{$uid}', {$pid});";
+    $response = $this->master->query($query);
+
+    // Целое число, большее нуля, означает количество затронутых или полученных строк.
+    // Ноль означает, что запросом вида UPDATE не обновлено ни одной записи, или что ни одна строка не соответствует условию WHERE в запросе, или что запрос еще не был выполнен.
+    // Значение -1 указывает на то, что запрос вернул ошибку.
+    //Замечание:
+    // Если число затронутых строк больше чем максимальное значение int ( PHP_INT_MAX ),
+    // то число затронутых строк будет возвращено в строковом виде (string).
+
+    $ar = $this->master->affected_rows();
+    if ($ar === 0) {
+      return FALSE;
+    } else {
+      return TRUE;
+    }
+
+  }
+
+  public function user_unlink_from ($uid, $pid) {
+    $query = "DELETE FROM `users_linked` WHERE `user_id`={$uid} AND `assign_pid`={$pid}";
+    $response = $this->master->query($query);
+
+    $ar = $this->master->affected_rows();
+    if ($ar === 0) {
+      return FALSE;
+    } else {
+      return TRUE;
+    }
+  }
+
+  public function user_update_data ($userdata) {
+    if ( !is_array($userdata) ) throw new InvalidArgumentException ("Входящие данные не являются массивом");
+
+    // Определяем элементы массива, которые должны быть в переменной $userdata
+    $keys = array ("name", "quotes", "enabled", "passwd", "nick");
+    $ud_keys = array_keys($userdata);
+    $diff = array_diff($keys, $ud_keys);
+    if ( !empty($diff) ) throw new InvalidArgumentException ("Во входящих данных отсутствуют свойства: [".print_r($diff, true)."]" );
+
+    foreach ($keys as $k) {
+      if ( !isset($userdata[$k]) ) throw new InvalidArgumentException ("У элемента [{$k}] отсутствует значение" );
+    }
+
+    $login=$userdata['nick'];
+    $name = trim($userdata['family']." ".$userdata['name']." ".$userdata['soname']);
+    $sams_quotes = $userdata['quotes'];
+    $sams_enabled = $userdata['enabled'];
+    $sams_passwd = $userdata['passwd'];
+
+    $query = "UPDATE `users` SET
+                `name`         = '{$name}'   ,
+                `sams_quotes`  = '{$sams_quotes}' ,
+                `sams_enabled` = '{$sams_enabled}',
+                `password`     = '{$sams_passwd}'
+                WHERE `login`  ='{$login}';";
+
+    $response = $this->master->query($query);
+    $ar = $this->master->affected_rows();
+
+    if ($ar === 0) {
+      return FALSE;
+    } else {
+      return TRUE;
+    }
+  }
+
+  public function user_delete ($uid) {
+    $query = "DELETE FROM `users` WHERE `id` = {$uid};";
+    $response = $this->master->query($query);
+
+    $ar = $this->master->affected_rows();
+    if ($ar === 0) {
+      return FALSE;
+    } else {
+      return TRUE;
+    }
+  }
+
+  public function user_create ($pid, $userdata) {
+    if ( !is_array($userdata) ) throw new InvalidArgumentException ("Входящие данные не являются массивом");
+
+    // Определяем элементы массива, которые должны быть в переменной $userdata
+    $keys = array ("nick", "name", "family", "soname", "passwd",  "quotes", "group", "domain", "shablon", "quotes", "enabled", "ip", "ipmask");
+    $ud_keys = array_keys($userdata);
+    $diff = array_diff($keys, $ud_keys);
+    if ( !empty($diff) ) throw new InvalidArgumentException ("Во входящих данных отсутствуют свойства: [".print_r($diff, true)."]" );
+
+    foreach ($keys as $k) {
+      if ( !isset($userdata[$k]) ) throw new InvalidArgumentException ("У элемента [{$k}] отсутствует значение" );
+    }
+
+    $query = "INSERT INTO users
+                (login,        proxy_id,    name,
+                 password,     sams_group,  sams_domain,
+                 sams_shablon, sams_quotes, sams_enabled,
+                 sams_ip,      sams_ip_mask
+                )
+              VALUES(
+                 '".strtolower(trim($userdata['nick']))."',
+                  {$pid},
+                 '".trim($userdata['family']." ".$userdata['name']." ".$userdata['soname'])."',
+                 '{$userdata['passwd' ]}',
+                 '{$userdata['group'  ]}',
+                 '{$userdata['domain' ]}',
+                 '{$userdata['shablon']}',
+                  {$userdata['quotes' ]},
+                  {$userdata['enabled']},
+                 '{$userdata['ip'     ]}',
+                 '{$userdata['ipmask' ]}'
+              )";
+
+    $response = $this->master->query($query);
+
+    $ar = $this->master->affected_rows();
+    if ($ar === 0) {
+      return FALSE;
+    } else {
+      return TRUE;
     }
   }
 
@@ -647,30 +783,30 @@ class rejik_worker extends worker {
   // ==========================================================================================================================
   public function import_from_csv($csv_file_path, $table, $fields) {
   //todo Данный функционал временно отключен
-    echo "<pre>Функционал import_from_csv временно отключен</pre>";
+   // echo "<pre>Функционал import_from_csv временно отключен</pre>";
 
-//    $response = $this->master->query("TRUNCATE TABLE {$table}");
-//    if (!$response) {
-//      throw new Exception ("Ошибка при очистке таблицы {$table}: (".$this->sql->errno.") ".$this->sql->error, $this->sql->errno);
-//    }
-//
-//    $query_txt = "LOAD DATA LOCAL INFILE '{$csv_file_path}' REPLACE INTO TABLE `{$table}` FIELDS TERMINATED BY ';' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n'" ;
-//    //"(`url`, `banlist`)";
-//
-//    $t="("; $max_fields = count($fields);
-//    for ($i = 0; $i <= $max_fields-1; $i++) {
-//      $t .= "`{$fields[$i]}`";
-//      if ($i != $max_fields-1) $t.=", ";
-//    }
-//    $t.=")";
-//    $query_txt.= " ".$t;
-//
-//    $response = $this->sql->query($query_txt);
-//    if (!$response) {
-//      throw new Exception ("Ошибка при импорте CSV в БД: (".$this->sql->errno.") ".$this->sql->error, $this->sql->errno);
-//    }
-//    return $this->sql->affected_rows;
-//    //if ($response->num_rows == 0) return 0;
+    $response = $this->master->query("TRUNCATE TABLE {$table}");
+    if (!$response) {
+      throw new Exception ("Ошибка при очистке таблицы {$table}: (".$this->master->errno.") ".$this->master->error, $this->master->errno);
+    }
+
+    $query_txt = "LOAD DATA LOCAL INFILE '{$csv_file_path}' REPLACE INTO TABLE `{$table}` FIELDS TERMINATED BY ';' ENCLOSED BY '\"' ESCAPED BY '\\\\' LINES TERMINATED BY '\\n'" ;
+    //"(`url`, `banlist`)";
+
+    $t="("; $max_fields = count($fields);
+    for ($i = 0; $i <= $max_fields-1; $i++) {
+      $t .= "`{$fields[$i]}`";
+      if ($i != $max_fields-1) $t.=", ";
+    }
+    $t.=")";
+    $query_txt.= " ".$t;
+
+    $response = $this->master->query($query_txt);
+    if (!$response) {
+      throw new Exception ("Ошибка при импорте CSV в БД: (".$this->master->errno.") ".$this->master->error, $this->master->errno);
+    }
+    return $this->sql->affected_rows;
+    //if ($response->num_rows == 0) return 0;
   }
 
   // ==========================================================================================================================
@@ -740,6 +876,19 @@ class rejik_worker extends worker {
     return $res;
   }
 
+
+
+} //end of rejik_worker
+
+
+class variable_worker extends worker {
+
+  public function __construct ($db_config) {
+    parent::__construct($db_config);
+
+    Logger::init(); //Инициализируем логер
+  }
+
   public function get_db_var($var_name) {
     $var_name_safed = $this->slave->escape_string($var_name);
 
@@ -766,7 +915,6 @@ class rejik_worker extends worker {
       return $res[0];
     }
   }
-
-} //end of rejik_worker
+}
 
 ?>

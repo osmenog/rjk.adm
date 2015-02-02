@@ -9,4 +9,8 @@ CREATE USER 'rejik_adm'@'%';
 GRANT ALL ON `rejik`.* TO 'rejik_adm'@'%';
 SET PASSWORD FOR 'rejik_adm'@'%' = PASSWORD ('43214321');
 
+-- CREATE USER 'sams'@'localhost';
+-- GRANT ALL ON `squidctrl`.* TO 'sams'@'localhost';
+-- SET PASSWORD FOR 'sams'@'localhost' = PASSWORD ('qwerty');
+
 FLUSH PRIVILEGES;

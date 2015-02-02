@@ -2,7 +2,8 @@
 include_once "config.php";
 include_once "classes/Logger.php";
 include_once "classes/HealthPanel.php";
-include_once "classes/Classes.php";
+//include_once "classes/Classes.php";
+include_once "classes/RejikWorker.php";
 include_once "classes/Exceptions.php";
 include_once "classes/API_worker.php";
 

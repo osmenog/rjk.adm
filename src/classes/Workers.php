@@ -19,9 +19,9 @@ class worker {
     try {
       $config['db_user_name']     = 'rejik_adm';
       $config['db_user_pass']     = '43214321';
-      $this->master = master_connect::getInstance(array('osme-n', $config['db_user_name'], $config['db_user_pass'], 'rejik', 'utf8'));
+      $this->master = master_connect::getInstance(array('oib01', $config['db_user_name'], $config['db_user_pass'], 'rejik', 'utf8'));
     } catch (Exception $e) {
-      echo "[m] ".$e->getMessage();
+      //echo "[m] ".$e->getMessage();
       $this->master = & $this->slave;
     }
 

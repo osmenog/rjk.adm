@@ -29,7 +29,7 @@ try {
           $importer->start();
         } catch (Exception $e) {
           //Если в процессе импорта произошла ошибка
-          echo "<div class='alert alert-danger'><b>Произошла ошибка при выполнении импорта!</b></br>".$e->getMessage()."</div>";
+          echo "<div class='alert alert-danger'><b>Произошла ошибка при выполнении импорта!</b></br>".$e->getMessage()." [".$e->getTraceAsString()."]</div>";
         }
       } else {
         //Если нет одного из параметров, то выходим.
@@ -160,7 +160,7 @@ class import {
     global $config;
 
     //Проверяем, существует ли csv файл с прошлого импорта
-    $this->csv_bl_path = "/tmp/import_bl.csv";
+    $this->csv_bl_path = $config['tmp_dir_path']."import_bl.csv";
     if (file_exists($this->csv_bl_path)) {
       if (!unlink($this->csv_bl_path)) {
         throw new Exception("Не могу удалить файл: ".$this->csv_bl_path);
@@ -200,7 +200,7 @@ class import {
     global $config;
 
     //Проверяем, существует ли csv файл с прошлого импорта
-    $this->csv_usr_path = "/tmp/import_usr.csv";
+    $this->csv_usr_path = $config['tmp_dir_path']."import_usr.csv";
     if (file_exists($this->csv_usr_path)) {
       if (!unlink($this->csv_usr_path)) {
         throw new Exception("Не могу удалить файл: ".$this->csv_usr_path);
@@ -264,7 +264,7 @@ class import {
     }
 
     //Открываем csv файл
-    $hdl = fopen($this->csv_bl_path, "a");
+    @$hdl = fopen($this->csv_bl_path, "a");
     if (!$hdl) {
       echo "Не могу открыть файл {$this->csv_bl_path}\n";
       return FALSE;

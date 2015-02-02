@@ -177,8 +177,9 @@ class HealthPanel {
       global $config;
       //Устанавливаем коннект с локальной базой RDB
       try {
-        $rjk = new rejik_worker($config['rejik_db']);
-        $rjk->set_db_var('master_id', $id);
+        $vw = new variable_worker($config['rejik_db']);
+        $vw->set_db_var('master_id', $id);
+        $vw->close_db();
       } catch (Exception $e) {
         echo "<h3>Запись ID мастера в RDB не выполнена!</h3>";
         throw $e;
@@ -293,9 +294,9 @@ class HealthPanel {
   public function determine_master() {
     global $config;
     //Устанавливаем коннект с локальной базой RDB и Получаем значение переменной master_id из базы
-    $rjk = new rejik_worker($config['rejik_db']);
-    $master_pid = $rjk->get_db_var("master_id");
-    $rjk->close_db();
+    $vw = new variable_worker($config['rejik_db']);
+    $master_pid = $vw->get_db_var("master_id");
+    $vw->close_db();
 
     $_SESSION['master_id'] = -1;
     $_SESSION['master_available'] = False;

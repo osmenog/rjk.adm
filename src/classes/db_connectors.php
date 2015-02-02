@@ -140,7 +140,7 @@ abstract class mysql_connection implements db_connection {
   }
 
   public function affected_rows(){
-
+    return $this->db_link->affected_rows;
   }
 
   public function escape_string($text) {

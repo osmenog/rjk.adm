@@ -9,6 +9,8 @@
 
 USE rejik;
 
+RESET MASTER;
+
 DROP TABLE IF EXISTS banlists;
 CREATE TABLE IF NOT EXISTS banlists (
   id int(11) NOT NULL AUTO_INCREMENT,

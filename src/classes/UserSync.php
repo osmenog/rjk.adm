@@ -1,5 +1,6 @@
 <?php
 include_once "classes/Logger.php";
+
 function do_sync() {
   function display_content($sp, $users_to_copy, $users_to_remove, $conflict_users) {
     if (count($users_to_copy) == 0) {
@@ -23,6 +24,7 @@ function do_sync() {
       print_table($logins_with_names, "Конфликтные пользователи", 3);
     }
   }
+
   function users_compare (array $a, array $b) {
     //Функция необходима для array_udiff
     return strcmp($a['login'], $b['login'] );
@@ -32,7 +34,9 @@ function do_sync() {
   echo "<h1>SYNC!</h1>";
 
   try {
-    //FileLogger::init('user_sync.log');
+    //По надобности включаем файловый логгер синхронизации пользователей
+    if ($config['user_sync_extended_log']) FileLogger::init('user_sync.log');
+
     $sp = new sams_sync($config['server_id']);
     $sp->do_sync();
 
@@ -47,68 +51,8 @@ function do_sync() {
   }
 
   return True;
-
-  //------------------------------------------
-//  try {
-//    $sp = new sams_sync($config['server_id']);
-//
-//    //Получаем список пользователей SAMS
-//    $sams_users = $sp->get_sams_logins();
-//    //echo "<pre>"; print_r($sams_users); echo "</pre>";
-//
-//    if (count($sams_users) == 0) {
-//      echo "<p>База данных SAMS пуста. Нечего копировать</p>\n";
-//      return False;
-//    }
-//
-//    //Получаем пользователей режика, привязанных к серверу.
-//    //Получаем ВСЕХ пользователей REJIK DB
-//    $rejik_users = $sp->get_rejik_logins();
-//    echo "<pre>"; print_r($rejik_users); echo "</pre>";
-//
-//    //Формируем список пользователей, которых нужно перенести слева -> направо
-//    // (пользователи, которые были созданы в SAMS)
-//    //$users_to_copy   = array_diff ($sams_users, $rejik_users);
-//    $users_to_copy = array_udiff ($sams_users, $rejik_users, "users_compare");
-//
-//    // (пользователи, которые были удалены в SAMS, но остиались в REJIKDB
-//    $users_to_remove = array_udiff ($rejik_users, $sams_users, "users_compare");
-//
-//    //Проверяем, были ли пользователи $users_to_copy добавлены в REJIK DB ранее, но для других прокси.
-//    $conflict_users = $sp->check_users_for_other_pids($users_to_copy);
-//
-//    //Удаляем $conflict_users из списка пользователей на копирование
-//    if (count($conflict_users) != 0) {
-//      foreach ($users_to_copy as $k => $row) {
-//        foreach ($conflict_users as $c_row) {
-//          if ($row['login'] == $c_row['login']) unset ($users_to_copy[$k]);
-//        }
-//      }
-//    }
-//
-//    //echo "<pre>"; print_r($users_to_copy); echo "</pre>";
-//    //echo "<pre>"; print_r($users_to_remove); echo "</pre>";
-//    //echo "<pre>"; print_r($conflict_users); echo "</pre>";
-//
-//    //Копируем подготовленных пользователей в REJIK DB
-//    $sp->copy_to_rejik($users_to_copy);
-//
-//    //Подключаем конфликтных пользователей к нашему прокси
-//    $users_to_link = $sp->link_users_to_proxy($conflict_users);
-//
-//    //Обрабатываем пользователей, помеченных на удаление. Перемещаем их в специальную группу SAMS
-//    //$sp->remove_users($users_to_remove);
-//
-//
-//    //Выводим на экран различную информацию о ходе синхронизации.
-//    display_content($sp, $users_to_copy, $users_to_remove, $users_to_link);
-//
-//
-//  } catch (Exception $e) {
-//      echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/><pre>{$e->getTraceAsString()}</pre></div>\n";
-//  }
-
 }
+
 function print_table($printable_array, $title, $id) {
   //Функция, выводит на экран одну панельку, содержащую список пользователей $printable_array
   if (count($printable_array) == 0) return;
@@ -349,18 +293,16 @@ class sams_sync {
       $local_pid = $this->server_id;
 
       //Проверяем, был ли пользователь подключен ранее...
-      $query = "SELECT `id`, `user_id`, `assign_pid` FROM `users_linked` WHERE user_id={$uid} AND assign_pid={$local_pid};";
-      $res = $this->rejik_conn->do_query($query);
-      if ($res->num_rows == 0) {
+      if ( !$this->rejik_conn->is_user_linked($uid, $local_pid) ) {
         //Если не был подключен, то подключаем пользователя:
-        $query = "INSERT INTO users_linked (user_id, assign_pid) VALUES('{$uid}', {$local_pid});";
-        $res = $this->rejik_conn->do_query($query);
+
+        $insert_result = $this->rejik_conn->user_link_with($uid, $local_pid);
 
         //Создаем пользователя в САМС
         //$this->sams_conn->sams_create_user($row);
 
         //fixme Придумать код для сообщения
-        if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
+        if ($insert_result) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
         $row['assign_pid'] = $local_pid;
         $linked_users[] = $row;
       };
@@ -389,15 +331,13 @@ class sams_sync {
       $local_pid = $this->server_id;
 
       //Проверяем, был ли пользователь подключен ранее...
-      $query = "SELECT `id`, `user_id`, `assign_pid` FROM `users_linked` WHERE user_id={$uid} AND assign_pid={$local_pid};";
-      $res = $this->rejik_conn->do_query($query);
-
-      if ($res->num_rows != 0) {
+      if ( $this->rejik_conn->is_user_linked($uid, $local_pid) ) {
         //Если был подключен, то отключаем пользователя:
-        $query = "DELETE FROM `users_linked` WHERE `user_id`={$uid} AND `assign_pid`={$local_pid}";
-        $res = $this->rejik_conn->do_query($query);
+
+        $unlink_result = $this->rejik_conn->user_unlink_from ($uid, $local_pid);
+
         //fixme Придумать код для сообщения
-        if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был отключен от прокси (pid={$local_pid})","",-1);
+        if ($unlink_result) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был отключен от прокси (pid={$local_pid})","",-1);
         $unlinked_users[$key]['result'] = 'True';
       }else {
         //Если не был подключен, то не обрабатываем его.
@@ -415,52 +355,14 @@ class sams_sync {
 
     foreach ($users as $row) {
       //$user_data = $this->sams_userdata[$v];
-      $pid = $this->server_id;
-      $name = trim($row['family']." ".$row['name']." ".$row['soname']);
-      $login = strtolower(trim($row['nick']));
-      $password     = $row['passwd' ];
-      $sams_group   = $row['group'  ];
-      $sams_domain  = $row['domain' ];
-      $sams_shablon = $row['shablon'];
-      $sams_quotes  = $row['quotes' ];
-      $sams_enabled = $row['enabled'];
-      $sams_ip      = $row['ip'     ];
-      $sams_mask    = $row['ipmask' ];
-
-
       //$name = iconv("ISO-8859-5","CP1251", $name);
       //$name = iconv("windows-1251","UTF-8", $name);
+      $login = strtolower(trim($row['nick']));
 
-      $query = "INSERT INTO users
-                (login,
-                 proxy_id,
-                 name,
-                 password,
-                 sams_group,
-                 sams_domain,
-                 sams_shablon,
-                 sams_quotes,
-                 sams_enabled,
-                 sams_ip,
-                 sams_ip_mask
-                )
-                VALUES(
-                 '{$login}',
-                  {$pid},
-                 '{$name}',
-                 '{$password}',
-                 '{$sams_group}',
-                 '{$sams_domain}',
-                 '{$sams_shablon}',
-                 {$sams_quotes},
-                 {$sams_enabled},
-                 '{$sams_ip}',
-                 '{$sams_mask}'
-                )";
-      //" ON DUPLICATE KEY UPDATE name=VALUES(name), age=VALUES(age)";
-      $res = $this->rejik_conn->do_query($query);
+      $cu_result = $this->rejik_conn->user_create($this->server_id, $row);
+
       //fixme Присвоить код для сообщения
-      if ($res) Logger::add(0,"Пользователь {$login} был скопирован из SAMS в RDB","",-1,"sams_sync");
+      if ($cu_result) Logger::add(0,"Пользователь {$login} был скопирован из SAMS в RDB","",-1,"sams_sync");
     }
 
     return True;
@@ -701,22 +603,11 @@ class sams_sync {
     //Обрабвтываем каждого конфликтного пользователя
     foreach ($updated_users as $row) {
       $login=$row['nick'];
-      $name = trim($row['family']." ".$row['name']." ".$row['soname']);
-      $sams_quotes = $row['quotes'];
-      $sams_enabled = $row['enabled'];
-      $sams_passwd = $row['passwd'];
 
       //Проверяем, был ли пользователь подключен ранее...
-      $query = "UPDATE `users` SET
-                `name`    = '{$name}'   ,
-                `sams_quotes`  = '{$sams_quotes}' ,
-                `sams_enabled` = '{$sams_enabled}',
-                `password`  = '{$sams_passwd}'
-                WHERE `login`='{$login}';";
+      $uu_result = $this->rejik_conn->user_update_data($row);
 
-      $res = $this->rejik_conn->do_query($query);
-      //fixme добавить возможность перечисления атрибутов
-      if ($res) Logger::add(0,"У пользователя {$login} были обновлены атрибуты","",-1,"sams_sync");
+      if ($uu_result) Logger::add(0,"У пользователя {$login} были обновлены атрибуты","",-1,"sams_sync");
     }
 
     return $updated;
@@ -734,10 +625,9 @@ class sams_sync {
       $login = $row['login'];
       $pid = $row['proxy_id'];
 
-      $query = "DELETE FROM `users` WHERE `id` = {$uid};";
-      $res = $this->rejik_conn->do_query($query);
+      $du_result = $this->rejik_conn->user_delete($uid);
 
-      if ($res) Logger::add(0,"Пользователь {$login} (id={$uid}, pid={$pid}) был удален в ходе синхронизации","",-1,"sams_sync");
+      if ($du_result) Logger::add(0,"Пользователь {$login} (id={$uid}, pid={$pid}) был удален в ходе синхронизации","",-1,"sams_sync");
     }
   }
 }
