@@ -119,13 +119,16 @@ class import {
 
       echo "<br/><h2>Импорт запрещенных URL адресов в БД</h2>";
       // Инициируем соединение с режикомю
-      $rejik = new rejik_worker($config['rejik_db']);
+      $master_cfg = HealthPanel::get_master_config();
+      $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
       $res = $rejik->import_from_csv($this->csv_bl_path, 'urls', array('url','banlist'));
       echo "<p>В БД импортировано: {$res} записей</p>\n";
 
       echo "<br/><h2>Импорт пользовательских привилегий в БД</h2>";
       // Инициируем соединение с режикомю
-      $rejik = new rejik_worker($config['rejik_db']);
+      $master_cfg = HealthPanel::get_master_config();
+      $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
+
       $res = $rejik->import_from_csv($this->csv_usr_path, 'users_acl', array('nick','banlist'));
       echo "<p>В БД импортировано: {$res} записей</p>\n";
 
@@ -141,10 +144,8 @@ class import {
     if (count($this->bl_folders)==0) throw new Exception ("Список банлистов не получен!");
 
     //Подключаемся к БД режика
-    $rejik = new rejik_worker($config['rejik_db']);
-
-
-    //$rejik->sql->query("");
+    $master_cfg = HealthPanel::get_master_config();
+    $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
 
     //По очереди перебираем список банлистов, и создаем их в базе
     foreach ($this->bl_folders as $v) {
@@ -328,7 +329,8 @@ class import {
 
     try {
       // Инициируем соединение с режикомю
-      $rejik = new rejik_worker($config['rejik_db']);
+      $master_cfg = HealthPanel::get_master_config();
+      $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
       $res = $rejik->import_from_csv($this->csv_file_path, 'urls', array('url','banlist'));
     } catch (Exception $e) {
       throw $e;

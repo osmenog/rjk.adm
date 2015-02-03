@@ -33,7 +33,6 @@ class RejikServer
   }
   
   public function __destruct() {
-    if ($this->sql_obj !== null) $this->sql_obj->close();
   }
   
   public function __toString() {
@@ -59,6 +58,11 @@ class RejikServer
     }
   }
   // -------------------------------------------------------------------------------------------------------
+
+  public function close_db(){
+    if ($this->sql_obj !== null && $this->sql_connected != False) $this->sql_obj->close();
+  }
+
   /**
    * Функция возвращает последнюю ошибку при подключении к SQL серверу
    * @return array|bool Возвращает массив с ошибкой если она возникала ранее.
@@ -332,8 +336,6 @@ class RejikServer
   public function is_read_only() {
     return $this->is_read_only;
   }
-
-
 
 }
 ?>

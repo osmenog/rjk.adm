@@ -1,9 +1,11 @@
 <?php
   include_once "config.php";
+  include_once "classes/HealthPanel.php";
   global $config;
 
   try {
-    $rejik = new rejik_worker ($config['rejik_db']);
+    $master_cfg = HealthPanel::get_master_config();
+    $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
 
     //Проверяем, зарегистрирован пользователь в системе
     if ( ($rejik->is_user($user)) === FALSE ) {

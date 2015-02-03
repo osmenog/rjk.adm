@@ -7,7 +7,9 @@
   //Выводим список пользователей, зарегистрированных на прокси
   //$prx = new proxy_worker ($config['sams_db']);
   //$list = $prx->get_userslist();
-  $rjk = new rejik_worker2($config['rejik_db']);
+  $master_cfg = HealthPanel::get_master_config();
+  $rjk = new rejik_worker ($config['rejik_db'], $master_cfg);
+
   $list = $rjk->users_get(FIELDS_LOGINS_AND_ID);
 
   echo "  <div class='page-header'>\n";

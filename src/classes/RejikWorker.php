@@ -1,6 +1,6 @@
 <?php
 include_once "classes/Workers.php";
-
+include_once "classes/HealthPanel.php";
 include_once "classes/Exceptions.php";
 include_once "classes/Logger.php";
 include_once "classes/Checker.php";
@@ -8,9 +8,9 @@ include_once "classes/Checker.php";
 
 class rejik_worker extends worker {
   // ==========================================================================================================================
-  public function __construct ($db_config) {
+  public function __construct ($db_config, $master_config = FALSE) {
     //todo добавить описание phpdoc
-    parent::__construct($db_config);
+    parent::__construct($db_config, $master_config);
 
     global $config;
     if ($config ['admin_log']==True) logger::init(); //Инициализируем логер
@@ -56,6 +56,8 @@ class rejik_worker extends worker {
    * @throws mysql_exception
    */
   private function banlist_set_crc ($banlist, $crc) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     if (count($crc) == 0) return false;
     $query = "UPDATE banlists SET `crc`=UNHEX('{$crc}') WHERE `name`='{$banlist}';";
     $response = $this->master->query($query);
@@ -84,6 +86,8 @@ class rejik_worker extends worker {
    * @throws mysql_exception
    */
   private function banlist_set_user_crc ($banlist, $user_crc) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     if (count($user_crc) == 0) return false;
     $query = "UPDATE banlists SET `users_crc`=UNHEX('{$user_crc}') WHERE `name`='{$banlist}';";
     $response = $this->master->query($query);
@@ -170,6 +174,8 @@ class rejik_worker extends worker {
    * @throws rejik_exception
    */
   public function banlist_create ($name, $short_desc, $full_desc='') {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     $name       = $this->master->escape_string ($name      );
     $short_desc = $this->master->escape_string ($short_desc);
     $full_desc  = $this->master->escape_string ($full_desc );
@@ -178,11 +184,6 @@ class rejik_worker extends worker {
     if ($this->is_banlist($name)) {
       throw new rejik_exception("Banlist '{$name}' already exists",1);
     }
-
-//    if (array_search($name, $this->banlists_get_list()) !== 0) {
-//
-//
-//    }
 
     // 2. Фильтруем XSS уязвимости
     $name = htmlspecialchars ($name);
@@ -304,6 +305,8 @@ class rejik_worker extends worker {
    * @throws rejik_exception
    */
   public function banlist_add_url ($banlist, $url) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     $dup = $this->find_duplicate($url, $banlist);
     if ($dup!=0 and is_array($dup)) {
       throw new rejik_exception("URL уже существует в банлисте {$banlist}",5);
@@ -334,6 +337,8 @@ class rejik_worker extends worker {
    * @throws rejik_exception
    */
   public function banlist_change_url ($banlist, $id, $new_url_name) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     //Проверяем, существует ли в банлисте URL с новым именем.
     $dup = $this->find_duplicate($new_url_name, $banlist);
     if ($dup!=0 and is_array($dup)) {
@@ -353,6 +358,8 @@ class rejik_worker extends worker {
    * Удаляет заданный URL из банлиста
    */
   public function banlist_remove_url ($banlist, $id) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     //Получаем значение url по заданному id
     $query = "SELECT `url` FROM `urls` WHERE `banlist`='{$banlist}' AND `id`={$id};";
     $response = $this->master->query($query);
@@ -442,6 +449,8 @@ class rejik_worker extends worker {
    * @throws mysql_exception
    */
   public function user_acl_add ($user, $banlist) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     //Проверяем, существует ли банлист
     //fixme Придумать код для исключения
     if (!($this->is_banlist($banlist))) throw new Exception ("Банлист <b>{$banlist}</b> отсутствует в базе!");
@@ -463,6 +472,8 @@ class rejik_worker extends worker {
   }
 
   public function user_acl_remove ($user, $banlist) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     //todo добавить описание phpdoc
     //Проверяем, существует ли банлист
     //fixme Придумать код для исключения
@@ -605,6 +616,8 @@ class rejik_worker extends worker {
   }
 
   public function is_user_linked ($uid, $pid) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     $query = "SELECT `id`, `user_id`, `assign_pid` FROM `users_linked` WHERE user_id={$uid} AND assign_pid={$pid};";
     $response = $this->master->query($query);
 
@@ -633,6 +646,8 @@ class rejik_worker extends worker {
   }
 
   public function user_link_with ($uid, $pid) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     $query = "INSERT INTO users_linked (user_id, assign_pid) VALUES('{$uid}', {$pid});";
     $response = $this->master->query($query);
 
@@ -653,6 +668,8 @@ class rejik_worker extends worker {
   }
 
   public function user_unlink_from ($uid, $pid) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     $query = "DELETE FROM `users_linked` WHERE `user_id`={$uid} AND `assign_pid`={$pid}";
     $response = $this->master->query($query);
 
@@ -713,6 +730,8 @@ class rejik_worker extends worker {
   }
 
   public function user_create ($pid, $userdata) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     if ( !is_array($userdata) ) throw new InvalidArgumentException ("Входящие данные не являются массивом");
 
     // Определяем элементы массива, которые должны быть в переменной $userdata
@@ -782,6 +801,7 @@ class rejik_worker extends worker {
   // Функции импорта
   // ==========================================================================================================================
   public function import_from_csv($csv_file_path, $table, $fields) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
   //todo Данный функционал временно отключен
    // echo "<pre>Функционал import_from_csv временно отключен</pre>";
 
@@ -805,7 +825,7 @@ class rejik_worker extends worker {
     if (!$response) {
       throw new Exception ("Ошибка при импорте CSV в БД: (".$this->master->errno.") ".$this->master->error, $this->master->errno);
     }
-    return $this->sql->affected_rows;
+    return $this->master->affected_rows;
     //if ($response->num_rows == 0) return 0;
   }
 
@@ -876,19 +896,6 @@ class rejik_worker extends worker {
     return $res;
   }
 
-
-
-} //end of rejik_worker
-
-
-class variable_worker extends worker {
-
-  public function __construct ($db_config) {
-    parent::__construct($db_config);
-
-    Logger::init(); //Инициализируем логер
-  }
-
   public function get_db_var($var_name) {
     $var_name_safed = $this->slave->escape_string($var_name);
 
@@ -902,6 +909,8 @@ class variable_worker extends worker {
   }
 
   public function set_db_var($var_name, $value) {
+    if (!isset($this->master)) throw new LengthException ("Для выполнения метода [".__METHOD__."] необходимо инициализировать Мастер сервер");
+
     $var_name_safed = $this->master->escape_string($var_name);
     $var_value_safed = $this->master->escape_string($value);
 
@@ -915,6 +924,7 @@ class variable_worker extends worker {
       return $res[0];
     }
   }
-}
+
+} //end of rejik_worker
 
 ?>

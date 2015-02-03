@@ -40,7 +40,8 @@
 
     try {
       //Подключаемся к RDB и получаем список пользователей
-      $rjk        = new rejik_worker2 ($config['rejik_db']);
+      $master_cfg = HealthPanel::get_master_config();
+      $rjk = new rejik_worker ($config['rejik_db'], $master_cfg);
       $users_data = $rjk->users_get(FIELDS_LOGINS_AND_ID);
 
       if ($users_data !== 0) { // Если список НЕ пуст, то выводим информацию о пользователях...
@@ -172,12 +173,12 @@
 
       $m_pid = isset($_SESSION['master_id']) ? $_SESSION['master_id'] : -1;
       $m_available = isset($_SESSION['master_available']) ? $_SESSION['master_available'] : -1;
-
+      $m_errormsg = isset ($_SESSION['master_error']) ? $_SESSION['master_error'] : "";
       if ($m_pid == -1) {
         echo "<div class='alert alert-warning'><b>Необходимо назначить мастер-сервер</b><br>Все данные будут доступны только для чтения</div>";
-      }/* elseif(!$m_available) {
-        echo "<div class='alert alert-danger'><b>Мастер-сервер</b><br></div>";
-      }*/
+      } elseif(!$m_available) {
+        echo "<div class='alert alert-danger'><b>Мастер-сервер не доступен</b><br>База данных доступна только в режиме для чтения.<br><small>Возникла ошибка: {$m_errormsg[0]}</small></div>";
+      }
 
       //Сохраняем результаты проверки в открытой сессии. Нужно только для отладки!
       //$hp->save_session();

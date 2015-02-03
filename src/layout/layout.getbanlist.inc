@@ -1,5 +1,7 @@
 <?php
   include_once "config.php";
+  include_once "classes/HealthPanel.php";
+
   global $config;
 
   function print_modal_box() {
@@ -31,7 +33,10 @@
 
   try{
 		$prx = new proxy_worker ($config['sams_db']);
-		$rejik = new rejik_worker ($config['rejik_db']);
+    // Если мастер был инициализирован,
+    $master_cfg = HealthPanel::get_master_config();
+
+    $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
 		$bl_info = $rejik->banlist_info ($banlist);
 
 		if ($bl_info == 0) {
@@ -124,7 +129,9 @@
 		
 		function get_page ($banlist, $page=0, $urls_per_page=100) {
 			global $config;
-			$rejik = new rejik_worker ($config['rejik_db']);
+
+      $master_cfg = HealthPanel::get_master_config();
+			$rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
 
 			return $rejik->banlist_get_urls($banlist, ($page-1)*$urls_per_page, $urls_per_page);
 		}

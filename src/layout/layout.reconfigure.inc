@@ -20,8 +20,9 @@
     echo "<div class='page-header'>\n";
     echo "<h2>Реконфигурация REJIK<br/><small>Данная страница отображает результат экспорта банлистов и статус реконфигурации SQUID</small></h2>\n";
     echo "</div>\n";
-    
-    $rejik = new rejik_worker ($config['rejik_db']);
+
+    $master_cfg = HealthPanel::get_master_config();
+    $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
 
     //Проверка возможность записи
     if (!check_export_dir('users')) {

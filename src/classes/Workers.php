@@ -13,18 +13,13 @@ class worker {
   protected $master;
   protected $slave;
 
-  public function __construct($db_config) {
-    $this->slave = slave_connect::getInstance($db_config);
+  public function __construct($slave_config, $master_config = FALSE) {
+    //Получаем соединение только для чтения
+    $this->slave = slave_connect::getInstance($slave_config);
 
-    try {
-      $config['db_user_name']     = 'rejik_adm';
-      $config['db_user_pass']     = '43214321';
-      $this->master = master_connect::getInstance(array('oib01', $config['db_user_name'], $config['db_user_pass'], 'rejik', 'utf8'));
-    } catch (Exception $e) {
-      //echo "[m] ".$e->getMessage();
-      $this->master = & $this->slave;
+    if ($master_config !== FALSE && is_array($master_config)) {
+      $this->master = master_connect::getInstance($master_config);
     }
-
   }
 
   public function close_db() {

@@ -173,19 +173,6 @@ class HealthPanel {
         throw $e;
       }
 
-      echo "<h2><b>Этап 3.1:</b> Запись в Id мастера в локальную RDB";
-      global $config;
-      //Устанавливаем коннект с локальной базой RDB
-      try {
-        $vw = new variable_worker($config['rejik_db']);
-        $vw->set_db_var('master_id', $id);
-        $vw->close_db();
-      } catch (Exception $e) {
-        echo "<h3>Запись ID мастера в RDB не выполнена!</h3>";
-        throw $e;
-      }
-
-
       echo "<h2><b>Этап 4:</b> Выполняем смену мастера на других серверах</h2>\n";
       //Определяем оставшиеся сервера, и отправляем сапрос на смену мастера
       foreach ($this->servers_list as $s) {
@@ -215,9 +202,27 @@ class HealthPanel {
           echo "<h3>Смена мастера не выполнена!</h3>";
           throw $e;
         }
-
         //echo $s->is_connected()." - ".$s->_update_work_mode()." - ".$s->get_id();
       }
+
+      $_SESSION['master_id'] = $srv->get_id();
+      $_SESSION['master_available'] = True;
+      $_SESSION['master_host'] = $srv;
+      $_SESSION['master_error'] = "";
+
+      echo "<h2><b>Этап 5:</b> Запись в Id мастера в локальную RDB";
+      global $config;
+      //Устанавливаем коннект с локальной базой RDB
+      try {
+        $master_cfg = HealthPanel::get_master_config();
+        $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
+        $rejik->set_db_var('master_id', $id);
+        $rejik->close_db();
+      } catch (Exception $e) {
+        echo "<h3>Запись ID мастера в RDB не выполнена!</h3>";
+        throw $e;
+      }
+
     } catch (Exception $e) {
       throw $e;
     }
@@ -293,14 +298,16 @@ class HealthPanel {
    */
   public function determine_master() {
     global $config;
-    //Устанавливаем коннект с локальной базой RDB и Получаем значение переменной master_id из базы
-    $vw = new variable_worker($config['rejik_db']);
-    $master_pid = $vw->get_db_var("master_id");
-    $vw->close_db();
 
     $_SESSION['master_id'] = -1;
     $_SESSION['master_available'] = False;
+    $_SESSION['master_host'] = "";
+    $_SESSION['master_error'] = "";
 
+    //Устанавливаем коннект с локальной базой RDB и Получаем значение переменной master_id из базы
+    $vw = new rejik_worker($config['rejik_db']);
+    $master_pid = $vw->get_db_var("master_id");
+    $vw->close_db();
 
     //Если значение переменной по каким-то причинам не удается получить, или такого pid не существует,
     //то считаем, что МАСТЕР-СЕРВЕР не определен. При этом пользователю должен выводиться АЛЕРТ на главной странице.
@@ -313,23 +320,21 @@ class HealthPanel {
 
     if ($master_srv === FALSE) return FALSE; //Если нет, то выходим.
 
-    try {
-      $rjk_master = new rejik_worker(array($master_srv->__toString(), $config['db_user_name'], $config['db_user_pass'], 'rejik'));
-      if ($rjk_master) {
-        $_SESSION['master_available'] = True;
-        $_SESSION['master_host'] = $master_srv->__toString();
-      }
-    } catch (Exception $e) {
-      throw $e;
-      //Подавляем исключение.
+    //Пытаемся установить соединение
+
+    $m = $master_srv->connect();
+    if ($m) {
+      $_SESSION['master_available'] = True;
+      $_SESSION['master_host'] = $master_srv->__toString();
+    } else {
+      $_SESSION['master_available'] = False;
+      $_SESSION['master_error'] = $master_srv->get_connect_error();
     }
-
-    $rjk_master->close_db();
-
+    $master_srv->close_db();
     return TRUE;
   }
 
-  public function check_master_availability() {
+  /*public function check_master_availability() {
     global $config;
     $m_pid = isset($_SESSION['master_id']) ? $_SESSION['master_id'] : -1;
 
@@ -350,8 +355,23 @@ class HealthPanel {
     }
 
     //$_SESSION['master_available'] = ($master_srv->is_connected()) ? TRUE : FALSE;
+  }*/
 
+  public static function get_master_config() {
+    global $config;
 
+    $m_pid       = isset($_SESSION['master_id']) ? $_SESSION['master_id'] : -1;
+    $m_available = isset($_SESSION['master_available']) ? $_SESSION['master_available'] : -1;
+    $m_errormsg  = isset($_SESSION['master_error']) ? $_SESSION['master_error'] : "";
+    $m_host      = isset($_SESSION['master_host']) ? $_SESSION['master_host'] : "";
+
+    if ( $m_pid === -1 ) return FALSE;
+    if ( !$m_available ) return FALSE;
+    if ( $m_host == "" ) return FALSE;
+
+    $cfg = array( $m_host, $config['db_user_name'], $config['db_user_pass'], 'rejik', 'utf8');
+
+    return $cfg;
   }
 }
 ?>

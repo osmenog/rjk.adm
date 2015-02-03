@@ -3,7 +3,9 @@
   global $config;
 
   try {
-    $rejik = new rejik_worker ($config['rejik_db']);
+    $master_cfg = HealthPanel::get_master_config();
+    $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
+
     $list = $rejik->banlists_get();
   
     if ($list==0) {

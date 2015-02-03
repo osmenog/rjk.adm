@@ -26,7 +26,9 @@
   if ($action=='link_all_users') {
     try {
       //Подключаемся к RDB и получаем список пользователей для сервера, с которого будут подключены пользователи
-      $rjk = new rejik_worker ($config['rejik_db']);
+      $master_cfg = HealthPanel::get_master_config();
+      $rjk = new rejik_worker ($config['rejik_db'], $master_cfg);
+
       $users_data = $rjk->users_get(FIELDS_FULL, $pid);
 
       //Обрабатываем исключительную ситуацию
@@ -141,7 +143,9 @@
   if ($action=='unlink_all_users') {
     try {
       //Получаем список ВСЕХ пользователей, подключенных к текущему серверу...
-      $rjk = new rejik_worker ($config['rejik_db']);
+      $master_cfg = HealthPanel::get_master_config();
+      $rjk = new rejik_worker ($config['rejik_db'], $master_cfg);
+
       $linked_users = $rjk->users_get_linked($hp->get_current_id());
       if ($linked_users === 0) throw new Exception("На сервере с pid={$pid} отсутствуют подключенные пользователи",999);
 

@@ -8,7 +8,9 @@
   echo "</div>\n";
 
   try {
-    $checker = new rejik_worker ($config['rejik_db']);
+    $master_cfg = HealthPanel::get_master_config();
+    $checker = new rejik_worker ($config['rejik_db'], $master_cfg);
+
     $checker_sql = $checker->sql;
   
     $st = CheckSelfTestResult();

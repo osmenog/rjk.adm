@@ -148,7 +148,9 @@ abstract class mysql_connection implements db_connection {
   }
 
   public function close_db() {
-    if (isset($this->db_link)) @mysqli_close($this->db_link);
+    if (isset($this->db_link)) {
+      mysqli_close($this->db_link);
+    }
   }
 
 }

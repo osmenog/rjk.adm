@@ -4,6 +4,7 @@
 include_once "classes/Exceptions.php";
 include_once "classes/Logger.php";
 include_once "classes/Checker.php";
+include_once "classes/HealthPanel.php";
 
 const FIELDS_FULL = 0;
 const FIELDS_ONLY_LOGINS = 1;
@@ -1130,7 +1131,8 @@ function set_user_acl($user, $banlists) {
   //Функция выполняет назначение прав полюзователю
   global $config;
   //$prx = new proxy_worker ($config['sams_db']);
-  $rejik = new rejik_worker ($config['rejik_db']);
+  $master_cfg = HealthPanel::get_master_config();
+  $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
 
   //echo "<pre>"; print_r($banlists); echo "</pre>";
 
@@ -1187,7 +1189,10 @@ function set_user_acl($user, $banlists) {
 function create_banlist ($name, $short_desc, $full_desc) {
   //todo добавить описание phpdoc
   global $config;
-  $rejik = new rejik_worker ($config['rejik_db']);
+
+  $master_cfg = HealthPanel::get_master_config();
+  $rejik = new rejik_worker ($config['rejik_db'], $master_cfg);
+
   try {
     if ($rejik->banlist_create($name, $short_desc, $full_desc)) {
       echo "<div class='alert alert-success'>Создание бан-листа <i>{$name}</i> успешно выполнено!</div>\n";

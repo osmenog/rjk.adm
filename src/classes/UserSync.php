@@ -105,7 +105,8 @@ class sams_sync {
     }
 
     try {
-      $this->rejik_conn = new rejik_worker ($config['rejik_db']);
+      $master_cfg = HealthPanel::get_master_config();
+      $this->rejik_conn = new rejik_worker ($config['rejik_db'], $master_cfg);
     } catch (Exception $e) {
       throw new Exception ("Не могу установить соединение с REJIK DB: ".$e->getMessage(),$e->getCode());
     }
