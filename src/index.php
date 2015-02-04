@@ -1,6 +1,7 @@
 <?php
   require_once "classes/Classes.php";
   include_once "classes/RejikWorker.php";
+  include_once "classes/SamsWorker.php";
   include_once "config.php";
   global $config;
 

@@ -1,8 +1,9 @@
 <?php
   include_once "config.php";
   require_once "classes/RejikWorker.php";
+  include_once "classes/SamsWorker.php";
   require_once "classes/Logger.php";
-  require_once "classes/Classes.php";
+  //require_once "classes/Classes.php";
 
   error_reporting(E_ALL);
   ini_set('display_errors', 0);

@@ -139,6 +139,10 @@
     margin-top: 20px;
 }
 
+#sync_users_btn {
+
+}
+
 #table-sync, #table-sync > tbody > tr > td {
     line-height: 1;
     font-size: 85%;

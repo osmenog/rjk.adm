@@ -8,6 +8,10 @@ class slave_connect extends mysql_connection {
 
 }
 
+class sams_connect extends mysql_connection {
+
+}
+
 class worker {
 
   protected $master;
