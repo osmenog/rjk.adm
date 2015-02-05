@@ -119,6 +119,52 @@ class proxy_worker{
     return $res;
   }
 
+  public function get_group_info($group_name) {
+
+    $query = "SELECT `name`,`nick` FROM `groups` WHERE `nick`='{$group_name}';";
+    $response = $this->sams_conn->query($query);
+
+    if ($response->num_rows == 0) return 0;
+
+    $res = array();
+    while ($row = $response->fetch_row()) {
+      $res[] = $row;
+    }
+
+    $response->close();
+
+    return $res;
+  }
+
+  public function create_group ($group_name, $gid=0) {
+    if ($gid == 0) $gid = strtok(uniqid(""),".");
+
+    $query = "INSERT INTO squidctrl.groups (count, name, nick, value) VALUES( 3, '{$gid}', '{$group_name}', 'open' ); ";
+
+    $response = $this->sams_conn->query($query);
+    $ar = $this->sams_conn->affected_rows();
+
+    if ($ar != False) {
+      return $gid;
+    } else {
+      return FALSE;
+    }
+
+  }
+
+  public function update_group ($login, $new_group_id) {
+    $query = "UPDATE squidctrl.squidusers SET `group`='{$new_group_id}' WHERE nick='{$login}';";
+
+    $response = $this->sams_conn->query($query);
+    $ar = $this->sams_conn->affected_rows();
+
+    if ($ar != False) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
+
   public function sams_create_user ($user) {
 //    $sams_uid = '';
 //    $nick    = $user['login'];

@@ -1,6 +1,6 @@
 <?php
 //include_once "config.php";
-//include_once "classes/Classes.php";
+include_once "classes/Classes.php";
 
 class Logger
 {

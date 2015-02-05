@@ -447,7 +447,7 @@ class sams_sync {
     FileLogger::add("\n\nDetermine deleted users in SAMS:\n");
     foreach ($rejik_data as & $row) {
       if (!isset($row['proc']) && $row['proxy_id'] == $this->server_id) {
-        FileLogger::add(" {$row['nick']}");
+        FileLogger::add(" {$row['login']}");
         $this->sams_users_to_remove[] = $row;
       }
     }
@@ -491,15 +491,55 @@ class sams_sync {
   }
 
   public function fix_linked_users_group($sams_users) {
+    global $config;
+
+    function is_group_exists ($groups, $group_name) {
+      foreach ($groups as $g) {
+        if ($g[1] === $group_name) return $g[0];
+      }
+      return FALSE;
+    }
+
     //Если в БД SAMS находятся пользователи, которые являются подключенными к текущему серверу RDB, то
     // данная функция меняет группу, к которой относятся данные пользователи.
 
     //1. Получаем список групп из SAMS
     $groups = $this->sams_conn->get_groups();
 
-    //Перебираем список подключенных пользователей
+    //2. Обрабатываем список пользователей, получаем массив из pid' ов
+    $pids=array();
     foreach ($sams_users as $row) {
+      if ( array_search($row['proxy_id'], $pids )===FALSE ) $pids[]= $row['proxy_id'];
+    }
 
+    //3. Проверяем, есть ли в SAMS группы для серверов с такими pid'ами
+    $hp = new HealthPanel();
+    $servers = $hp->get_servers();
+
+    $gids = array();
+    foreach ($pids as $p) {
+      $grp_name = ( ($s = $servers->get_server_by_id($p)) !== FALSE ) ? 'linked_from_'.$s->get_real_hostname() : "";
+
+      //При необходимости обрезаем имя группы. Это нужно сделать из-за ограничений размера полей в САМС DB
+      if ( $config['cut_group_name']) $grp_name = substr($grp_name,0,25);
+
+      //Проверяем, существует ли группа в САМС
+      $gid = is_group_exists($groups, $grp_name);
+      if ( $gid === FALSE ) {
+        //Если нет, то создаем
+        if ( ($new_gid=$this->sams_conn->create_group( $grp_name )) !== FALSE ) {
+          //echo "<p>{$grp_name}-{$r} created</p>";
+          $gids[$p] = array($grp_name, $new_gid);
+        }
+      } else { //Если существует
+        $gids[$p] = array ($grp_name, $gid);
+      };
+    }
+
+    //Переносим юзеров в группу
+    foreach ($sams_users as $row) {
+      $gid = $gids[$row['proxy_id']][1];
+      $this->sams_conn->update_group ($row['login'], $gid);
     }
 
   }
