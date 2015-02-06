@@ -128,10 +128,17 @@
 
         $sp = new sams_sync($config['server_id']);
         $linked_users = $sp->link_users_to_proxy($users_data);
+
+        $created_users = $sp->create_sams_users($linked_users);
+
+        $fixed_users = $sp->fix_linked_users_group($linked_users);
+
         $c = count($linked_users);
+        $c2 = count ($created_users);
         echo "<div class='alert alert-success'>
                 <b>Операция выполнена успешно!</b><br>
-                {$c} пользователя были подключены к серверу.
+                {$c} пользователя были подключены к серверу.<br>
+                {$c2} пользователя были созданы в SAMS.
               </div>";
       }
 
@@ -142,10 +149,11 @@
 
   if ($action=='unlink_all_users') {
     try {
-      //Получаем список ВСЕХ пользователей, подключенных к текущему серверу...
+
       $master_cfg = HealthPanel::get_master_config();
       $rjk = new rejik_worker ($config['rejik_db'], $master_cfg);
 
+      //Получаем список ВСЕХ пользователей, подключенных к текущему серверу...
       $linked_users = $rjk->users_get_linked($hp->get_current_id());
       if ($linked_users === 0) throw new Exception("На сервере с pid={$pid} отсутствуют подключенные пользователи",999);
 
@@ -191,7 +199,7 @@
         if ($confirm !== 1) throw new Exception ("Неверно задан входящий параметр 'confirm'");
         //echo "<h1>ТУТ ВЫПОЛНЯЕТСЯ ПРОЦЕДУРА ОТКЛЮЧЕНИЯ ПОЛЬЗОВАТЕЛЕЙ</h1>";
         $sp = new sams_sync($config['server_id']);
-        $unlinked_users = $sp->unlink_users_from_proxy($linked_users);
+        $unlinked_users = $sp->unlink_users_from_proxy($users_to_unlink);
         $c = count($unlinked_users);
         echo "<div class='alert alert-success'>
                 <b>Операция выполнена успешно!</b><br>

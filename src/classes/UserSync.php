@@ -230,6 +230,7 @@ class sams_sync {
         //Если не был подключен, то подключаем пользователя:
 
         $insert_result = $this->rejik_conn->user_link_with($uid, $local_pid);
+        //$insert_result = TRUE;
 
         //Создаем пользователя в САМС
         //$this->sams_conn->sams_create_user($row);
@@ -342,6 +343,8 @@ class sams_sync {
     $sams_data = $this->get_sams_userdata();
     FileLogger::add(count($sams_data)." users\n");
 
+    if ($sams_data == 0) throw new LogicException("В БД SAMS отсутствуют пользователи");
+
     //Данный блок кода ищет пользователей SAMS с одинаковыми логинами.
     $counter = array();
     foreach ($sams_data as $k => &$row) {
@@ -354,7 +357,7 @@ class sams_sync {
       }
     }
 
-    if ($sams_data == 0) throw new LogicException("В БД SAMS отсутствуют пользователи");
+
 
     FileLogger::add("Getting RDB userdata... ");
     $rejik_data = $this->get_rejik_userdata();
@@ -469,7 +472,6 @@ class sams_sync {
     FileLogger::add("\nsams_users_to_remove:\n");
     FileLogger::add(print_r($this->sams_users_to_remove, true));
 
-
     //Копируем подготовленных пользователей в REJIK DB
     $this->copy_to_rejik($this->sams_users_to_copy);
 
@@ -483,9 +485,6 @@ class sams_sync {
 
     //Удаляем пользователей, которые были удалены с SAMS
     $this->delete_removed_users($this->sams_users_to_remove);
-
-
-    //
 
     FileLogger::close();
   }
@@ -537,11 +536,12 @@ class sams_sync {
     }
 
     //Переносим юзеров в группу
-    foreach ($sams_users as $row) {
+    foreach ($sams_users as $k=>$row) {
       $gid = $gids[$row['proxy_id']][1];
-      $this->sams_conn->update_group ($row['login'], $gid);
+      $update_group_result = $this->sams_conn->update_group ($row['login'], $gid);
     }
 
+    return $sams_users;
   }
 
   public function update_users_data($updated_users) {
@@ -579,6 +579,40 @@ class sams_sync {
 
       if ($du_result) Logger::add(0,"Пользователь {$login} (id={$uid}, pid={$pid}) был удален в ходе синхронизации","",-1,"sams_sync");
     }
+  }
+
+  public function create_sams_users($users_to_create) {
+    //Если передан пустой массив, то выходим
+    if ( count($users_to_create)==0 ) return array();
+
+    //Получаем список пользователей, зарегистрированных в SAMS
+    $sams_userdata = $this->get_sams_userdata(TRUE);
+
+    //Проверяем, существует ли в БД САМСа пользователи с такими логинами
+    $conflicted = array();
+    foreach ($sams_userdata as $r1) {
+      foreach ($users_to_create as $k=>$r2) {
+        // Если есть пользователи, чью логина совпадают, то заносим их в список
+        if ( $r1['nick'] ===  $r2['login']) {
+          $conflicted[] = $r1;
+          unset ($users_to_create[$k]);
+        }
+      }
+    }
+
+    if ( count($users_to_create)==0 ) return array();
+
+    //Создаем пользователя в САМС
+    foreach ($users_to_create as $k=>$row) {
+      $result = $this->sams_conn->sams_create_user($row);
+      if ( $result ) {
+        $users_to_create[$k]['create_result'] = TRUE;
+      } else {
+        $users_to_create[$k]['create_result'] = FALSE;
+      }
+    }
+
+    return $users_to_create;
   }
 
   // Геттеры --------------------------------------------------------

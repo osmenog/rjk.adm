@@ -166,28 +166,74 @@ class proxy_worker{
   }
 
   public function sams_create_user ($user) {
-//    $sams_uid = '';
-//    $nick    = $user['login'];
-//    $fio     = explode(" ", $user['name']);
-//    $family  = $fio[0];
-//    $name    = $fio[1];
-//    $soname  = $fio[2];
-//    $group   = $user['sams_group'];
-//    $domain  = $user['sams_domain'];
-//    $passwd  = $user['password'];
-//    $shablon = $user['sams_shablon'];
-//    $quotes  = $user['sams_quotes'];
-//    $size    = $user['sams_size'];
-//    $enabled = $user['sams_enabled'];
-//    $ip      = $user['sams_ip'];
-//    $mask    = $user['sams_ip_mask'];
-//
-//    $query = "INSERT INTO squidusers (user_id, assign_pid) VALUES('{$uid}', {$local_pid});";
-//    $res = $this->rejik_conn->do_query($query);
-//    //fixme Придумать код для сообщения
-//    //if ($res) Logger::add(0,"Пользователь {$row['login']} (pid={$pid}) был привязан к прокси (pid={$local_pid})","",-1,"sams_sync");
-//    //$row['assign_pid'] = $local_pid;
-//    $linked_users[] = $row;
+    $sams_uid = strtok(uniqid(""),".");
+    $nick    = $user['login'];
+    $fio     = explode(" ", $user['name']);
+    $family  = isset( $fio[0] ) ? $fio[0] : "";
+    $name    = isset( $fio[1] ) ? $fio[1] : "";
+    $soname  = isset( $fio[2] ) ? $fio[2] : "";
+    $group   = $user['sams_group'];
+    $domain  = $user['sams_domain'];
+    $passwd  = $user['password'];
+    $shablon = $user['sams_shablon'];
+    $quotes  = $user['sams_quotes'];
+    $size    = $user['sams_size'];
+    $enabled = $user['sams_enabled'];
+    $ip      = $user['sams_ip'];
+    $mask    = $user['sams_ip_mask'];
+
+    $query = "
+    INSERT INTO squidctrl.squidusers
+    (
+      id
+      ,nick
+      ,family
+      ,name
+      ,soname
+      ,`group`
+      ,domain
+      ,shablon
+      ,quotes
+      ,size
+      ,enabled
+      ,ip
+      ,ipmask
+      ,passwd
+      ,gauditor
+      ,hit
+      ,autherrorc
+      ,autherrort
+    )
+    VALUES
+    (
+        '{$sams_uid}' -- id - CHAR(25)
+       ,'{$nick}'     -- nick - CHAR(25)
+       ,'{$family}'   -- family - CHAR(25)
+       ,'{$name}'     -- name - CHAR(25)
+       ,'{$soname}'   -- soname - CHAR(25)
+       ,'{$group}'    -- group - CHAR(25)
+       ,'{$domain}'   -- domain - CHAR(25)
+       ,'{$shablon}'  -- shablon - CHAR(25)
+       , {$quotes}    -- quotes - BIGINT(20)
+       , {$size}      -- size - BIGINT(20)
+       , {$enabled}   -- enabled - INT(11)
+       ,'{$ip}'       -- ip - CHAR(15)
+       ,'{$mask}'     -- ipmask - CHAR(15)
+       ,'{$passwd}'   -- passwd - CHAR(20)
+       ,0             -- gauditor - INT(1)
+       ,0             -- hit - BIGINT(20) NOT NULL
+       ,0             -- autherrorc - TINYINT(1)
+       ,''            -- autherrort - VARCHAR(16)
+    );";
+
+    $res = $this->sams_conn->query($query);
+    $ar = $this->sams_conn->affected_rows();
+
+    if ($ar != False) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
   }
 
   public function close_db() {

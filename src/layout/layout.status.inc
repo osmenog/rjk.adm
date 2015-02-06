@@ -64,7 +64,7 @@
         foreach ($users_data as $row) { //Перебираем пользователей и определяем, к какому серверу они относятся...
           $pid = $row['proxy_id'];
           $srv_obj = $servers->get_server_by_id($pid);
-          $srv_name = ($srv_obj !== False) ? $srv_obj->__toString() : "Unknown server (pid={$pid})";
+          $srv_name = ($srv_obj !== False) ? $srv_obj->get_real_hostname() : "Unknown server (pid={$pid})";
           $short_srv_info[$pid][0] = $srv_name;
 
           //... также считаем количество пользователей на различных серверах.
