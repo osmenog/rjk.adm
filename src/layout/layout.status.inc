@@ -175,13 +175,15 @@
       //Определяем мастер-сервер
       $hp->determine_master();
       //$hp->check_master_availability();
-    } catch (mysql_exception $e) {
-      echo "<div class='alert alert-danger'><b>Критическая ошибка при определении мастер сервера:</b><br>{$e->getCode()} : {$e->getMessage()}</div>\n";
+      $m_errormsg = isset ($_SESSION['master_error']) ? $_SESSION['master_error'] : "";
+    } catch (Exception $e) {
+      //echo "<div class='alert alert-danger'><b>Критическая ошибка при определении мастер сервера:</b><br>{$e->getCode()} : {$e->getMessage()}</div>\n";
+      $m_errormsg =  ($_SESSION['master_error'] == "") ? array($e->getMessage(), $e->getCode()) : $_SESSION['master_error'];
     }
 
     $m_pid = isset($_SESSION['master_id']) ? $_SESSION['master_id'] : -1;
     $m_available = isset($_SESSION['master_available']) ? $_SESSION['master_available'] : -1;
-    $m_errormsg = isset ($_SESSION['master_error']) ? $_SESSION['master_error'] : "";
+
     if ($m_pid == -1) {
       echo "<div class='alert alert-warning'><b>Необходимо назначить мастер-сервер</b><br>Все данные будут доступны только для чтения</div>";
     } elseif(!$m_available) {
@@ -190,7 +192,6 @@
 
     //Сохраняем результаты проверки в открытой сессии. Нужно только для отладки!
     //$hp->save_session();
-
 
     $servers_info = array();
     foreach ($servers as $srv) {

@@ -902,7 +902,7 @@ function CheckSession () {
   
   //Стартуем сессию 
   session_name("sid");
-  session_set_cookie_params (3600,"/{$config['proj_name']}/");
+  session_set_cookie_params (3600,"/{$config['proj_name']}");
   session_start();
   
   //Проверяем, был ли залогинен пользователь

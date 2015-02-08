@@ -311,14 +311,14 @@ class HealthPanel {
 
     //Если значение переменной по каким-то причинам не удается получить, или такого pid не существует,
     //то считаем, что МАСТЕР-СЕРВЕР не определен. При этом пользователю должен выводиться АЛЕРТ на главной странице.
-    if ($master_pid === NULL) return FALSE;
+    if ($master_pid === NULL) throw new Exception ("Невозможно определить мастер-сервер");
 
     $_SESSION['master_id'] = $master_pid;
 
     //Проверяем, есть ли мастер в списке серверов
     $master_srv = $this->servers_list->get_server_by_id($master_pid);
 
-    if ($master_srv === FALSE) return FALSE; //Если нет, то выходим.
+    if ($master_srv === FALSE) throw new Exception ("Мастер-сервер с id={$master_pid} не определен в настройках");//Если нет, то выходим.
 
     //Пытаемся установить соединение
 
