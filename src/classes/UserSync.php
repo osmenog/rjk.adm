@@ -17,6 +17,7 @@ class sams_sync {
   private $sams_users_conflicted;
   private $sams_users_to_link;
   private $sams_users_to_remove;
+  private $sams_users_to_unlink;
 
   public function __construct($server_id) {
     global $config;
@@ -42,6 +43,7 @@ class sams_sync {
     $this->sams_users_conflicted = array();
     $this->sams_users_to_link = array();    //Пользователи SAMS, которые уже есть в RDB. Их необходимо "подключить" к текущему серверу
     $this->sams_users_to_remove = array();
+    $this->sams_users_to_unlink = array();
 
     $this->is_connected = True;
     $this->server_id = $server_id;
@@ -357,8 +359,6 @@ class sams_sync {
       }
     }
 
-
-
     FileLogger::add("Getting RDB userdata... ");
     $rejik_data = $this->get_rejik_userdata();
     if ($rejik_data == 0) $rejik_data = array();
@@ -369,10 +369,12 @@ class sams_sync {
     FileLogger::add(count($linked_users)." users\n");
 
     FileLogger::add("Proccess SAMS users:\n");
+    $c = 1; $cc = count($sams_data); // Счетчики пользователей для логгера
+
     //Перебираем пользователей SAMS
-    $c = 1; $cc = count($sams_data);
     foreach ($sams_data as $sams_row) {
       FileLogger::add(" ({$c} of {$cc}) {$sams_row['nick']}:\n");
+
       //Проверяем: Пользователь с логином $sams_row['nick'] Имеется в RDB?
       $rjk_user_key = $this->is_exist($sams_row['nick'], $rejik_data);
       FileLogger::add("   Search user in RDB...");
@@ -433,28 +435,34 @@ class sams_sync {
             FileLogger::add("already linked\n");
           }
 
-        }
+        } // end of "IF"
       } else {
         //... если пользователь SAMS не найден в RDB, то помещаем в список sams_users_to_copy (копирование из SAMS в RDB)
         FileLogger::add("Not found\n");
         $this->sams_users_to_copy[] = $sams_row;
         FileLogger::add("   *Marked as 'sams_users_to_copy'\n");
-      }
+      }  // end of "IF"
 
       $rejik_user['proc'] = '1';
       $c++;
-    }
+    } // of foreach
 
     //Получаем список пользователей, которые не были затронуты.
     //По факту это пользователи, которые остались в RDB, но отсутствуют в SAMS
     FileLogger::add("\n\nDetermine deleted users in SAMS:\n");
     foreach ($rejik_data as & $row) {
-      if (!isset($row['proc']) && $row['proxy_id'] == $this->server_id) {
-        FileLogger::add(" {$row['login']}");
-        $this->sams_users_to_remove[] = $row;
+      if ( !isset($row['proc']) ) {
+        if ( $row['proxy_id'] == $this->server_id ) {
+          FileLogger::add(" {$row['login']}");
+          $this->sams_users_to_remove[] = $row;
+          $row['proc'] = '1';
+        }
+        //else {
+//          FileLogger::add(" {$row['login']} (linked)");
+//          $this->sams_users_to_unlink[] = $row;
+//        }
       }
     }
-
     if (count($this->sams_users_to_remove)==0) {
       FileLogger::add(" Deleted users not found!\n");
     } else {
@@ -471,6 +479,8 @@ class sams_sync {
     FileLogger::add(print_r($this->sams_users_to_link, true));
     FileLogger::add("\nsams_users_to_remove:\n");
     FileLogger::add(print_r($this->sams_users_to_remove, true));
+    FileLogger::add("\nsams_users_to_unlink:\n");
+    FileLogger::add(print_r($this->sams_users_to_unlink, true));
 
     //Копируем подготовленных пользователей в REJIK DB
     $this->copy_to_rejik($this->sams_users_to_copy);
@@ -485,6 +495,9 @@ class sams_sync {
 
     //Удаляем пользователей, которые были удалены с SAMS
     $this->delete_removed_users($this->sams_users_to_remove);
+
+    //Отключаем пользователей, которых удалили в SAMS
+    $this->unlink_users_from_proxy($this->sams_users_to_unlink);
 
     FileLogger::close();
   }
@@ -615,6 +628,23 @@ class sams_sync {
     return $users_to_create;
   }
 
+  public function delete_sams_users ($users_to_delete) {
+    //Если передан пустой массив, то выходим
+    if ( count($users_to_delete)==0 ) return array();
+
+    //Удаляем пользователя в САМС
+    foreach ($users_to_delete as $k=>$row) {
+      $result = $this->sams_conn->sams_delete_user($row);
+      if ( $result ) {
+        $users_to_delete[$k]['delete_result'] = TRUE;
+      } else {
+        $users_to_delete[$k]['delete_result'] = FALSE;
+      }
+    }
+
+    return $users_to_delete;
+  }
+
   // Геттеры --------------------------------------------------------
   public function getSamsUsersToCopy() {
     return $this->sams_users_to_copy;
@@ -631,5 +661,9 @@ class sams_sync {
   public function getSamsUsersToRemove() {
     return $this->sams_users_to_remove;
   }
+  public function getSamsUsersToUnLink() {
+    return $this->sams_users_to_unlink;
+  }
+
 }
 ?>

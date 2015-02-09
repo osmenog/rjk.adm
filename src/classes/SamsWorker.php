@@ -236,6 +236,19 @@ class proxy_worker{
     }
   }
 
+  public function sams_delete_user ($user) {
+    $nick    = $user['login'];
+    $query = "DELETE FROM squidctrl.squidusers WHERE nick = '{$nick}';";
+    $res = $this->sams_conn->query($query);
+    $ar = $this->sams_conn->affected_rows();
+
+    if ($ar != False) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
+
   public function close_db() {
     if (isset($this->sams_conn)) {
       $this->sams_conn->close_db();

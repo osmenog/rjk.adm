@@ -197,13 +197,16 @@
 
       } else {
         if ($confirm !== 1) throw new Exception ("Неверно задан входящий параметр 'confirm'");
-        //echo "<h1>ТУТ ВЫПОЛНЯЕТСЯ ПРОЦЕДУРА ОТКЛЮЧЕНИЯ ПОЛЬЗОВАТЕЛЕЙ</h1>";
+
         $sp = new sams_sync($config['server_id']);
         $unlinked_users = $sp->unlink_users_from_proxy($users_to_unlink);
+        $deleted_users = $sp->delete_sams_users($unlinked_users);
         $c = count($unlinked_users);
+        $c2 = count($deleted_users);
         echo "<div class='alert alert-success'>
                 <b>Операция выполнена успешно!</b><br>
-                {$c} пользователя были отключены от сервера.
+                {$c} пользователей были отключены от сервера.<br>
+                {$c2} пользователей былы удалены в SAMS
               </div>";
       }
     } catch (Exception $e) {

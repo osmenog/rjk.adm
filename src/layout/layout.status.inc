@@ -407,6 +407,10 @@
       echo "<h3>sams_users_to_remove</h3>";
       echo "<pre style='font-size: 8pt;'>"; print_r ($sp->getSamsUsersToRemove()); echo "</pre>";
 
+      echo "<h3>sams_users_to_unlink</h3>";
+      echo "<pre style='font-size: 8pt;'>"; print_r ($sp->getSamsUsersToUnLink()); echo "</pre>";
+
+
     } catch (DuplicateFound $dp) {
       echo "<div class='alert alert-warning'><b>Внимание</b><br> Возникла конфликтная ситуация, которую нужно разрешить в ручном режиме:<br>{$dp->getMessage()}<br/></div>\n";
     } catch (logger_exception $le) {
