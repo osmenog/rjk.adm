@@ -450,6 +450,7 @@ class sams_sync {
     //Получаем список пользователей, которые не были затронуты.
     //По факту это пользователи, которые остались в RDB, но отсутствуют в SAMS
     FileLogger::add("\n\nDetermine deleted users in SAMS:\n");
+
     foreach ($rejik_data as & $row) {
       if ( !isset($row['proc']) ) {
         if ( $row['proxy_id'] == $this->server_id ) {
@@ -457,17 +458,21 @@ class sams_sync {
           $this->sams_users_to_remove[] = $row;
           $row['proc'] = '1';
         }
-        //else {
-//          FileLogger::add(" {$row['login']} (linked)");
-//          $this->sams_users_to_unlink[] = $row;
-//        }
+
+        if ( $this->is_linked_with($row['id'], $linked_users) ){
+          $this->sams_users_to_unlink[] = $row;
+          $row['proc'] = '1';
+        }
       }
+
     }
     if (count($this->sams_users_to_remove)==0) {
       FileLogger::add(" Deleted users not found!\n");
     } else {
       FileLogger::add(count($this->sams_users_to_remove)." Marked as 'sams_users_to_remove'\n");
     }
+
+
 
     FileLogger::add("\nsams_users_to_copy:\n");
     FileLogger::add(print_r($this->sams_users_to_copy, true));
