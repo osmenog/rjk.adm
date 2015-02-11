@@ -381,10 +381,6 @@
     echo "<h1>\nСостояние синхронизации</h1>\n";
     echo "</div>\n";
 
-    echo "<h1></h1>";
-
-    //print_table (array ("name" => "asd", "login" => "zxc"), '1', '2');
-
     try {
       //По надобности включаем файловый логгер синхронизации пользователей
       if ($config['user_sync_extended_log']) FileLogger::init('user_sync.log');
@@ -392,24 +388,61 @@
       $sp = new sams_sync($config['server_id']);
       $sp->do_sync();
 
-      echo "<h3>sams_users_to_copy</h3>";
-      echo "<pre style='font-size: 8pt;'>"; print_r ($sp->getSamsUsersToCopy());echo "</pre>";
+      $labels = array ("Скопировано из SAMS в RDB",
+                       "Обновлено в RBD",
+                       "Требует вмешательства",
+                       "Подключено к серверу",
+                       "Удалены из RDB",
+                       "Отключено от сервера"
+                      );
 
-      echo "<h3>sams_users_updated</h3>";
-      echo "<pre style='font-size: 8pt;'>"; print_r ($sp->getSamsUsersUpdated()); echo "</pre>";
+      //todo Дополнить описания
+      $descriptions = array("В эту группу входят те пользователи SAMS, <b>логины</b> которых отсутствуют в RDB",
+                            "В эту группу входят те пользователи, у которых изменились данные в SAMS</br>Сюда входят только <b>локальные<b> пользователи!",
+                            "", "", "", ""
+      );
 
-      echo "<h3>sams_users_conflicted</h3>";
-      echo "<pre style='font-size: 8pt;'>"; print_r ($sp->getSamsUsersConflicted()); echo "</pre>";
+      $results = array ( $sp->getSamsUsersToCopy(),
+                         $sp->getSamsUsersUpdated(),
+                         $sp->getSamsUsersConflicted(),
+                         $sp->getSamsUsersToLink(),
+                         $sp->getSamsUsersToRemove(),
+                         $sp->getSamsUsersToUnLink()
+                       );
 
-      echo "<h3>sams_users_to_link</h3>";
-      echo "<pre style='font-size: 8pt;'>"; print_r ($sp->getSamsUsersToLink()); echo "</pre>";
+      $fields_sets = array (
+                            "copy"    => array ("id", "nick", "family", "name", "soname", "enabled"),
+                            "updated" => array ("id", "nick", "family", "name", "soname"),
+                            "conf"    => array ("id", "nick", "family", "name", "soname"),
+                            "other"   => array ("id", "login", "name")
+                            );
 
-      echo "<h3>sams_users_to_remove</h3>";
-      echo "<pre style='font-size: 8pt;'>"; print_r ($sp->getSamsUsersToRemove()); echo "</pre>";
+      $fields = array ($fields_sets["copy"],
+                       $fields_sets["updated"],
+                       $fields_sets["conf"],
+                       $fields_sets["other"],
+                       $fields_sets["other"],
+                       $fields_sets["other"]
+      );
 
-      echo "<h3>sams_users_to_unlink</h3>";
-      echo "<pre style='font-size: 8pt;'>"; print_r ($sp->getSamsUsersToUnLink()); echo "</pre>";
+      echo "<script src='js/jquery.webui-popover.js'></script>";
 
+      for ($i=0; $i<=count($labels)-1; $i++) {
+        if( !empty($results[$i]) ) {
+          //Выводим заголовок, и создаем для него хинт
+          echo "<h3 id='label{$i}'> {$labels[$i]}: ".count( $results[$i] )." </h3>";
+          echo "<script>   $('#label{$i}').webuiPopover({content:'<small>{$descriptions[$i]}</small>', trigger: 'hover', placement: 'left'});  </script>";
+
+          //Выводим данные в виде таблицы
+          //echo "<pre style='font-size: 8pt;'>"; print_r ( $results[$i] ); echo "</pre>";
+          print_table ( $results[$i], $fields[$i] );
+          $flag_not_empty = true;
+        }
+      }
+
+      if ( empty($flag_not_empty) ) {
+        echo "<div class='alert alert-warning'>Изменения не выявлены.</div>\n";
+      }
 
     } catch (DuplicateFound $dp) {
       echo "<div class='alert alert-warning'><b>Внимание</b><br> Возникла конфликтная ситуация, которую нужно разрешить в ручном режиме:<br>{$dp->getMessage()}<br/></div>\n";
@@ -424,7 +457,24 @@
     return True;
   }
 
-  function print_table($printable_array, $title, $id) {
+  function print_table ($data, $fields) {
+    echo "<table id='table-sync' class='table table-condensed small'>\n";
+
+    echo "<tr>";
+    foreach ($fields as $f) { echo "<th>{$f}</th>"; }
+    echo "</tr>";
+
+    foreach ($data as $row) {
+      echo "<tr>";
+      //echo "<td>".print_r($row, true)."</td>";
+      foreach ($fields as $f) { echo "<td>{$row[$f]}</td>"; }
+      echo "</tr>\n";
+    }
+
+    echo "</table>\n";
+  }
+
+  function print_table_old($printable_array, $title, $id) {
     //Функция, выводит на экран одну панельку, содержащую список пользователей $printable_array
     if (count($printable_array) == 0) return;
 
