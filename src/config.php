@@ -4,7 +4,7 @@
 // -------------------------------------------------------------
 
   //ID этого сервера. Такой же как и в конфиге MySQL
-  $config['server_id']        = 3;
+  $config['server_id']        = 6;
 
   $config['repl_user_name']   = 'repl_user';
   $config['repl_user_passwd'] = '12341234';
@@ -29,7 +29,7 @@
   $config['user_sync_extended_log'] = False;
 
   //Как будет обновляться статус серверов
-  $config['use_check_cache'] = False;
+  $config['use_check_cache'] = True;
 
   //Название корневой папки проекта. Используется при указании абсолютного адреса.
   $config['proj_name'] = 'adm';
@@ -48,10 +48,10 @@
 
   $config['servers'] = array(
     'proxy2.bankom.omsk.su' => array($config['repl_user_name'], $config['repl_user_passwd'], 1),
-    'proxy6.bankom.omsk.su' => array($config['repl_user_name'], $config['repl_user_passwd'], 6),
-    //'oib01'                 => array($config['repl_user_name'], $config['repl_user_passwd'], 3),
+    //'proxy6.bankom.omsk.su' => array($config['repl_user_name'], $config['repl_user_passwd'], 6),
+    'oib01'                 => array($config['repl_user_name'], $config['repl_user_passwd'], 3),
     'FreeBSD_01'            => array($config['repl_user_name'], $config['repl_user_passwd'], 11),
-    'FreeBSD_01'            => array($config['repl_user_name'], $config['repl_user_passwd'], 12),
+    'FreeBSD_02'            => array($config['repl_user_name'], $config['repl_user_passwd'], 12),
     'osme-n'                => array($config['repl_user_name'], $config['repl_user_passwd'], 13)
   );
 

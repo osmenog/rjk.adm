@@ -175,7 +175,7 @@ class RejikServer
     } else {
       //Проверяем, что сервер является Слейвом.
       //Получаем SLAVE STATUS. Если в поле host указан адрес, то это слейв.
-      $tmp = $this->show_slave_status(False);
+      $tmp = $this->show_slave_status();
       if (isset($tmp['Slave_IO_Running']) && $tmp['Slave_IO_Running'] != 'No') {
         $this->work_mode = WORK_MODE_SLAVE;
       } else {

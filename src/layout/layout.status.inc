@@ -166,7 +166,6 @@
     //Стартуем проверку доступности серверов
     if ($config['use_check_cache'] == False) {
       $hp->check_availability();
-      //$hp->determine_master();
     }
 
     $servers = $hp->get_servers();
@@ -174,7 +173,6 @@
     try {
       //Определяем мастер-сервер
       $hp->determine_master();
-      //$hp->check_master_availability();
       $m_errormsg = isset ($_SESSION['master_error']) ? $_SESSION['master_error'] : "";
     } catch (Exception $e) {
       //echo "<div class='alert alert-danger'><b>Критическая ошибка при определении мастер сервера:</b><br>{$e->getCode()} : {$e->getMessage()}</div>\n";
@@ -190,20 +188,16 @@
       echo "<div class='alert alert-danger'><b>Мастер-сервер не доступен</b><br>База данных доступна только в режиме для чтения.<br><small>Возникла ошибка: {$m_errormsg[0]}</small></div>";
     }
 
-    //Сохраняем результаты проверки в открытой сессии. Нужно только для отладки!
-    //$hp->save_session();
-
     $servers_info = array();
     foreach ($servers as $srv) {
-      $row = array( "host" => $srv->get_real_hostname(),
-        "is_master"  => FALSE,
-        "pid"  => $srv->get_id(),
-        "mode"       => $srv->get_work_mode(),
-        "is_conn"  => $srv->is_connected(),
-        "conn_error" => $srv->get_connect_error(),
-        "is_ro" => $srv->is_read_only()
+      $row = array( "host"       => $srv->get_real_hostname(),
+                    "is_master"  => FALSE,
+                    "pid"        => $srv->get_id(),
+                    "mode"       => $srv->get_work_mode(),
+                    "is_conn"    => $srv->is_connected(),
+                    "conn_error" => $srv->get_connect_error(),
+                    "is_ro"      => $srv->is_read_only()
       );
-
       $servers_info[] = $row;
     }
 
@@ -211,16 +205,18 @@
     echo "<table class='table table-condensed table-bordered'>\n";
     echo "<thead>\n";
     echo "<tr>\n
-          <th width='5%' class='text-center'>*</th>
-          <th width='40%'>Хост</th>\n
-          <th class='text-center' width='10%'>Соединение</th>\n
-          <th width='30%'>Статус репликации</th>\n
-          <th width='5%'>*</th>\n
-          <th width='5%'>*</th>\n
+            <th width='5%' class='text-center'>*</th>
+            <th width='40%'>Хост</th>\n
+            <th class='text-center' width='10%'>Соединение</th>\n
+            <th width='30%'>Статус репликации</th>\n
+            <th width='5%'>*</th>\n
+            <th width='5%'>*</th>\n
           </tr>\n";
     echo "</thead>\n";
+
     foreach ($servers_info as $r) {
       echo "<tr>";
+      // ------------------ Звездочка ------------------
       if ($m_pid == $r['pid'] && $m_available === TRUE) {
         echo "<td class='text-center'><span class='glyphicon glyphicon-star'></span></td>";
       } elseif ($m_pid == $r['pid'] && $m_available === FALSE)  {
@@ -229,31 +225,34 @@
         echo "<td></td>";
       }
 
-//        if ($r['is_ro']) {
-//          echo "<span>ro</span>";
-//        }
-
+      // ----------------- Имя сервера -----------------
       echo "<td>".print_server_hint ($r['host'], $r['pid'])."</td>";
 
+      // -------------- Статус подключения -------------
       if ($r['is_conn']) {
         if ($r['conn_error'] === FALSE) {
           echo "<td class='text-center'><span class='glyphicon glyphicon-ok'></span></td>";
         } else {
           echo "<td class='text-center'>
-                <a id='err{$r['pid']}' class='glyphicon glyphicon-warning-sign' href='#'>Предупреждение</a>
-                <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Предупреждение', trigger: 'hover', placement: 'right-top'});  </script>
-            </td>";
+                  <a id='err{$r['pid']}' class='glyphicon glyphicon-warning-sign' href='#'>Предупреждение</a>
+                  <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Предупреждение', trigger: 'hover', placement: 'right-top'});  </script>
+                </td>";
         }
       } else {
-
         echo "<td class='text-center'>
-            <a id='err{$r['pid']}' class='glyphicon glyphicon-remove' href='#'>Ошибка</a>
-            <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Ошибка при соединении', trigger: 'hover', placement: 'right-top'});  </script>
-          </td>";
+                <a id='err{$r['pid']}' class='glyphicon glyphicon-remove' href='#'>Ошибка</a>
+                <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Ошибка при соединении', trigger: 'hover', placement: 'right-top'});  </script>
+              </td>";
       }
+
+      // -------------- Статус репликации -------------
       echo "<td></td>";
+
+      // ------------- Кнопка смены мастера -----------
       echo "<td><button type='button' onClick='location.href=\"?action=status&switch_master_to={$r['pid']}\"' class='btn btn-primary btn-xs'>Сделать мастером</button></td>";
-      echo "<td>*</td>";
+
+      // ------------------- Резерв -------------------
+      echo "<td></td>";
 //
 //
 //        if ($value->get_work_mode() == WORK_MODE_MASTER) {
@@ -310,9 +309,10 @@
 //        </td></tr>\n";
 //        }
       //echo "<tr><td colspan=4>"; foreach ($err as $k => $v) echo "{$k} = {$v}</br>"; echo "</td></tr>\n";
-    }
+    } // end of foreach
     echo "</table>\n";
     echo "</div>\n"; // of panel
+
   } catch (Exception $e) {
     echo "<div class='alert alert-danger'><b>Ошибка</b> {$e->getCode()} : {$e->getMessage()}<br/></div>\n";
   }
@@ -388,61 +388,18 @@
       $sp = new sams_sync($config['server_id']);
       $sp->do_sync();
 
-      $labels = array ("Скопировано из SAMS в RDB",
-                       "Обновлено в RBD",
-                       "Требует вмешательства",
-                       "Подключено к серверу",
-                       "Удалены из RDB",
-                       "Отключено от сервера"
-                      );
-
-      //todo Дополнить описания
-      $descriptions = array("В эту группу входят те пользователи SAMS, <b>логины</b> которых отсутствуют в RDB",
-                            "В эту группу входят те пользователи, у которых изменились данные в SAMS</br>Сюда входят только <b>локальные<b> пользователи!",
-                            "", "", "", ""
-      );
-
-      $results = array ( $sp->getSamsUsersToCopy(),
-                         $sp->getSamsUsersUpdated(),
-                         $sp->getSamsUsersConflicted(),
-                         $sp->getSamsUsersToLink(),
-                         $sp->getSamsUsersToRemove(),
-                         $sp->getSamsUsersToUnLink()
-                       );
-
-      $fields_sets = array (
-                            "copy"    => array ("id", "nick", "family", "name", "soname", "enabled"),
-                            "updated" => array ("id", "nick", "family", "name", "soname"),
-                            "conf"    => array ("id", "nick", "family", "name", "soname"),
-                            "other"   => array ("id", "login", "name")
-                            );
-
-      $fields = array ($fields_sets["copy"],
-                       $fields_sets["updated"],
-                       $fields_sets["conf"],
-                       $fields_sets["other"],
-                       $fields_sets["other"],
-                       $fields_sets["other"]
-      );
-
-      echo "<script src='js/jquery.webui-popover.js'></script>";
-
-      for ($i=0; $i<=count($labels)-1; $i++) {
-        if( !empty($results[$i]) ) {
-          //Выводим заголовок, и создаем для него хинт
-          echo "<h3 id='label{$i}'> {$labels[$i]}: ".count( $results[$i] )." </h3>";
-          echo "<script>   $('#label{$i}').webuiPopover({content:'<small>{$descriptions[$i]}</small>', trigger: 'hover', placement: 'left'});  </script>";
-
-          //Выводим данные в виде таблицы
-          //echo "<pre style='font-size: 8pt;'>"; print_r ( $results[$i] ); echo "</pre>";
-          print_table ( $results[$i], $fields[$i] );
-          $flag_not_empty = true;
-        }
+      if ( $sp ) {
+        echo "<div class='alert alert-success'>Синхронизация выполнена успешно</div>\n";
       }
 
-      if ( empty($flag_not_empty) ) {
-        echo "<div class='alert alert-warning'>Изменения не выявлены.</div>\n";
-      }
+      echo "<a href='index.php?action=status'>вернуться назад</a>";
+      echo "<br/>";
+
+      //Выводим табличку с результатами
+      print_sync_results ($sp);
+
+      echo "<br/>";
+      echo "<a href='index.php?action=status'>вернуться назад</a>";
 
     } catch (DuplicateFound $dp) {
       echo "<div class='alert alert-warning'><b>Внимание</b><br> Возникла конфликтная ситуация, которую нужно разрешить в ручном режиме:<br>{$dp->getMessage()}<br/></div>\n";
@@ -457,12 +414,72 @@
     return True;
   }
 
+  function print_sync_results (sams_sync $sp) {
+    $labels = array ("Скопировано из SAMS в RDB",
+      "Обновлено в RBD",
+      "Требует вмешательства",
+      "Подключено к серверу",
+      "Удалены из RDB",
+      "Отключено от сервера"
+    );
+
+    //todo Дополнить описания
+    $descriptions = array("В эту группу входят те пользователи SAMS, <b>логины</b> которых отсутствуют в RDB",
+      "В эту группу входят те пользователи, у которых изменились данные в SAMS</br>Сюда входят только <b>локальные<b> пользователи!",
+      "", "", "", ""
+    );
+
+    $results = array ( $sp->getSamsUsersToCopy(),
+      $sp->getSamsUsersUpdated(),
+      $sp->getSamsUsersConflicted(),
+      $sp->getSamsUsersToLink(),
+      $sp->getSamsUsersToRemove(),
+      $sp->getSamsUsersToUnLink()
+    );
+
+    $fields_sets = array (
+      "copy"    => array ("id", "nick", "family", "name", "soname", "enabled"),
+      "updated" => array ("id", "nick", "family", "name", "soname"),
+      "conf"    => array ("id", "nick", "family", "name", "soname"),
+      "other"   => array ("id", "login", "name")
+    );
+
+    $fields = array ($fields_sets["copy"],
+      $fields_sets["updated"],
+      $fields_sets["conf"],
+      $fields_sets["other"],
+      $fields_sets["other"],
+      $fields_sets["other"]
+    );
+
+    echo "<script src='js/jquery.webui-popover.js'></script>";
+
+    for ($i=0; $i<=count($labels)-1; $i++) {
+      if( !empty($results[$i]) ) {
+        //Выводим заголовок, и создаем для него хинт
+        echo "<h3 id='label{$i}'> {$labels[$i]}: ".count( $results[$i] )." </h3>";
+        echo "<script>   $('#label{$i}').webuiPopover({content:'<small>{$descriptions[$i]}</small>', trigger: 'hover', placement: 'left'});  </script>";
+
+        //Выводим данные в виде таблицы
+        //echo "<pre style='font-size: 8pt;'>"; print_r ( $results[$i] ); echo "</pre>";
+        print_table ( $results[$i], $fields[$i] );
+        $flag_not_empty = true;
+      }
+    }
+
+    if ( empty($flag_not_empty) ) {
+      echo "<div class='alert alert-warning'>Изменения не выявлены.</div>\n";
+    }
+  }
+
   function print_table ($data, $fields) {
     echo "<table id='table-sync' class='table table-condensed small'>\n";
 
-    echo "<tr>";
-    foreach ($fields as $f) { echo "<th>{$f}</th>"; }
-    echo "</tr>";
+    echo "<thead><tr>";
+    for ($i=0; $i<=6; $i++) {
+      echo "<th>".( isset($fields[$i]) ? $fields[$i] : "" )."</th>";
+    }
+    echo "</tr></thead>";
 
     foreach ($data as $row) {
       echo "<tr>";

@@ -133,11 +133,11 @@
           ?>
         </div>
       
-        <!-- Пока отключим
-        <div class='footer navbar-fixed-bottom'>
-        <div class='container'><h6>ОАО Плюс Банк v0.0</h6></div>
+        <!-- Пока отключим -->
+        <div class='footer'>
+          <div class='container'><h6>ОАО Плюс Банк v0.0</h6></div>
         </div>
-        -->
+
       </body>
     </html>
     <?php
