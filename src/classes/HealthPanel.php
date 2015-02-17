@@ -330,7 +330,7 @@ class HealthPanel {
       $_SESSION['master_available'] = False;
       $_SESSION['master_error'] = $master_srv->get_connect_error();
     }
-    $master_srv->close_db();
+    //$master_srv->close_db();
     return TRUE;
   }
 

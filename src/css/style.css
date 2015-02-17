@@ -148,3 +148,26 @@
     line-height: 1;
     font-size: 85%;
 }
+
+.error-container {
+    border-bottom: 1px dotted;
+    display: inline;
+    cursor: help;
+}
+
+.error-container > .glyphicon {
+    top: 2px;
+    font-size: 16px;
+}
+
+#repl_status .glyphicon-ok {
+    font-size: 16px;
+}
+
+.slave-status-hint {
+    font-size: 8pt;
+}
+
+.slave-status-hint td {
+    padding: 1px !important;
+}

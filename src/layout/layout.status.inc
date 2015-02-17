@@ -196,13 +196,15 @@
                     "mode"       => $srv->get_work_mode(),
                     "is_conn"    => $srv->is_connected(),
                     "conn_error" => $srv->get_connect_error(),
-                    "is_ro"      => $srv->is_read_only()
+                    "is_ro"      => $srv->is_read_only(),
+                    "slave_stat" => ( ($srv->is_connected()) ? $srv->show_slave_status_ex() : 0 ),
+                    "master_stat"=> ( ($srv->is_connected()) ? $srv->show_master_status() : 0 )
       );
       $servers_info[] = $row;
     }
 
     echo "<div class='panel panel-default'>\n";
-    echo "<table class='table table-condensed table-bordered'>\n";
+    echo "<table id='repl_status' class='table table-condensed table-bordered'>\n";
     echo "<thead>\n";
     echo "<tr>\n
             <th width='5%' class='text-center'>*</th>
@@ -231,84 +233,47 @@
       // -------------- Статус подключения -------------
       if ($r['is_conn']) {
         if ($r['conn_error'] === FALSE) {
-          echo "<td class='text-center'><span class='glyphicon glyphicon-ok'></span></td>";
+          echo "<td class='text-center text-success'><span class='glyphicon glyphicon-ok'></span></td>";
         } else {
-          echo "<td class='text-center'>
-                  <a id='err{$r['pid']}' class='glyphicon glyphicon-warning-sign' href='#'>Предупреждение</a>
+          echo "<td class='text-center text-warning'>
+                  <span id='err{$r['pid']}' class='glyphicon glyphicon-warning-sign'></span>Предупреждение
                   <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Предупреждение', trigger: 'hover', placement: 'right-top'});  </script>
                 </td>";
         }
       } else {
-        echo "<td class='text-center'>
-                <a id='err{$r['pid']}' class='glyphicon glyphicon-remove' href='#'>Ошибка</a>
+        echo "<td class='text-center text-danger'>
+                <div id='err{$r['pid']}' class='error-container'>
+                    <span class='glyphicon glyphicon-remove'></span>
+                    <span>ОШИБКА</span>
+                </div>
                 <script>   $('#err{$r['pid']}').webuiPopover({content:'<small>".htmlentities($r['conn_error'][0], ENT_QUOTES)."</small>', title: 'Ошибка при соединении', trigger: 'hover', placement: 'right-top'});  </script>
               </td>";
       }
 
       // -------------- Статус репликации -------------
-      echo "<td></td>";
+      if ($r['is_conn']) {
+        if ($r['mode'] == WORK_MODE_SLAVE) {
+          echo "<td>
+                <span id='slave-status{$r['pid']}'>SS</span>
+                <script>   $('#slave-status{$r['pid']}').webuiPopover({content:'".print_slave_status($r['slave_stat'])."', title: 'Состояние подчиненного', trigger: 'hover', placement: 'right-top', width: '400px', height: '700px'});  </script>
+              </td>";
+        } elseif ($r['mode'] == WORK_MODE_MASTER) {
+          echo "<td>
+                <span id='master-status{$r['pid']}'>MS</span>
+                <script>   $('#master-status{$r['pid']}').webuiPopover({content:'".print_master_status($r['master_stat'])."', title: 'Состояние мастера', trigger: 'hover', placement: 'right-top'});  </script>
+              </td>";
+        }
+      } else {
+        echo "<td></td>";
+      }
 
       // ------------- Кнопка смены мастера -----------
       echo "<td><button type='button' onClick='location.href=\"?action=status&switch_master_to={$r['pid']}\"' class='btn btn-primary btn-xs'>Сделать мастером</button></td>";
 
       // ------------------- Резерв -------------------
       echo "<td></td>";
-//
-//
-//        if ($value->get_work_mode() == WORK_MODE_MASTER) {
-//          echo " <span class='label label-danger'>МАСТЕР</span>";
-//        } elseif ($value->get_work_mode() == WORK_MODE_SLAVE) {
-//          echo " <span class='label label-warning'>ПОДЧИНЕННЫЙ</span>";
-//        }
-//
-//        echo "</td>\n";
-
-      if ($r['is_conn']) {
-//          echo "<td class='text-success'>ДОСТУПЕН</td>";
-//
-//          $err = $hp->get_repl_errors($value);
-//          if (empty($err)) {
-//            echo "<td class='text-success'>OK</td>";
-//          } else {
-//            echo "<td class='text-danger'>\n";
-//            echo "<a href='#srv{$srv_id}' data-toggle='collapse' data-target='#srv{$srv_id}'>\n";
-//            echo "<span class='glyphicon glyphicon-remove'></span> ОШИБКА\n";
-//            echo "</a>\n";
-//            echo "</td>\n";
-//          }
-      } else {
-//
-//          echo "<td class='text-danger'>НЕ ДОСТУПЕН</td>\n";
-//          $err = $value->get_connect_error();
-//          //echo "<pre>"; $value->get_error(); echo "</pre>";
-//          echo "<td><span style='font-size: 8pt;'>{$err[1]}: " . iconv("CP1251", "UTF-8", $err[0]) . "</span></td>\n";
-      }
-
-//        echo "<td> </td>\n";
-//
-//        $wm = $value->get_work_mode();
-//        if (($wm == WORK_MODE_SLAVE || $wm == WORK_MODE_UNDEFINED) && $avaiable) {
-//          echo "<td><button type='button' onClick='location.href=\"?action=status&switch_master_to=" . $value->get_id() . "\"' class='btn btn-primary btn-xs'> Сделать мастером</button></td>\n";
-//        } else {
-//          echo "<td> </td>\n";
-//        }
-//
-//        echo "<td> </td>\n";
 
       echo "</tr>\n";
-
-//        if (!empty($err)) {
-//          $data_content = '';
-//          foreach ($err as $k => $v) $data_content .= "{$k}: {$v}</br>\n";
-//          echo "<tr class='hiddenRow'><td colspan=4>
-//          <div id='srv{$srv_id}' class='collapse'>
-//            <div class='alert alert-danger hiddenAlert'>
-//              <small>{$data_content}</small>
-//            </div>
-//          </div>
-//        </td></tr>\n";
-//        }
-      //echo "<tr><td colspan=4>"; foreach ($err as $k => $v) echo "{$k} = {$v}</br>"; echo "</td></tr>\n";
     } // end of foreach
     echo "</table>\n";
     echo "</div>\n"; // of panel
@@ -538,6 +503,33 @@
       $logins_with_names = $sp->get_users_shortinfo($conflict_users, SOURCE_RDB);
       print_table($logins_with_names, "Конфликтные пользователи", 3);
     }
+  }
+
+  function print_slave_status ($ss) {
+    $hint="";
+    $hint.="<table class='slave-status-hint table table-condensed'>";
+    foreach ($ss as $k=>$v ) {
+      //Тут вызывается функция, которая анализирует сравнивает значения $v параметра $k с эталонными, и возвращает параметр, отвечающий за стиль элемента (красный\зеленый\желтый фон, жирный шрифт, цвет шрифта)
+      $td = "<td>".$k."</td>";
+      $td.= "<td>".htmlentities($v, ENT_QUOTES)."</td>";
+      $hint.="<tr>{$td}</tr>";
+    }
+    $hint.="</table>";
+
+    return addslashes($hint);
+  }
+
+  function print_master_status ($ms) {
+    $hint="";
+    $hint.="<table class='master-status-hint table table-condensed'>";
+    foreach ($ms as $k=>$v ) {
+      $td = "<td>".$k."</td>";
+      $td.= "<td>".htmlentities($v, ENT_QUOTES)."</td>";
+      $hint.="<tr>{$td}</tr>";
+    }
+    $hint.="</table>";
+
+    return addslashes($hint);
   }
 
   function users_compare (array $a, array $b) {
