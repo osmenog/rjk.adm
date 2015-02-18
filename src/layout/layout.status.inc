@@ -252,17 +252,16 @@
 
       // -------------- Статус репликации -------------
       if ($r['is_conn']) {
-        if ($r['mode'] == WORK_MODE_SLAVE) {
-          echo "<td>
-                <span id='slave-status{$r['pid']}'>SS</span>
-                <script>   $('#slave-status{$r['pid']}').webuiPopover({content:'".print_slave_status($r['slave_stat'])."', title: 'Состояние подчиненного', trigger: 'hover', placement: 'right-top', width: '400px', height: '700px'});  </script>
-              </td>";
-        } elseif ($r['mode'] == WORK_MODE_MASTER) {
-          echo "<td>
-                <span id='master-status{$r['pid']}'>MS</span>
-                <script>   $('#master-status{$r['pid']}').webuiPopover({content:'".print_master_status($r['master_stat'])."', title: 'Состояние мастера', trigger: 'hover', placement: 'right-top'});  </script>
-              </td>";
+        echo "<td>";
+        if ( $m_pid == $r['pid'] ) {
+          echo "<span id='master-status{$r['pid']}'>MS</span>
+                <script>   $('#master-status{$r['pid']}').webuiPopover({content:'".print_master_status($r['master_stat'])."', title: 'Состояние мастера', trigger: 'hover', placement: 'right-top'});  </script>";
         }
+
+        echo "<span id='slave-status{$r['pid']}'>SS</span>
+              <script>   $('#slave-status{$r['pid']}').webuiPopover({content:'".print_slave_status($r['slave_stat'])."', title: 'Состояние подчиненного', trigger: 'hover', placement: 'right-top', width: '400px', height: '700px'});  </script>";
+
+        echo "</td>";
       } else {
         echo "<td></td>";
       }
