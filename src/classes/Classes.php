@@ -1086,4 +1086,30 @@ function create_banlist ($name, $short_desc, $full_desc) {
 // }
 // echo('</div>');
 // break;
+
+function check_export_dir($dir_name) {
+  //Проверяем, существует ли директория для экспорта, и пробуем ее создать
+  global $config;
+  $path="{$dir_name}/";
+
+  //Проверяем, существует ли директория
+  if (!file_exists($path)) { //... если нет, то пытаемся создать
+    if (!mkdir($path, 0775, true)) {
+      throw new Exception ("Не могу создать директорию [{$path}]");
+    }
+  }
+
+  //Проверяем, можно ли выполнить запись в директорию
+  $f = @fopen($path.'test', 'w');
+  if ( $f === FALSE ) {
+    $e = error_get_last();
+    throw new Exception ("Директория [{$path}] не доступна для записи: ".$e['message']);
+  } else {
+    fclose($f);
+    @unlink ($path.'test');
+    return True;
+  }
+}
+
+
 ?>

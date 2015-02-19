@@ -118,26 +118,16 @@ class rejik_worker extends worker {
    * @throws rejik_exception
    */
   public function banlist_export ($banlist, $root_path){
-    echo "<h1>Функционал banlist_export отключен</h1>";
-    return FALSE;
-
     //Проверяем, существует ли банлист
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4);
 
     //Получаем список URL по банлисту
-    var_dump($banlist);
     $urls = $this->banlist_get_urls($banlist,0,0,TRUE);
-
-    return;
 
     //Создаем каталог для банлиста
     $p = $root_path."{$banlist}/";
-    if (!file_exists($p)) {
-      if (!@mkdir($p, 0, true)) {
-        $e=error_get_last();
-        throw new rejik_exception("Не могу создать каталог: {$e['message']}",111);
-      }
-    }
+
+    check_export_dir($p);
 
     $hdl = @fopen("{$p}/urls", "w");
     if(!$hdl) {
@@ -155,6 +145,7 @@ class rejik_worker extends worker {
       }
     }
     fclose($hdl);
+    chmod ("{$p}/urls", 0664);
 
     //Проверяем контрольную сумму файла
     $file_hash = sha1_file ("{$p}/urls");
@@ -515,6 +506,7 @@ class rejik_worker extends worker {
         }
       }
       fclose($hdl);
+      chmod("{$root_path}/{$banlist}", 0664 );
     }
 
     //Проверяем контрольную сумму файла
