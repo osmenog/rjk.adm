@@ -258,8 +258,10 @@
                 <script>   $('#master-status{$r['pid']}').webuiPopover({content:'".print_master_status($r['master_stat'])."', title: 'Состояние мастера', trigger: 'hover', placement: 'right-top'});  </script>";
         }
 
-        echo "<span id='slave-status{$r['pid']}'>SS</span>
+        if ( $r['slave_stat']!=0 ) {
+          echo "<span id='slave-status{$r['pid']}'>SS</span>
               <script>   $('#slave-status{$r['pid']}').webuiPopover({content:'".print_slave_status($r['slave_stat'])."', title: 'Состояние подчиненного', trigger: 'hover', placement: 'right-top', width: '400px', height: '700px'});  </script>";
+        }
 
         echo "</td>";
       } else {

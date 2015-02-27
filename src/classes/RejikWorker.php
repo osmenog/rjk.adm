@@ -121,19 +121,38 @@ class rejik_worker extends worker {
     //Проверяем, существует ли банлист
     if (!$this->is_banlist($banlist)) throw new rejik_exception("Банлист {$banlist} отсутствует в базе",4);
 
-    //Получаем список URL по банлисту
-    $urls = $this->banlist_get_urls($banlist,0,0,TRUE);
-
     //Создаем каталог для банлиста
     $p = $root_path."{$banlist}/";
-
     check_export_dir($p);
 
+    //Создаем файл [urls]
     $hdl = @fopen("{$p}/urls", "w");
     if(!$hdl) {
       $e=error_get_last();
       throw new rejik_exception("Не могу записать в файл: {$e['message']}",112);
     }
+
+    //Получаем количество URL в банлисте
+    $c = $this->banlist_urls_count($banlist);
+
+    $u = 50000;
+
+    for ($i=0; $i <= $c; $i += $u ) {
+      echo "<h6>{$i}-".($i+$u)."</h6>";
+      echo "<b>".memory_get_usage()."</b> --- ";
+      $urls = $this->banlist_get_urls($banlist, $i, $i+$u, TRUE);
+      echo "<b>".memory_get_usage()."</b>";
+      //unset ($urls);
+    }
+
+     exit;
+
+    //$pages_count = ($count>LOG_EVENTS_ON_PAGE) ? floor($count/LOG_EVENTS_ON_PAGE) : 1; //Всего страниц
+
+    //if ($count>LOG_EVENTS_ON_PAGE and $count%LOG_EVENTS_ON_PAGE!=0) $pages_count++; //Остаток
+
+    //В цикле получаем 10000 URL из банлиста
+
 
     $counter=0;
     //Если в бан-листе нету УРЛов, то пропускаем его.
@@ -145,7 +164,7 @@ class rejik_worker extends worker {
       }
     }
     fclose($hdl);
-    chmod ("{$p}/urls", 0664);
+    @chmod ("{$p}/urls", 0664);
 
     //Проверяем контрольную сумму файла
     $file_hash = sha1_file ("{$p}/urls");
@@ -267,7 +286,7 @@ class rejik_worker extends worker {
 
     $res = array();
     while ($row = $response->fetch_row()) $res[] = $row;
-
+    //var_dump($response);
     $response->close();
     return $res;
   }
@@ -284,7 +303,7 @@ class rejik_worker extends worker {
     $urls_num = $response->fetch_row();
 
     $response->close();
-    return $urls_num[0];
+    return (int) $urls_num[0];
   }
 
   /**
@@ -506,7 +525,7 @@ class rejik_worker extends worker {
         }
       }
       fclose($hdl);
-      chmod("{$root_path}/{$banlist}", 0664 );
+      @chmod("{$root_path}/{$banlist}", 0664 );
     }
 
     //Проверяем контрольную сумму файла
@@ -817,7 +836,7 @@ class rejik_worker extends worker {
     if (!$response) {
       throw new Exception ("Ошибка при импорте CSV в БД: (".$this->master->errno.") ".$this->master->error, $this->master->errno);
     }
-    return $this->master->affected_rows;
+    return $this->master->affected_rows();
     //if ($response->num_rows == 0) return 0;
   }
 

@@ -53,12 +53,12 @@ function print_form() {
     <div class="form-group">
       <label for="bl_path">Путь до папки с бан-листами:</label>
       <input name="bl_path" type="text" class="form-control" id="bl_path" placeholder="Введите сюда абсолютный путь..."
-             value="/usr/local/www/apache24/data/rjk/import/banlists/">
+             value="/tmp/import/banlists/">
     </div>
     <div class="form-group">
       <label for="usr_path">Путь до папки с пользователями:</label>
       <input name="usr_path" type="text" class="form-control" id="usr_path"
-             placeholder="Введите сюда абсолютный путь..." value="/usr/local/www/apache24/data/rjk/import/users/">
+             placeholder="Введите сюда абсолютный путь..." value="/tmp/import/users/">
     </div>
     <button type="submit" class="btn btn-default">Старт</button>
   </form>
@@ -132,6 +132,8 @@ class import {
       $res = $rejik->import_from_csv($this->csv_usr_path, 'users_acl', array('nick','banlist'));
       echo "<p>В БД импортировано: {$res} записей</p>\n";
 
+      @unlink($this->csv_bl_path);
+      @unlink($this->csv_usr_path);
     } catch (Exception $e) {
       throw $e;
     }
@@ -162,11 +164,11 @@ class import {
 
     //Проверяем, существует ли csv файл с прошлого импорта
     $this->csv_bl_path = $config['tmp_dir_path']."import_bl.csv";
-    if (file_exists($this->csv_bl_path)) {
-      if (!unlink($this->csv_bl_path)) {
-        throw new Exception("Не могу удалить файл: ".$this->csv_bl_path);
-      }
-    }
+    //if (file_exists($this->csv_bl_path)) {
+      unlink($this->csv_bl_path);//) {
+        //throw new Exception("Не могу удалить файл: ".$this->csv_bl_path);
+      //}
+    //}
 
     //Получаем содержимое родительского каталога $bl_list в виде массива: "имя обьекта" => "file|dir"
     $root_dir = $this->dir_contents($this->source_bl_dir);

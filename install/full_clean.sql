@@ -13,8 +13,8 @@ TRUNCATE TABLE `urls`;
 TRUNCATE TABLE `users`;
 TRUNCATE TABLE `users_acl`;
 TRUNCATE TABLE `users_linked`;
-TRUNCATE TABLE `variables`;
+-- TRUNCATE TABLE `variables`;
 
-START SLAVE;
+-- START SLAVE;
 
 SHOW SLAVE STATUS;

@@ -488,21 +488,21 @@ class sams_sync {
     FileLogger::add(print_r($this->sams_users_to_unlink, true));
 
     //Копируем подготовленных пользователей в REJIK DB
-    //$this->copy_to_rejik($this->sams_users_to_copy);
+    $this->copy_to_rejik($this->sams_users_to_copy);
 
     //Подключаем пользователей к нашему прокси...
-    //$this->link_users_to_proxy($this->sams_users_to_link);
+    $this->link_users_to_proxy($this->sams_users_to_link);
     //... и переносим пользователей SAMS в группу linked
-    //$this->fix_linked_users_group($this->sams_users_to_link);
+    $this->fix_linked_users_group($this->sams_users_to_link);
 
     //Обновляем измененных пользователей в RDB
-    //$this->update_users_data($this->sams_users_updated);
+    $this->update_users_data($this->sams_users_updated);
 
     //Удаляем пользователей, которые были удалены с SAMS
-    //$this->delete_removed_users($this->sams_users_to_remove);
+    $this->delete_removed_users($this->sams_users_to_remove);
 
     //Отключаем пользователей, которых удалили в SAMS
-    //$this->unlink_users_from_proxy($this->sams_users_to_unlink);
+    $this->unlink_users_from_proxy($this->sams_users_to_unlink);
 
     FileLogger::close();
   }
