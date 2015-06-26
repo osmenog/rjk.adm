@@ -1,0 +1,61 @@
+﻿<?php
+// -------------------------------------------------------------
+//Настройки соединения для текущего сервера
+// -------------------------------------------------------------
+
+  //ID этого сервера. Такой же как и в конфиге MySQL
+  $config['server_id']        = 1;
+
+  $config['repl_user_name']   = 'user';
+  $config['repl_user_passwd'] = 'password';
+
+  $config['db_user_name']     = 'user';
+  $config['db_user_pass']     = 'password';
+
+  //Параметры БД САМС
+  $config  ['sams_db'] = array('localhost', 'sams', 'user', 'squidctrl', 'utf8');
+  //Параметры БД Режика
+  $config ['rejik_db'] = array('localhost', $config['db_user_name'], $config['db_user_pass'], 'rejik', 'utf8');
+
+// -------------------------------------------------------------
+//Вспомогательные опции
+// -------------------------------------------------------------
+
+  // Логировать действия админов
+  $config['admin_log'] = True;
+
+  //Режим отладки
+  $config['debug_mode'] = True;
+  $config['user_sync_extended_log'] = False;
+
+  //Как будет обновляться статус серверов
+  $config['use_check_cache'] = True;
+
+  //Название корневой папки проекта. Используется при указании абсолютного адреса.
+  $config['proj_name'] = 'adm';
+
+  //Идентификатор и название группы, в которую будут перемещаться удаленные пользователи
+  $config['trash_group_id'] = '51592397f28d5';
+  $config['trash_group_default_name'] = 'removed';
+  $config['cut_group_name'] = True;
+
+
+  //Количество ссылок на одной странице
+  $config['urls_per_page'] = 250;
+
+  //Секретный ключ сервера
+  $config['private_key'] = 'secret';
+
+  $config['servers'] = array(
+    'Proxy_host' => array($config['repl_user_name'], $config['repl_user_passwd'], 1),
+  );
+
+  //Путь до папки, где будут хранится всякие логи.
+  $config['log_dir'] = '/var/log/rejik.adm/';
+
+  //$config['tmp_dir_path'] = '/tmp/';
+  $config['tmp_dir_path'] = '/tmp/';
+
+  //Если этот параметр существует, то при выыводи информации из БД САМС будет выполнятся преобразование кодировки
+  //$config ['conv'] = array ('cp1252','cp1251');
+?>
