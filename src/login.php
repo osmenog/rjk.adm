@@ -138,6 +138,7 @@ function login ($login, $pass) {
   $row = $response->fetch_row();
   $db_hash = $row[1];
 
+  // Эмулируем гипершифрование в самсе.....
   $usr_hash = crypt($pass, "00");
   $sid = 0;
   
